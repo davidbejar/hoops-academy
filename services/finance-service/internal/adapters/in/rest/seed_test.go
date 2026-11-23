@@ -8,6 +8,7 @@ import (
 	"hoopsacademy.local/finance/internal/adapters/out/persistence"
 	"hoopsacademy.local/finance/internal/application"
 	"hoopsacademy.local/finance/internal/domain"
+	"hoopsacademy.local/finance/internal/testsupport/pgtest"
 )
 
 // The dues tests run on today's date (the API's clock is the system's), so their seasons and periods are relative to
@@ -143,20 +144,7 @@ func (s *seed) person(subject, name string) string {
 // text reads one text value as finance_app bound to tenant.
 func (a *api) text(t *testing.T, tenant, sql string, args ...any) string {
 	t.Helper()
-	ctx := context.Background()
-	tx, err := a.db.App.Begin(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-	if _, err := tx.Exec(ctx, "select set_config('app.tenant_id', $1, true)", tenant); err != nil {
-		t.Fatal(err)
-	}
-	var value string
-	if err := tx.QueryRow(ctx, sql, args...).Scan(&value); err != nil {
-		t.Fatal(err)
-	}
-	return value
+	return pgtest.Value[string](t, a.db.App, tenant, sql, args...)
 }
 
 // plan creates a MONTHLY plan of team from two months ago (EUR chosen first) and returns its id.

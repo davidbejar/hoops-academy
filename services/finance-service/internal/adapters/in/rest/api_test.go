@@ -3,7 +3,6 @@ package rest_test
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,13 +12,12 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"hoopsacademy.local/finance/internal/adapters/in/oidc"
 	"hoopsacademy.local/finance/internal/adapters/in/rest"
 	"hoopsacademy.local/finance/internal/adapters/out/persistence"
 	"hoopsacademy.local/finance/internal/application"
-	"hoopsacademy.local/finance/internal/domain"
+	"hoopsacademy.local/finance/internal/platform/clock"
 	"hoopsacademy.local/finance/internal/platform/ids"
 	"hoopsacademy.local/finance/internal/platform/security"
 	"hoopsacademy.local/finance/internal/testsupport/contract"
@@ -45,14 +43,7 @@ func newAPI(t *testing.T) *api {
 	logs := &bytes.Buffer{}
 	log := slog.New(slog.NewJSONHandler(logs, nil))
 	events := security.NewEvents(log)
-	tx := persistence.NewTransactions(db.App)
-	finance := application.NewFinance(application.Ports{
-		Clock: systemClock{}, IDs: ids.V7{}, Transactions: tx, Settings: persistence.SettingsStore{},
-		FeePlans: persistence.FeePlanStore{},
-		Audit:    persistence.AuditLog{IDs: ids.V7{}, Log: log}, Members: persistence.MembershipStore{},
-		Roster: persistence.RosterStore{}, Dues: persistence.DueStore{}, Payments: persistence.PaymentStore{},
-		Expenses: persistence.ExpenseStore{},
-	})
+	finance := application.NewFinance(persistence.NewPorts(db.App, clock.System{}, log))
 	handler := rest.NewHandler(rest.Deps{
 		Finance: finance, Verifier: oidc.NewVerifier(oidc.Config{AuthServerURL: r.URL(), Audience: realm.Audience}),
 		Security: events, Log: log, CORSOrigins: []string{"http://localhost:5173"},
@@ -63,18 +54,7 @@ func newAPI(t *testing.T) *api {
 	return &api{server: server, realm: r, db: db, events: events, logs: logs}
 }
 
-type systemClock struct{}
-
-func (systemClock) Now() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }
-
-func uuid() string {
-	var b [16]byte
-	_, _ = rand.Read(b[:])
-	b[6] = b[6]&0x0f | 0x40
-	b[8] = b[8]&0x3f | 0x80
-	id := domain.UUID(b)
-	return id.String()
-}
+func uuid() string { return ids.V7{}.New().String() }
 
 // academy creates an ACTIVE academy in the replica with members subject -> roles (as core's events would).
 func (a *api) academy(t *testing.T, members map[string][]string) string {
@@ -91,49 +71,13 @@ func (a *api) academy(t *testing.T, members map[string][]string) string {
 
 func (a *api) bound(t *testing.T, tenant, sql string, args ...any) {
 	t.Helper()
-	ctx := context.Background()
-	tx, err := a.db.App.Begin(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-	if _, err := tx.Exec(ctx, "select set_config('app.tenant_id', $1, true)", tenant); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := tx.Exec(ctx, sql, args...); err != nil {
-		t.Fatal(err)
-	}
-	if err := tx.Commit(ctx); err != nil {
-		t.Fatal(err)
-	}
+	pgtest.Exec(t, a.db.App, tenant, sql, args...)
 }
 
 // auditActions reads the academy's audit trail in order, as finance_app bound to it.
 func (a *api) auditActions(t *testing.T, tenant string) []string {
 	t.Helper()
-	ctx := context.Background()
-	tx, err := a.db.App.Begin(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-	if _, err := tx.Exec(ctx, "select set_config('app.tenant_id', $1, true)", tenant); err != nil {
-		t.Fatal(err)
-	}
-	rows, err := tx.Query(ctx, "select action from finance.audit_event order by seq")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer rows.Close()
-	var actions []string
-	for rows.Next() {
-		var action string
-		if err := rows.Scan(&action); err != nil {
-			t.Fatal(err)
-		}
-		actions = append(actions, action)
-	}
-	return actions
+	return pgtest.Rows[string](t, a.db.App, tenant, "select action from finance.audit_event order by seq")
 }
 
 type answer struct {

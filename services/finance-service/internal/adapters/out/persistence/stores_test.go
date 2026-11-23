@@ -2,7 +2,6 @@ package persistence_test
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"testing"
 	"time"
@@ -27,13 +26,7 @@ func newTenant(t *testing.T) domain.TenantID {
 	return tenant
 }
 
-func randomUUID() domain.UUID {
-	var id domain.UUID
-	_, _ = rand.Read(id[:])
-	id[6] = id[6]&0x0f | 0x40
-	id[8] = id[8]&0x3f | 0x80
-	return id
-}
+func randomUUID() domain.UUID { return ids.V7{}.New() }
 
 type stores struct {
 	tx       persistence.Transactions

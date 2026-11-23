@@ -1,13 +1,13 @@
 package persistence_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"hoopsacademy.local/finance/internal/domain"
+	"hoopsacademy.local/finance/internal/testsupport/pgtest"
 )
 
 // Rows the use cases of WP118 never write (dues: WP119; the replica: the event consumer), inserted as finance_app
@@ -15,21 +15,7 @@ import (
 
 func bound(t *testing.T, pool *pgxpool.Pool, tenant domain.TenantID, sql string, args ...any) {
 	t.Helper()
-	ctx := context.Background()
-	tx, err := pool.Begin(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-	if _, err := tx.Exec(ctx, "select set_config('app.tenant_id', $1, true)", tenant.String()); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := tx.Exec(ctx, sql, args...); err != nil {
-		t.Fatal(err)
-	}
-	if err := tx.Commit(ctx); err != nil {
-		t.Fatal(err)
-	}
+	pgtest.Exec(t, pool, tenant.String(), sql, args...)
 }
 
 func insertDue(t *testing.T, pool *pgxpool.Pool, tenant domain.TenantID, plan domain.FeePlanID) {

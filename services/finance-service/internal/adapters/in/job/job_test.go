@@ -3,7 +3,6 @@ package job_test
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"log/slog"
 	"os"
 	"strings"
@@ -26,32 +25,21 @@ func TestMain(m *testing.M) { os.Exit(pgtest.Run(m)) }
 // The job's day: 16 November 2026, 09:00 UTC (in Jakarta already the afternoon, in Honolulu still the 15th).
 var now = time.Date(2026, 11, 16, 9, 0, 0, 0, time.UTC)
 
-type fixedClock struct{}
+type clockAt time.Time
 
-func (fixedClock) Now() time.Time { return now }
+func (c clockAt) Now() time.Time { return time.Time(c) }
 
 func day(m time.Month, d int) time.Time { return time.Date(2026, m, d, 0, 0, 0, 0, time.UTC) }
 
-func randomID() domain.UUID {
-	var id domain.UUID
-	_, _ = rand.Read(id[:])
-	id[6] = id[6]&0x0f | 0x40
-	id[8] = id[8]&0x3f | 0x80
-	return id
-}
+func randomID() domain.UUID { return ids.V7{}.New() }
 
-func financeOn(pool *pgxpool.Pool) *application.Finance {
-	return application.NewFinance(application.Ports{
-		Clock: fixedClock{}, IDs: ids.V7{}, Transactions: persistence.NewTransactions(pool),
-		Settings: persistence.SettingsStore{}, FeePlans: persistence.FeePlanStore{},
-		Audit: persistence.AuditLog{IDs: ids.V7{}}, Members: persistence.MembershipStore{},
-		Roster: persistence.RosterStore{}, Dues: persistence.DueStore{}, Payments: persistence.PaymentStore{},
-		Expenses: persistence.ExpenseStore{},
-	})
+func financeOn(pool *pgxpool.Pool, clock application.Clock) *application.Finance {
+	return application.NewFinance(persistence.NewPorts(pool, clock, nil))
 }
 
 func jobOn(pool *pgxpool.Pool) application.DuesJob {
-	return application.NewDuesJob(financeOn(pool), persistence.TenantDirectory{Pool: pool}, persistence.Exclusive{Pool: pool})
+	return application.NewDuesJob(financeOn(pool, clockAt(now)), persistence.TenantDirectory{Pool: pool},
+		persistence.Exclusive{Pool: pool})
 }
 
 // academy is an academy of zone with one team (season 1 September 2026 to 30 June 2027) whose plan charges 4500 a month
@@ -93,7 +81,7 @@ func newAcademy(t *testing.T, pool *pgxpool.Pool, status, zone string, autoGener
 		})
 	}
 	admin := domain.NewMembership("admin", domain.PersonID(randomID()), tenant, []domain.Role{domain.Admin})
-	finance := financeOn(pool)
+	finance := financeOn(pool, clockAt(now))
 	if _, err := finance.UpdateSettings(ctx, admin, "EUR"); err != nil {
 		t.Fatal(err)
 	}
@@ -110,20 +98,7 @@ func newAcademy(t *testing.T, pool *pgxpool.Pool, status, zone string, autoGener
 // count reads a number as finance_app bound to the academy.
 func (a academy) count(t *testing.T, pool *pgxpool.Pool, sql string) int {
 	t.Helper()
-	ctx := context.Background()
-	tx, err := pool.Begin(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-	if _, err := tx.Exec(ctx, "select set_config('app.tenant_id', $1, true)", a.tenant.String()); err != nil {
-		t.Fatal(err)
-	}
-	var n int
-	if err := tx.QueryRow(ctx, sql).Scan(&n); err != nil {
-		t.Fatal(err)
-	}
-	return n
+	return pgtest.Value[int](t, pool, a.tenant.String(), sql)
 }
 
 const (
@@ -203,13 +178,8 @@ func TestTheJobUsesEachAcademysTimeZone(t *testing.T) {
 	jakarta := newAcademy(t, database.App, "ACTIVE", "Asia/Jakarta", true)
 	honolulu := newAcademy(t, database.App, "ACTIVE", "Pacific/Honolulu", true)
 	late := time.Date(2026, 11, 30, 20, 0, 0, 0, time.UTC)
-	job := application.NewDuesJob(application.NewFinance(application.Ports{
-		Clock: clockAt(late), IDs: ids.V7{}, Transactions: persistence.NewTransactions(database.App),
-		Settings: persistence.SettingsStore{}, FeePlans: persistence.FeePlanStore{},
-		Audit: persistence.AuditLog{IDs: ids.V7{}}, Members: persistence.MembershipStore{},
-		Roster: persistence.RosterStore{}, Dues: persistence.DueStore{}, Payments: persistence.PaymentStore{},
-		Expenses: persistence.ExpenseStore{},
-	}), persistence.TenantDirectory{Pool: database.App}, persistence.Exclusive{Pool: database.App})
+	job := application.NewDuesJob(financeOn(database.App, clockAt(late)), persistence.TenantDirectory{Pool: database.App},
+		persistence.Exclusive{Pool: database.App})
 
 	if _, _, err := job.Run(context.Background()); err != nil {
 		t.Fatal(err)
@@ -223,10 +193,6 @@ func TestTheJobUsesEachAcademysTimeZone(t *testing.T) {
 		t.Errorf("Honolulu's December dues: %d", got)
 	}
 }
-
-type clockAt time.Time
-
-func (c clockAt) Now() time.Time { return time.Time(c) }
 
 func TestTheRunnerRunsTheJobOnItsIntervalAndLogsWhatItDid(t *testing.T) {
 	database := pgtest.Start(t)

@@ -2,7 +2,6 @@ package rls
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"strings"
@@ -11,6 +10,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"hoopsacademy.local/finance/internal/platform/ids"
+	"hoopsacademy.local/finance/internal/testsupport/pgtest"
 )
 
 // Isolation is the generic data-driven isolation suite (GenericRlsIsolationTest). For one tenant table it inserts,
@@ -32,7 +34,7 @@ const insufficientPrivilege = "42501"
 
 // CheckTable runs the suite on one table and returns its violations.
 func (s Isolation) CheckTable(ctx context.Context, table string) ([]string, error) {
-	a, b := newUUID(), newUUID()
+	a, b := ids.V7{}.New().String(), ids.V7{}.New().String()
 	if _, err := s.insertAsMigrator(ctx, table, a); err != nil {
 		return nil, err
 	}
@@ -103,13 +105,13 @@ func firstWord(statement string) string { return strings.Fields(statement)[0] }
 
 func (s Isolation) count(ctx context.Context, tenant string, sql string, args ...any) (int64, error) {
 	var n int64
-	err := inTenant(ctx, s.App, tenant, func(tx pgx.Tx) error { return tx.QueryRow(ctx, sql, args...).Scan(&n) })
+	err := pgtest.InTenant(ctx, s.App, tenant, func(tx pgx.Tx) error { return tx.QueryRow(ctx, sql, args...).Scan(&n) })
 	return n, err
 }
 
 func (s Isolation) exec(ctx context.Context, tenant string, sql string, args ...any) (int64, error) {
 	var touched int64
-	err := inTenant(ctx, s.App, tenant, func(tx pgx.Tx) error {
+	err := pgtest.InTenant(ctx, s.App, tenant, func(tx pgx.Tx) error {
 		tag, err := tx.Exec(ctx, sql, args...)
 		touched = tag.RowsAffected()
 		return err
@@ -143,13 +145,13 @@ func (s Isolation) insertAsApp(ctx context.Context, table, bound, target string,
 		}
 	}
 	row := s.build(table, cols, target, parents)
-	return inTenant(ctx, s.App, bound, func(tx pgx.Tx) error { return insert(ctx, tx, table, row) })
+	return pgtest.InTenant(ctx, s.App, bound, func(tx pgx.Tx) error { return insert(ctx, tx, table, row) })
 }
 
 // insertAsMigrator inserts a committed row (and its parents) for tenant, bound to that tenant.
 func (s Isolation) insertAsMigrator(ctx context.Context, table, tenant string) (map[string]any, error) {
 	var row map[string]any
-	err := inTenant(ctx, s.Migrator, tenant, func(tx pgx.Tx) error {
+	err := pgtest.InTenant(ctx, s.Migrator, tenant, func(tx pgx.Tx) error {
 		var err error
 		row, err = s.insertTree(ctx, tx, table, tenant)
 		return err
@@ -206,7 +208,7 @@ func (s Isolation) build(table string, cols []column, tenant string, parents map
 func sample(c column) any {
 	switch c.dataType {
 	case "uuid":
-		return newUUID()
+		return ids.V7{}.New().String()
 	case "character":
 		return strings.Repeat("X", max(c.length, 1))
 	case "integer", "smallint":
@@ -316,21 +318,6 @@ func foreignKeysOf(ctx context.Context, q Querier, table string) ([]foreignKey, 
 	return fks, nil
 }
 
-func inTenant(ctx context.Context, pool *pgxpool.Pool, tenant string, fn func(pgx.Tx) error) error {
-	tx, err := pool.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("begin: %w", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-	if _, err := tx.Exec(ctx, "select set_config('app.tenant_id', $1, true)", tenant); err != nil {
-		return fmt.Errorf("bind tenant: %w", err)
-	}
-	if err := fn(tx); err != nil {
-		return err
-	}
-	return tx.Commit(ctx)
-}
-
 func isInsufficientPrivilege(err error) bool {
 	var pgErr *pgconn.PgError
 	return errors.As(err, &pgErr) && pgErr.Code == insufficientPrivilege
@@ -339,12 +326,4 @@ func isInsufficientPrivilege(err error) bool {
 func quote(table string) string {
 	schema, name, _ := strings.Cut(table, ".")
 	return pgx.Identifier{schema, name}.Sanitize()
-}
-
-func newUUID() string {
-	var b [16]byte
-	_, _ = rand.Read(b[:])
-	b[6] = b[6]&0x0f | 0x40
-	b[8] = b[8]&0x3f | 0x80
-	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }

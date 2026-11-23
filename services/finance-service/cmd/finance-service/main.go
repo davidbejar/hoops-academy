@@ -25,8 +25,8 @@ import (
 	"hoopsacademy.local/finance/internal/adapters/in/rest"
 	"hoopsacademy.local/finance/internal/adapters/out/persistence"
 	"hoopsacademy.local/finance/internal/application"
+	"hoopsacademy.local/finance/internal/platform/clock"
 	"hoopsacademy.local/finance/internal/platform/config"
-	"hoopsacademy.local/finance/internal/platform/ids"
 	"hoopsacademy.local/finance/internal/platform/security"
 	"hoopsacademy.local/finance/internal/platform/telemetry"
 )
@@ -37,10 +37,6 @@ func main() {
 		os.Exit(1)
 	}
 }
-
-type clock struct{}
-
-func (clock) Now() time.Time { return time.Now().UTC().Truncate(time.Microsecond) }
 
 func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, os.Interrupt)
@@ -68,13 +64,7 @@ func run() error {
 	defer pool.Close()
 
 	tx := persistence.NewTransactions(pool)
-	finance := application.NewFinance(application.Ports{
-		Clock: clock{}, IDs: ids.V7{}, Transactions: tx, Settings: persistence.SettingsStore{},
-		FeePlans: persistence.FeePlanStore{},
-		Audit:    persistence.AuditLog{IDs: ids.V7{}, Log: log}, Members: persistence.MembershipStore{},
-		Roster: persistence.RosterStore{}, Dues: persistence.DueStore{}, Payments: persistence.PaymentStore{},
-		Expenses: persistence.ExpenseStore{},
-	})
+	finance := application.NewFinance(persistence.NewPorts(pool, clock.System{}, log))
 	if cfg.DuesJob.Enabled {
 		runner := job.Runner{Interval: cfg.DuesJob.Interval, Log: log, Job: application.NewDuesJob(finance,
 			persistence.TenantDirectory{Pool: pool}, persistence.Exclusive{Pool: pool})}
