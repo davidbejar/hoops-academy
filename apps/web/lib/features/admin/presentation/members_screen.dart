@@ -15,8 +15,6 @@ import '../../roster/application/roster_providers.dart';
 import '../application/admin_providers.dart';
 import 'member_edit_dialog.dart';
 
-final memberEmailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-
 /// Localised text for a failed member action, chosen by the server's error code (never its English detail).
 String memberErrorText(Object error, AppLocalizations l) {
   final e = AppError.of(error);
@@ -242,9 +240,7 @@ class _InviteMemberDialogState extends ConsumerState<InviteMemberDialog> {
           controller: _email,
           keyboardType: TextInputType.emailAddress,
           decoration: InputDecoration(labelText: l.memberEmail),
-          validator: (v) => memberEmailPattern.hasMatch((v ?? '').trim())
-              ? null
-              : l.fieldInvalidEmail,
+          validator: (v) => emailValidator(l, v),
         ),
         formGap,
         Text(l.memberRoles, style: Theme.of(context).textTheme.titleSmall),

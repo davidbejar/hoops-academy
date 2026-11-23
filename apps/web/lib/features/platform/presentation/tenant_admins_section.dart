@@ -11,7 +11,6 @@ import '../../../core/ui/temporary_password_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/platform_providers.dart';
 import 'platform_labels.dart';
-import 'platform_validators.dart';
 
 /// Administrators of an academy on the tenant detail page (ADR-0023): list, add, edit, remove, and a new temporary
 /// password for a pending administrator (ADR-0024; no e-mail is ever sent).

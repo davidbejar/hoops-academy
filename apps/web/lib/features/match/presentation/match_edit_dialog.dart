@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
+import '../../../core/ui/validators.dart';
 import '../../../core/time/dates.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/date_field.dart';
@@ -80,7 +81,7 @@ class _MatchEditDialogState extends ConsumerState<MatchEditDialog> {
             ),
           ),
       homeAway: _homeAway,
-      venue: venue.isEmpty ? null : venue,
+      venue: blankToNull(venue),
       periodCount: _periodsEditable ? int.parse(_periods.text.trim()) : null,
       periodMinutes: _periodsEditable ? int.parse(_minutes.text.trim()) : null,
     );

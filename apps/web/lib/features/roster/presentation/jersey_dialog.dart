@@ -66,7 +66,7 @@ class _JerseyDialogState extends ConsumerState<JerseyDialog> {
       context,
       () => ref
           .read(teamDetailProvider(widget.teamId).notifier)
-          .setJersey(widget.playerId, text.isEmpty ? null : text),
+          .setJersey(widget.playerId, blankToNull(text)),
       success: l.saved,
     );
     if (!ok) {

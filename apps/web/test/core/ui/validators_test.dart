@@ -1,3 +1,5 @@
+import 'dart:ui' show Locale;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/ui/validators.dart';
 import 'package:hoops_app/l10n/gen/app_localizations.dart';

@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/ui/validators.dart';
 import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/ui/actions.dart';
@@ -9,7 +10,7 @@ import '../../../core/ui/form_dialog.dart';
 import '../../../core/ui/labels.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/admin_providers.dart';
-import 'members_screen.dart' show memberEmailPattern, memberErrorText;
+import 'members_screen.dart' show memberErrorText;
 
 /// Edits the personal data of a member (`UpdateMemberRequest`). E-mail, phone, birth date and gender can be emptied
 /// (sent in `clear`). A member with a login (`userId`) cannot lose the e-mail (ADR-0023): the field is validated before
@@ -40,8 +41,6 @@ class _MemberEditDialogState extends ConsumerState<MemberEditDialog> {
     super.dispose();
   }
 
-  static String? _blankToNull(String v) => v.trim().isEmpty ? null : v.trim();
-
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
@@ -56,8 +55,8 @@ class _MemberEditDialogState extends ConsumerState<MemberEditDialog> {
               widget.member.personId,
               givenName: _given.text.trim(),
               familyName: _family.text.trim(),
-              email: _blankToNull(_email.text),
-              phone: _blankToNull(_phone.text),
+              email: blankToNull(_email.text),
+              phone: blankToNull(_phone.text),
               birthDate: _birth,
               gender: _gender,
             ),
@@ -91,9 +90,7 @@ class _MemberEditDialogState extends ConsumerState<MemberEditDialog> {
                   ? null
                   : l.memberErrorLoginRequiresEmail;
             }
-            return memberEmailPattern.hasMatch(value)
-                ? null
-                : l.fieldInvalidEmail;
+            return emailValidator(l, value);
           },
         ),
         formGap,

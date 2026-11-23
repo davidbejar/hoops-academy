@@ -306,7 +306,7 @@ class _ExpenseDialogState extends ConsumerState<ExpenseDialog> {
                 ..category = _category
                 ..amountMinor = amount
                 ..description = description
-                ..note = note.isEmpty ? null : note,
+                ..note = blankToNull(note),
             ),
           );
           return;

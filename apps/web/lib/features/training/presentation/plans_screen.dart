@@ -667,7 +667,7 @@ class _AssignDialogState extends ConsumerState<AssignDialog> {
                   : (_playerId ??
                         ref.read(selectablePlayerIdsProvider).firstOrNull),
               dueOn: _due,
-              notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+              notes: blankToNull(_notes.text),
             ),
         success: l.assignDone,
       ),

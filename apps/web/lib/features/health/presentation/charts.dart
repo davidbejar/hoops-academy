@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:fl_chart/fl_chart.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/ui/validators.dart';
 import '../../../core/design/tokens.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/ui/chart_card.dart';
@@ -39,9 +40,6 @@ DateTime _fromDays(double v) => DateTime.fromMillisecondsSinceEpoch(
   (v * Duration.millisecondsPerDay).round(),
   isUtc: true,
 );
-
-String _fmt(double v) =>
-    v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
 
 /// Shared line-chart body: thin 2 px line, >= 8 px markers with a 2 px
 /// surface ring, recessive grid, ink-coloured axis text.
@@ -98,7 +96,7 @@ class _Line extends StatelessWidget {
                   ? const SizedBox.shrink()
                   : SideTitleWidget(
                       meta: meta,
-                      child: Text(_fmt(v), style: style),
+                      child: Text(formatMeasure(v), style: style),
                     ),
             ),
           ),
@@ -122,7 +120,7 @@ class _Line extends StatelessWidget {
             getTooltipItems: (spots) => [
               for (final s in spots)
                 LineTooltipItem(
-                  '${chartDate(points[s.spotIndex].at)}\n${_fmt(s.y)}',
+                  '${chartDate(points[s.spotIndex].at)}\n${formatMeasure(s.y)}',
                   TextStyle(color: palette.ink, fontSize: _ChartSize.labelText),
                 ),
             ],
@@ -177,7 +175,11 @@ class _GrowthChartState extends State<GrowthChart> {
     }
     return ChartCard(
       title: widget.title,
-      semantics: l.chartSummary(pts.length, widget.title, _fmt(pts.last.value)),
+      semantics: l.chartSummary(
+        pts.length,
+        widget.title,
+        formatMeasure(pts.last.value),
+      ),
       chart: _Line(
         points: pts,
         palette: p,
@@ -203,7 +205,7 @@ class _GrowthChartState extends State<GrowthChart> {
                   DataRow(
                     cells: [
                       DataCell(Text(chartDate(pt.at))),
-                      DataCell(Text(_fmt(pt.value))),
+                      DataCell(Text(formatMeasure(pt.value))),
                     ],
                   ),
               ],
@@ -247,7 +249,7 @@ class BandHistoryChart extends StatelessWidget {
       semantics: l.chartSummary(
         points.length,
         title,
-        '${_fmt(points.last.value)} $unit',
+        '${formatMeasure(points.last.value)} $unit',
       ),
       chart: _Line(
         points: points,

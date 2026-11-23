@@ -36,8 +36,7 @@ class ExerciseFields {
   String? get videoUrl => _text(_video);
 
   static int? _int(TextEditingController c) => int.tryParse(c.text.trim());
-  static String? _text(TextEditingController c) =>
-      c.text.trim().isEmpty ? null : c.text.trim();
+  static String? _text(TextEditingController c) => blankToNull(c.text);
 
   void dispose() {
     for (final c in [

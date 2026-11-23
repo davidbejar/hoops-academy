@@ -602,8 +602,8 @@ class MeasurementTile extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final m = measurement;
     final values = [
-      if (m.heightCm != null) '${_num(m.heightCm!)} cm',
-      if (m.weightKg != null) '${_num(m.weightKg!)} kg',
+      if (m.heightCm != null) '${formatMeasure(m.heightCm!)} cm',
+      if (m.weightKg != null) '${formatMeasure(m.weightKg!)} kg',
     ].join(' · ');
     return ListRow(
       key: Key('measurement-${m.id}'),
@@ -677,7 +677,7 @@ class _MeasurementDialogState extends ConsumerState<MeasurementDialog> {
       widget.measurement?.measuredOn.toDateTime() ?? DateTime.now();
   bool _needOne = false;
 
-  static String _initial(double? v) => v == null ? '' : _num(v);
+  static String _initial(double? v) => v == null ? '' : formatMeasure(v);
 
   @override
   void dispose() {
@@ -686,14 +686,7 @@ class _MeasurementDialogState extends ConsumerState<MeasurementDialog> {
     super.dispose();
   }
 
-  double? _parse(TextEditingController c) =>
-      double.tryParse(c.text.trim().replaceAll(',', '.'));
-
-  String? _optional(AppLocalizations l, String? v) {
-    if ((v ?? '').trim().isEmpty) return null;
-    final n = double.tryParse(v!.trim().replaceAll(',', '.'));
-    return n == null || n <= 0 ? l.fieldInvalidNumber : null;
-  }
+  double? _parse(TextEditingController c) => parseDecimal(c.text);
 
   @override
   Widget build(BuildContext context) {
@@ -741,7 +734,7 @@ class _MeasurementDialogState extends ConsumerState<MeasurementDialog> {
           controller: _height,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(labelText: l.growthHeight),
-          validator: (v) => _optional(l, v),
+          validator: (v) => optionalDecimalValidator(l, v, positive: true),
         ),
         formGap,
         TextFormField(
@@ -749,7 +742,7 @@ class _MeasurementDialogState extends ConsumerState<MeasurementDialog> {
           controller: _weight,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(labelText: l.growthWeight),
-          validator: (v) => _optional(l, v),
+          validator: (v) => optionalDecimalValidator(l, v, positive: true),
         ),
         if (_needOne)
           Padding(
@@ -843,7 +836,7 @@ class ResultTile extends ConsumerWidget {
     return ListRow(
       key: Key('result-${r.id}'),
       leading: const IconTile(Icons.speed, tone: HoopsTone.info),
-      title: l.testResultLine(r.unit, _num(r.value)),
+      title: l.testResultLine(r.unit, formatMeasure(r.value)),
       subtitle: r.ageAtMeasurement == null
           ? fullDate(r.measuredOn)
           : '${fullDate(r.measuredOn)} · ${l.testAtAge(r.ageAtMeasurement!)}',
@@ -916,7 +909,9 @@ class ResultEditDialog extends ConsumerStatefulWidget {
 
 class _ResultEditDialogState extends ConsumerState<ResultEditDialog> {
   final _form = GlobalKey<FormState>();
-  late final _value = TextEditingController(text: _num(widget.result.value));
+  late final _value = TextEditingController(
+    text: formatMeasure(widget.result.value),
+  );
   late final _notes = TextEditingController(text: widget.result.notes ?? '');
   late DateTime _on = widget.result.measuredOn.toDateTime();
 
@@ -941,8 +936,8 @@ class _ResultEditDialogState extends ConsumerState<ResultEditDialog> {
             .correct(
               r.id,
               measuredOn: _on,
-              value: double.parse(_value.text.trim().replaceAll(',', '.')),
-              notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+              value: parseDecimal(_value.text)!,
+              notes: blankToNull(_notes.text),
             ),
         success: l.saved,
       ),
@@ -952,10 +947,7 @@ class _ResultEditDialogState extends ConsumerState<ResultEditDialog> {
           controller: _value,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           decoration: InputDecoration(labelText: '${l.testValue} (${r.unit})'),
-          validator: (v) =>
-              double.tryParse((v ?? '').trim().replaceAll(',', '.')) == null
-              ? l.fieldInvalidNumber
-              : null,
+          validator: (v) => decimalValidator(l, v),
         ),
         ScaleHint(code: r.testCode),
         formGap,
@@ -976,9 +968,6 @@ class _ResultEditDialogState extends ConsumerState<ResultEditDialog> {
     );
   }
 }
-
-String _num(double v) =>
-    v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(2);
 
 /// Results entry; after saving it shows the expected band right away.
 class ResultDialog extends ConsumerStatefulWidget {
@@ -1015,8 +1004,8 @@ class _ResultDialogState extends ConsumerState<ResultDialog> {
           .add(
             testTypeId: _typeId!,
             measuredOn: _on,
-            value: double.parse(_value.text.trim().replaceAll(',', '.')),
-            notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+            value: parseDecimal(_value.text)!,
+            notes: blankToNull(_notes.text),
           );
     });
     if (!mounted) return;
@@ -1096,10 +1085,7 @@ class _ResultDialogState extends ConsumerState<ResultDialog> {
                 decimal: true,
               ),
               decoration: InputDecoration(labelText: l.testValue),
-              validator: (v) =>
-                  double.tryParse((v ?? '').trim().replaceAll(',', '.')) == null
-                  ? l.fieldInvalidNumber
-                  : null,
+              validator: (v) => decimalValidator(l, v),
             ),
             ScaleHint(
               code: types.where((t) => t.id == _typeId).firstOrNull?.code,

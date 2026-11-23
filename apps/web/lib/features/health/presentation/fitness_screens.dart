@@ -351,9 +351,6 @@ class NormsScreen extends ConsumerWidget {
   }
 }
 
-String _v(double v) =>
-    v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toString();
-
 class NormTile extends ConsumerWidget {
   const NormTile({
     super.key,
@@ -370,11 +367,11 @@ class NormTile extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final n = norm;
     final values = n.minValue != null && n.maxValue != null
-        ? l.normValues(_v(n.minValue!), _v(n.maxValue!))
+        ? l.normValues(formatMeasure(n.minValue!), formatMeasure(n.maxValue!))
         : n.minValue != null
-        ? l.normValuesFrom(_v(n.minValue!))
+        ? l.normValuesFrom(formatMeasure(n.minValue!))
         : n.maxValue != null
-        ? l.normValuesUpTo(_v(n.maxValue!))
+        ? l.normValuesUpTo(formatMeasure(n.maxValue!))
         : '';
     return ListRow(
       key: Key('norm-${n.id}'),
@@ -465,14 +462,7 @@ class _NormDialogState extends ConsumerState<NormDialog> {
     super.dispose();
   }
 
-  double? _d(TextEditingController c) =>
-      double.tryParse(c.text.trim().replaceAll(',', '.'));
-
-  String? _optional(AppLocalizations l, String? v) =>
-      (v ?? '').trim().isEmpty ||
-          double.tryParse(v!.trim().replaceAll(',', '.')) != null
-      ? null
-      : l.fieldInvalidNumber;
+  double? _d(TextEditingController c) => parseDecimal(c.text);
 
   @override
   Widget build(BuildContext context) {
@@ -595,7 +585,7 @@ class _NormDialogState extends ConsumerState<NormDialog> {
                   decimal: true,
                 ),
                 decoration: InputDecoration(labelText: l.normMinValue),
-                validator: (v) => _optional(l, v),
+                validator: (v) => optionalDecimalValidator(l, v),
               ),
             ),
             const SizedBox(width: HoopsSpace.sm),
@@ -607,7 +597,7 @@ class _NormDialogState extends ConsumerState<NormDialog> {
                   decimal: true,
                 ),
                 decoration: InputDecoration(labelText: l.normMaxValue),
-                validator: (v) => _optional(l, v),
+                validator: (v) => optionalDecimalValidator(l, v),
               ),
             ),
           ],

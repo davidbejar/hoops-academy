@@ -163,7 +163,7 @@ class _ApprovalCard extends ConsumerWidget {
                         context,
                         () async => approved = await notifier.approve(
                           request.id,
-                          note: note.isEmpty ? null : note,
+                          note: blankToNull(note),
                         ),
                       );
                       if (!ok || !nav.mounted) return;

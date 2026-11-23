@@ -10,7 +10,6 @@ import '../../../core/ui/temporary_password_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/platform_providers.dart';
 import 'platform_labels.dart';
-import 'platform_validators.dart';
 
 class TenantStatusChip extends StatelessWidget {
   const TenantStatusChip(this.status, {super.key});

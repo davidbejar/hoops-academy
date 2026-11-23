@@ -10,7 +10,6 @@ import '../../../l10n/gen/app_localizations.dart';
 import '../../tenant/application/tenant_providers.dart';
 import '../application/admin_providers.dart';
 import '../domain/logo_validation.dart';
-import 'members_screen.dart' show memberEmailPattern;
 
 String logoProblemMessage(LogoProblem problem, AppLocalizations l) =>
     switch (problem) {
@@ -229,8 +228,6 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
     super.dispose();
   }
 
-  static String? _blankToNull(String v) => v.trim().isEmpty ? null : v.trim();
-
   static bool _isWebAddress(String v) {
     final uri = Uri.tryParse(v);
     return uri != null &&
@@ -252,8 +249,8 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
             defaultLocale: _locale,
             ageRule: _ageRule,
             maxPlayUpLevels: int.parse(_maxPlayUp.text.trim()),
-            contactEmail: _blankToNull(_contactEmail.text),
-            websiteUrl: _blankToNull(_website.text),
+            contactEmail: blankToNull(_contactEmail.text),
+            websiteUrl: blankToNull(_website.text),
           ),
       success: l.saved,
     );
@@ -332,11 +329,7 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
             controller: _contactEmail,
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(labelText: l.academyContactEmail),
-            validator: (v) =>
-                (v ?? '').trim().isEmpty ||
-                    memberEmailPattern.hasMatch(v!.trim())
-                ? null
-                : l.fieldInvalidEmail,
+            validator: (v) => optionalEmailValidator(l, v),
           ),
           const SizedBox(height: HoopsSpace.md),
           TextFormField(

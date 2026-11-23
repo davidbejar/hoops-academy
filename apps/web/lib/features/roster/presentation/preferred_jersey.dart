@@ -112,7 +112,7 @@ class _PreferredJerseyDialogState extends ConsumerState<PreferredJerseyDialog> {
           context,
           () => ref
               .read(playerDetailProvider(widget.playerId).notifier)
-              .setPreferredJersey(text.isEmpty ? null : text),
+              .setPreferredJersey(blankToNull(text)),
           success: l.saved,
         );
       },

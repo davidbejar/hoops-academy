@@ -10,8 +10,6 @@ import '../../admin/application/admin_providers.dart';
 import '../../admin/presentation/members_screen.dart' show memberErrorText;
 import '../data/guardians_repository.dart';
 
-final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-
 /// The academy's active PARENT members by person id: whether a guardian has a login decides the login action.
 final guardianMembersProvider =
     FutureProvider.autoDispose<Map<String, api.Member>>((ref) async {
@@ -66,7 +64,7 @@ class _AddGuardianDialogState extends ConsumerState<AddGuardianDialog> {
             playerId: widget.playerId,
             givenName: given,
             familyName: family,
-            email: email.isEmpty ? null : email,
+            email: blankToNull(email),
           ),
       errorText: memberErrorText,
     );
@@ -119,12 +117,7 @@ class _AddGuardianDialogState extends ConsumerState<AddGuardianDialog> {
           controller: _email,
           keyboardType: TextInputType.emailAddress,
           decoration: InputDecoration(labelText: l.playerGuardianEmailOptional),
-          validator: (v) {
-            final value = (v ?? '').trim();
-            return value.isEmpty || _emailPattern.hasMatch(value)
-                ? null
-                : l.fieldInvalidEmail;
-          },
+          validator: (v) => optionalEmailValidator(l, v),
         ),
       ],
     );

@@ -1,3 +1,7 @@
+import '../../../core/ui/validators.dart' show isValidEmail;
+
+export '../../../core/ui/validators.dart' show isValidEmail;
+
 /// Who may ask for an invitation from the landing page. Players never request
 /// a new academy (decisions 51 and 58).
 enum InvitationRole { admin, coach, parent }
@@ -49,9 +53,3 @@ class InvitationRequest {
     if (academy.trim().isEmpty) InvitationProblem.missingAcademy,
   };
 }
-
-final _email = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-
-/// A pragmatic shape check (local part, `@`, a dotted domain); the server
-/// checks the rest.
-bool isValidEmail(String value) => _email.hasMatch(value.trim());

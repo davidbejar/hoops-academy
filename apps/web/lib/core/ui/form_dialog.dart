@@ -99,6 +99,3 @@ class _FormDialogState extends State<FormDialog> {
 
 /// Spacing between form fields.
 const formGap = SizedBox(height: 12);
-
-String? requiredValidator(AppLocalizations l, String? v) =>
-    (v ?? '').trim().isEmpty ? l.fieldRequired : null;

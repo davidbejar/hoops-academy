@@ -410,7 +410,7 @@ class _PayDueDialogState extends ConsumerState<PayDueDialog> {
                 widget.due.id,
                 paidOn: toFinDate(_paidOn),
                 method: _method,
-                note: note.isEmpty ? null : note,
+                note: blankToNull(note),
               ),
           success: l.financePayRecorded,
           errorText: financeErrorText,

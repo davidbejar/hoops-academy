@@ -234,7 +234,7 @@ class _TeamDialogState extends ConsumerState<TeamDialog> {
       formKey: _form,
       canSubmit: categories.isNotEmpty,
       onSubmit: () {
-        final alias = _alias.text.trim().isEmpty ? null : _alias.text.trim();
+        final alias = blankToNull(_alias.text);
         final notifier = ref.read(teamsProvider.notifier);
         return runAction(context, () async {
           if (widget.team == null) {
@@ -708,7 +708,7 @@ class _AssignPlayerDialogState extends ConsumerState<AssignPlayerDialog> {
 
   Future<void> _assign() async {
     setState(() => _busy = true);
-    final jersey = _jersey.text.trim().isEmpty ? null : _jersey.text.trim();
+    final jersey = blankToNull(_jersey.text);
     api.AssignedTeamPlayer? assigned;
     final ok = await runAction(context, () async {
       assigned = await ref

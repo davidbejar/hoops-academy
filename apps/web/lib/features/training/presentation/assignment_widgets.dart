@@ -75,7 +75,7 @@ class CompletionControl extends ConsumerWidget {
                             assignmentId,
                             playerId,
                             s,
-                            comment: comment.isEmpty ? null : comment,
+                            comment: blankToNull(comment),
                           ),
                       success: l.completionSaved,
                     );

@@ -511,7 +511,7 @@ class _PlayerDetailBody extends ConsumerWidget {
     await runAction(context, () async {
       final result = await ref
           .read(playerDetailProvider(player.id).notifier)
-          .withdraw(reason: reason.isEmpty ? null : reason);
+          .withdraw(reason: blankToNull(reason));
       if (!context.mounted) return;
       final pending =
           result.approvalRequest.status == api.ApprovalStatus.PENDING;
@@ -648,7 +648,7 @@ class _PlayerFormScreenState extends ConsumerState<PlayerFormScreen> {
     setState(() => _busy = true);
     var created = false;
     final (given, family) = (_given.text.trim(), _family.text.trim());
-    final email = _email.text.trim().isEmpty ? null : _email.text.trim();
+    final email = blankToNull(_email.text);
     await runAction(context, () async {
       final result = await ref
           .read(playersProvider.notifier)
@@ -661,7 +661,7 @@ class _PlayerFormScreenState extends ConsumerState<PlayerFormScreen> {
                 ..gender = _gender
                 ..email = email
                 ..teamId = _teamId
-                ..note = _note.text.trim().isEmpty ? null : _note.text.trim(),
+                ..note = blankToNull(_note.text),
             ),
           );
       created = true;
@@ -774,14 +774,7 @@ class _PlayerFormScreenState extends ConsumerState<PlayerFormScreen> {
                         helperText: l.playerEmailHint,
                         helperMaxLines: 3,
                       ),
-                      validator: (v) {
-                        final t = (v ?? '').trim();
-                        return t.isEmpty ||
-                                RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-                                    .hasMatch(t)
-                            ? null
-                            : l.fieldInvalidEmail;
-                      },
+                      validator: (v) => optionalEmailValidator(l, v),
                     ),
                     const SizedBox(height: HoopsSpace.md),
                     DropdownButtonFormField<String?>(

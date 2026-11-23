@@ -428,10 +428,8 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
           ),
         );
     final duration = int.parse(_duration.text);
-    final location = _location.text.trim().isEmpty
-        ? null
-        : _location.text.trim();
-    final notes = _notes.text.trim().isEmpty ? null : _notes.text.trim();
+    final location = blankToNull(_location.text);
+    final notes = blankToNull(_notes.text);
     final editing = widget.session;
     if (editing != null) {
       return ref
