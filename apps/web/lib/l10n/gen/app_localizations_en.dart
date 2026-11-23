@@ -449,6 +449,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get none => 'None';
 
   @override
+  String pageOf(int page, int total) {
+    return 'Page $page of $total';
+  }
+
+  @override
+  String get pagePrevious => 'Previous page';
+
+  @override
+  String get pageNext => 'Next page';
+
+  @override
   String get saved => 'Changes saved';
 
   @override
@@ -845,17 +856,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String financePaymentVoidedBy(String name, String date) {
     return 'Voided by $name on $date';
   }
-
-  @override
-  String financePageOf(int page, int total) {
-    return 'Page $page of $total';
-  }
-
-  @override
-  String get financePagePrevious => 'Previous page';
-
-  @override
-  String get financePageNext => 'Next page';
 
   @override
   String get financeGenerateTitle => 'Generate dues';
@@ -3781,17 +3781,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get auditEmpty => 'No activity for this filter';
-
-  @override
-  String auditPageOf(int page, int pages) {
-    return 'Page $page of $pages';
-  }
-
-  @override
-  String get auditPreviousPage => 'Previous page';
-
-  @override
-  String get auditNextPage => 'Next page';
 
   @override
   String auditByActor(String actor) {

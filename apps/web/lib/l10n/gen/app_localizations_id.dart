@@ -450,6 +450,17 @@ class AppLocalizationsId extends AppLocalizations {
   String get none => 'Tidak ada';
 
   @override
+  String pageOf(int page, int total) {
+    return 'Halaman $page dari $total';
+  }
+
+  @override
+  String get pagePrevious => 'Halaman sebelumnya';
+
+  @override
+  String get pageNext => 'Halaman berikutnya';
+
+  @override
   String get saved => 'Perubahan disimpan';
 
   @override
@@ -846,17 +857,6 @@ class AppLocalizationsId extends AppLocalizations {
   String financePaymentVoidedBy(String name, String date) {
     return 'Dibatalkan oleh $name pada $date';
   }
-
-  @override
-  String financePageOf(int page, int total) {
-    return 'Halaman $page dari $total';
-  }
-
-  @override
-  String get financePagePrevious => 'Halaman sebelumnya';
-
-  @override
-  String get financePageNext => 'Halaman berikutnya';
 
   @override
   String get financeGenerateTitle => 'Buat tagihan';
@@ -3778,17 +3778,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get auditEmpty => 'Tidak ada aktivitas untuk saringan ini';
-
-  @override
-  String auditPageOf(int page, int pages) {
-    return 'Halaman $page dari $pages';
-  }
-
-  @override
-  String get auditPreviousPage => 'Halaman sebelumnya';
-
-  @override
-  String get auditNextPage => 'Halaman berikutnya';
 
   @override
   String auditByActor(String actor) {

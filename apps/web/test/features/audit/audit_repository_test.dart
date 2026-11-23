@@ -65,8 +65,6 @@ void main() {
       expect(request.uri.queryParameters['size'], '${AuditQuery.pageSize}');
       expect(page.page, 1);
       expect(page.totalPages, 2);
-      expect(page.hasPrevious, isTrue);
-      expect(page.hasNext, isFalse);
       final e = page.items.single;
       expect(e.action, api.AuditAction.memberPeriodInvited);
       expect(e.actorKind, api.AuditActorKind.PLATFORM);

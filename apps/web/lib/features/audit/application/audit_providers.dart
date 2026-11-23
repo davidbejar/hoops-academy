@@ -39,9 +39,7 @@ class AuditQueryNotifier extends Notifier<AuditQuery> {
   void clearRange() => setRange(null, null);
   void setActions(Set<api.AuditAction> actions) =>
       state = state.withActions(actions);
-  void nextPage() => state = state.atPage(state.page + 1);
-  void previousPage() =>
-      state = state.atPage(state.page > 0 ? state.page - 1 : 0);
+  void goToPage(int page) => state = state.atPage(page);
 }
 
 final auditQueryProvider =

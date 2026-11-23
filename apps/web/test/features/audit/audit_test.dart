@@ -194,7 +194,7 @@ void main() {
       expect(find.text('Página 1 de 2'), findsOneWidget);
       expect(
         tester
-            .widget<IconButton>(find.byKey(const Key('audit-prev')))
+            .widget<IconButton>(find.byKey(const Key('audit-previous')))
             .onPressed,
         isNull,
       );
@@ -209,7 +209,7 @@ void main() {
             .onPressed,
         isNull,
       );
-      await tester.tap(find.byKey(const Key('audit-prev')));
+      await tester.tap(find.byKey(const Key('audit-previous')));
       await tester.pumpAndSettle();
       expect(repo.academyQueries.last.$2.page, 0);
     });

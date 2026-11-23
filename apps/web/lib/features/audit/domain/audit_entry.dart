@@ -47,9 +47,6 @@ class AuditPage {
   final int page;
   final int totalPages;
   final int totalElements;
-
-  bool get hasPrevious => page > 0;
-  bool get hasNext => page + 1 < totalPages;
 }
 
 /// What the user asked for: a range of local calendar days (both inclusive), some actions (none = all), a page.

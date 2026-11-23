@@ -95,7 +95,14 @@ class _PlatformUsersScreenState extends ConsumerState<PlatformUsersScreen> {
                       spacing: HoopsSpace.gap,
                       children: [
                         for (final user in page.items) _UserCard(user),
-                        _Pager(page: page.page),
+                        Pager(
+                          keyPrefix: 'users',
+                          page: page.page.page,
+                          totalPages: page.page.totalPages,
+                          onPage: ref
+                              .read(usersQueryProvider.notifier)
+                              .goToPage,
+                        ),
                         const SizedBox(height: HoopsSpace.sm),
                       ],
                     ),
@@ -230,41 +237,6 @@ class _MembershipRow extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _Pager extends ConsumerWidget {
-  const _Pager({required this.page});
-
-  final api.PageMeta page;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (page.totalPages <= 1) return const SizedBox.shrink();
-    final l = AppLocalizations.of(context);
-    final notifier = ref.read(usersQueryProvider.notifier);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          key: const Key('users-prev'),
-          tooltip: l.auditPreviousPage,
-          icon: const Icon(Icons.chevron_left),
-          onPressed: page.page > 0
-              ? () => notifier.goToPage(page.page - 1)
-              : null,
-        ),
-        Text(l.auditPageOf(page.page + 1, page.totalPages)),
-        IconButton(
-          key: const Key('users-next'),
-          tooltip: l.auditNextPage,
-          icon: const Icon(Icons.chevron_right),
-          onPressed: page.page + 1 < page.totalPages
-              ? () => notifier.goToPage(page.page + 1)
-              : null,
-        ),
-      ],
     );
   }
 }

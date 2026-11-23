@@ -137,6 +137,9 @@
   "search": "Cari",
   "all": "Semua",
   "none": "Tidak ada",
+  "pageOf": "Halaman {page} dari {total}",
+  "pagePrevious": "Halaman sebelumnya",
+  "pageNext": "Halaman berikutnya",
   "saved": "Perubahan disimpan",
   "fieldRequired": "Wajib diisi",
   "fieldInvalidNumber": "Masukkan angka yang valid",
@@ -339,19 +342,6 @@
       }
     }
   },
-  "financePageOf": "Halaman {page} dari {total}",
-  "@financePageOf": {
-    "placeholders": {
-      "page": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "financePagePrevious": "Halaman sebelumnya",
-  "financePageNext": "Halaman berikutnya",
   "financeGenerateTitle": "Buat tagihan",
   "financeGenerateIntro": "Membuat tagihan yang belum ada untuk satu periode bagi pemain dalam rencana. Dapat diulang tanpa menggandakan.",
   "financeGeneratePlan": "Rencana",
@@ -1640,9 +1630,6 @@
   "auditFilterTitle": "Saring menurut tindakan",
   "auditApply": "Terapkan",
   "auditEmpty": "Tidak ada aktivitas untuk saringan ini",
-  "auditPageOf": "Halaman {page} dari {pages}",
-  "auditPreviousPage": "Halaman sebelumnya",
-  "auditNextPage": "Halaman berikutnya",
   "auditByActor": "Oleh {actor}",
   "auditActorSystem": "Sistem",
   "auditActorPlatform": "Administrator platform",

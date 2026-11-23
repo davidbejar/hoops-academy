@@ -194,29 +194,12 @@ class _ExpenseList extends ConsumerWidget {
                 ? () => _menu(context, ref, e, money)
                 : null,
           ),
-        if (meta.totalPages > 1)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                key: const Key('expenses-previous'),
-                tooltip: l.financePagePrevious,
-                icon: const Icon(Icons.chevron_left),
-                onPressed: meta.page > 0
-                    ? () => notifier.goToPage(meta.page - 1)
-                    : null,
-              ),
-              Text(l.financePageOf(meta.page + 1, meta.totalPages)),
-              IconButton(
-                key: const Key('expenses-next'),
-                tooltip: l.financePageNext,
-                icon: const Icon(Icons.chevron_right),
-                onPressed: meta.page + 1 < meta.totalPages
-                    ? () => notifier.goToPage(meta.page + 1)
-                    : null,
-              ),
-            ],
-          ),
+        Pager(
+          keyPrefix: 'expenses',
+          page: meta.page,
+          totalPages: meta.totalPages,
+          onPage: notifier.goToPage,
+        ),
         const SizedBox(height: HoopsSize.appBar),
       ],
     );

@@ -12,6 +12,7 @@ export 'list_row.dart';
 export 'notice_banner.dart';
 export 'page_layout.dart';
 export 'page_scaffold.dart';
+export 'pager.dart';
 export 'picker_dialog.dart';
 export 'responsive_grid.dart';
 export 'section_card.dart';

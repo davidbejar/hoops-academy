@@ -164,10 +164,11 @@ class AuditLogView extends ConsumerWidget {
                     ],
                   ),
                 ),
-                _Pager(
-                  page: p,
-                  onPrevious: notifier.previousPage,
-                  onNext: notifier.nextPage,
+                Pager(
+                  keyPrefix: 'audit',
+                  page: p.page,
+                  totalPages: p.totalPages,
+                  onPage: notifier.goToPage,
                 ),
               ],
             ),
@@ -237,51 +238,6 @@ class AuditEntryTile extends StatelessWidget {
     api.AuditTargetType.team => Icons.groups_outlined,
     _ => Icons.person_outline,
   };
-}
-
-class _Pager extends StatelessWidget {
-  const _Pager({
-    required this.page,
-    required this.onPrevious,
-    required this.onNext,
-  });
-  final AuditPage page;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: HoopsSpace.md,
-        vertical: HoopsSpace.xs,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          IconButton(
-            key: const Key('audit-prev'),
-            tooltip: l.auditPreviousPage,
-            icon: const Icon(Icons.chevron_left),
-            onPressed: page.hasPrevious ? onPrevious : null,
-          ),
-          Text(
-            l.auditPageOf(
-              page.page + 1,
-              page.totalPages < 1 ? 1 : page.totalPages,
-            ),
-          ),
-          IconButton(
-            key: const Key('audit-next'),
-            tooltip: l.auditNextPage,
-            icon: const Icon(Icons.chevron_right),
-            onPressed: page.hasNext ? onNext : null,
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// Picks one or several actions (none = every action).

@@ -161,6 +161,19 @@
   "search": "Buscar",
   "all": "Todos",
   "none": "Ninguno",
+  "pageOf": "Página {page} de {total}",
+  "@pageOf": {
+    "placeholders": {
+      "page": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "pagePrevious": "Página anterior",
+  "pageNext": "Página siguiente",
   "saved": "Cambios guardados",
   "fieldRequired": "Campo obligatorio",
   "fieldInvalidNumber": "Introduce un número válido",
@@ -363,19 +376,6 @@
       }
     }
   },
-  "financePageOf": "Página {page} de {total}",
-  "@financePageOf": {
-    "placeholders": {
-      "page": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "financePagePrevious": "Página anterior",
-  "financePageNext": "Página siguiente",
   "financeGenerateTitle": "Generar cuotas",
   "financeGenerateIntro": "Crea las cuotas que faltan de un periodo para los jugadores del plan. Se puede repetir sin duplicar nada.",
   "financeGeneratePlan": "Plan",
@@ -2010,19 +2010,6 @@
   "auditFilterTitle": "Filtrar por acción",
   "auditApply": "Aplicar",
   "auditEmpty": "No hay actividad con este filtro",
-  "auditPageOf": "Página {page} de {pages}",
-  "@auditPageOf": {
-    "placeholders": {
-      "page": {
-        "type": "int"
-      },
-      "pages": {
-        "type": "int"
-      }
-    }
-  },
-  "auditPreviousPage": "Página anterior",
-  "auditNextPage": "Página siguiente",
   "auditByActor": "Por {actor}",
   "@auditByActor": {
     "placeholders": {

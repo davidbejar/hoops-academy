@@ -886,6 +886,24 @@ abstract class AppLocalizations {
   /// **'Ninguno'**
   String get none;
 
+  /// No description provided for @pageOf.
+  ///
+  /// In es, this message translates to:
+  /// **'Página {page} de {total}'**
+  String pageOf(int page, int total);
+
+  /// No description provided for @pagePrevious.
+  ///
+  /// In es, this message translates to:
+  /// **'Página anterior'**
+  String get pagePrevious;
+
+  /// No description provided for @pageNext.
+  ///
+  /// In es, this message translates to:
+  /// **'Página siguiente'**
+  String get pageNext;
+
   /// No description provided for @saved.
   ///
   /// In es, this message translates to:
@@ -1599,24 +1617,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Anulado por {name} el {date}'**
   String financePaymentVoidedBy(String name, String date);
-
-  /// No description provided for @financePageOf.
-  ///
-  /// In es, this message translates to:
-  /// **'Página {page} de {total}'**
-  String financePageOf(int page, int total);
-
-  /// No description provided for @financePagePrevious.
-  ///
-  /// In es, this message translates to:
-  /// **'Página anterior'**
-  String get financePagePrevious;
-
-  /// No description provided for @financePageNext.
-  ///
-  /// In es, this message translates to:
-  /// **'Página siguiente'**
-  String get financePageNext;
 
   /// No description provided for @financeGenerateTitle.
   ///
@@ -6897,24 +6897,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'No hay actividad con este filtro'**
   String get auditEmpty;
-
-  /// No description provided for @auditPageOf.
-  ///
-  /// In es, this message translates to:
-  /// **'Página {page} de {pages}'**
-  String auditPageOf(int page, int pages);
-
-  /// No description provided for @auditPreviousPage.
-  ///
-  /// In es, this message translates to:
-  /// **'Página anterior'**
-  String get auditPreviousPage;
-
-  /// No description provided for @auditNextPage.
-  ///
-  /// In es, this message translates to:
-  /// **'Página siguiente'**
-  String get auditNextPage;
 
   /// No description provided for @auditByActor.
   ///

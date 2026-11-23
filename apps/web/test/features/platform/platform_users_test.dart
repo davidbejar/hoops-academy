@@ -215,14 +215,14 @@ void main() {
       expect(find.text('Página 1 de 2'), findsOneWidget);
       expect(
         tester
-            .widget<IconButton>(find.byKey(const Key('users-prev')))
+            .widget<IconButton>(find.byKey(const Key('users-previous')))
             .onPressed,
         isNull,
       );
       await tapKey(tester, 'users-next');
       expect(find.text('Página 2 de 2'), findsOneWidget);
       expect(repo.userRequests.last.page, 1);
-      await tapKey(tester, 'users-prev');
+      await tapKey(tester, 'users-previous');
       expect(repo.userRequests.last.page, 0);
     });
   });

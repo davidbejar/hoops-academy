@@ -244,29 +244,12 @@ class _DueList extends ConsumerWidget {
             ),
             onTap: () => context.go('/admin/finance/dues/${due.id}'),
           ),
-        if (meta.totalPages > 1)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                key: const Key('dues-previous'),
-                tooltip: l.financePagePrevious,
-                icon: const Icon(Icons.chevron_left),
-                onPressed: meta.page > 0
-                    ? () => notifier.goToPage(meta.page - 1)
-                    : null,
-              ),
-              Text(l.financePageOf(meta.page + 1, meta.totalPages)),
-              IconButton(
-                key: const Key('dues-next'),
-                tooltip: l.financePageNext,
-                icon: const Icon(Icons.chevron_right),
-                onPressed: meta.page + 1 < meta.totalPages
-                    ? () => notifier.goToPage(meta.page + 1)
-                    : null,
-              ),
-            ],
-          ),
+        Pager(
+          keyPrefix: 'dues',
+          page: meta.page,
+          totalPages: meta.totalPages,
+          onPage: notifier.goToPage,
+        ),
         const SizedBox(height: HoopsSize.appBar),
       ],
     );

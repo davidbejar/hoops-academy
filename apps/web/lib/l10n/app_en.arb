@@ -137,6 +137,9 @@
   "search": "Search",
   "all": "All",
   "none": "None",
+  "pageOf": "Page {page} of {total}",
+  "pagePrevious": "Previous page",
+  "pageNext": "Next page",
   "saved": "Changes saved",
   "fieldRequired": "Required field",
   "fieldInvalidNumber": "Enter a valid number",
@@ -339,19 +342,6 @@
       }
     }
   },
-  "financePageOf": "Page {page} of {total}",
-  "@financePageOf": {
-    "placeholders": {
-      "page": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "financePagePrevious": "Previous page",
-  "financePageNext": "Next page",
   "financeGenerateTitle": "Generate dues",
   "financeGenerateIntro": "Creates the missing dues of one period for the players of the plan. It can be repeated without duplicating anything.",
   "financeGeneratePlan": "Plan",
@@ -1640,9 +1630,6 @@
   "auditFilterTitle": "Filter by action",
   "auditApply": "Apply",
   "auditEmpty": "No activity for this filter",
-  "auditPageOf": "Page {page} of {pages}",
-  "auditPreviousPage": "Previous page",
-  "auditNextPage": "Next page",
   "auditByActor": "By {actor}",
   "auditActorSystem": "System",
   "auditActorPlatform": "Platform administrator",
