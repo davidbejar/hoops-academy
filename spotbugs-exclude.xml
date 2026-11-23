@@ -52,7 +52,7 @@
 
   <!-- Not applicable: the format string is an SQL text block; \n is the intended separator, not a platform newline. -->
   <Match>
-    <Class name="com.hoopsacademy.game.adapters.out.persistence.JpaMatchEventRepository"/>
+    <Class name="com.hoopsacademy.game.adapters.out.persistence.JdbcMatchEventRepository"/>
     <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
   </Match>
 </FindBugsFilter>
