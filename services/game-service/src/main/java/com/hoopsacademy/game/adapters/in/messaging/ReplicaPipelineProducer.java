@@ -9,6 +9,7 @@ import com.hoopsacademy.common.replica.RetryPolicy;
 import com.hoopsacademy.game.application.replica.ReplicateRoster;
 import com.hoopsacademy.game.application.replica.RosterEvent;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.quarkus.runtime.Startup;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
@@ -30,8 +31,10 @@ class ReplicaPipelineProducer {
         return new CoreEventDecoder<>(json, new RosterEventMapper());
     }
 
+    /** Created at startup, so the meters of every topic exist before the first record (ADR-0062). */
     @Produces
     @Singleton
+    @Startup
     ReplicaConsumer<RosterEvent> replicaConsumer(CoreEventDecoder<RosterEvent> decoder, ReplicateRoster replicate,
             ParkedEvents parked, MeterRegistry metrics, Clock clock,
             @ConfigProperty(name = "hoops.roster.replica.max-attempts", defaultValue = "5") int maxAttempts,

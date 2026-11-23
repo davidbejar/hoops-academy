@@ -61,7 +61,10 @@ read core's roster: `replica` (the default since WP98) reads the local `*_ref` t
 `GAME_ROSTER_CONSUMER_ENABLED`, default on) feeds the replica in both modes: schema-validated, applied in the event's
 tenant (known `eventId` skipped, older `occurredAt` never wins, removals soft), invalid records parked in
 `game.parked_event` (once per topic position, WP126). A daily job prunes old applied event ids and inspected parked
-records (`hoops.roster.replica.retention.*`). Operations: `docs/runbooks/events.md`.
+records (`hoops.roster.replica.retention.*`). The envelope checks, the consumer loop (a database failure is retried
+`hoops.roster.replica.max-attempts` = 5 times, backoff from 0.5 s doubling, for apply and park), the meters and the
+bookkeeping stores are common-quarkus' (`com.hoopsacademy.common.replica`, WP130, ADR-0062), the same as athlete's; game
+keeps `RosterEventMapper` (payload to `RosterEvent`) and its replica tables. Operations: `docs/runbooks/events.md`.
 
 ## Match sheet PDF (WP117; ADR-0051, ADR-0052)
 `GetMatchSheetPdf` reads the caller's box score, the team's name (`RosterPort.team`) and the academy's name, and asks
