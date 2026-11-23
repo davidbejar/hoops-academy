@@ -27,7 +27,7 @@ import java.util.UUID;
 
 /** {@code game.match_event} via JDBC. */
 @ApplicationScoped
-class JpaMatchEventRepository extends JdbcRepository implements MatchEventRepository {
+class JdbcMatchEventRepository extends JdbcRepository implements MatchEventRepository {
 
     private static final String COLUMNS = """
             id, server_seq, device_id, client_seq, type, player_id, period, clock_seconds_remaining, payload::text as payload,
@@ -72,7 +72,7 @@ class JpaMatchEventRepository extends JdbcRepository implements MatchEventReposi
     private final EntityManager em;
     private final ObjectMapper json;
 
-    JpaMatchEventRepository(EntityManager em, ObjectMapper json) {
+    JdbcMatchEventRepository(EntityManager em, ObjectMapper json) {
         this.em = em;
         this.json = json;
     }

@@ -70,7 +70,7 @@ class FeedPageStatementCountTest {
     MatchSeed seed;
 
     @InjectSpy
-    JpaMatchEventRepository events;
+    JdbcMatchEventRepository events;
 
     @InjectSpy
     JpaMatchRepository matches;

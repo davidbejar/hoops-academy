@@ -28,7 +28,7 @@ import java.util.UUID;
 
 /** {@code game.match_player_stats} and {@code game.match_summary} via JDBC; JSON columns hold warnings and period scores. */
 @ApplicationScoped
-class JpaProjectionRepository extends JdbcRepository implements ProjectionRepository {
+class JdbcProjectionRepository extends JdbcRepository implements ProjectionRepository {
 
     private static final String STAT_COLUMNS = """
             pts, fgm1, fga1, fgm2, fga2, fgm3, fga3, ast, oreb, dreb, tov, stl, blk, pf, technical_fouls,
@@ -42,7 +42,7 @@ class JpaProjectionRepository extends JdbcRepository implements ProjectionReposi
     private final EntityManager em;
     private final ObjectMapper json;
 
-    JpaProjectionRepository(EntityManager em, ObjectMapper json) {
+    JdbcProjectionRepository(EntityManager em, ObjectMapper json) {
         this.em = em;
         this.json = json;
     }
@@ -62,7 +62,7 @@ class JpaProjectionRepository extends JdbcRepository implements ProjectionReposi
                     s.setObject(1, match);
                     s.setObject(2, line.playerId().value());
                     s.setBoolean(3, line.wasStarter());
-                    s.setString(4, write(line.warnings().stream().map(JpaProjectionRepository::toJson).toList()));
+                    s.setString(4, write(line.warnings().stream().map(JdbcProjectionRepository::toJson).toList()));
                     bindStats(s, 5, line.stats());
                 }).toList());
         MatchSummary summary = projection.summary();
@@ -77,7 +77,7 @@ class JpaProjectionRepository extends JdbcRepository implements ProjectionReposi
             s.setInt(2, summary.teamScore());
             s.setInt(3, summary.opponentScore());
             s.setString(4, write(summary.periodScores()));
-            s.setString(5, write(projection.warnings().stream().map(JpaProjectionRepository::toJson).toList()));
+            s.setString(5, write(projection.warnings().stream().map(JdbcProjectionRepository::toJson).toList()));
             s.setLong(6, summary.lastServerSeq());
         });
     }

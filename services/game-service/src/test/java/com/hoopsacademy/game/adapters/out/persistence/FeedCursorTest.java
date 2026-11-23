@@ -63,7 +63,7 @@ class FeedCursorTest {
     MatchSeed seed;
 
     @InjectSpy
-    JpaMatchEventRepository events;
+    JdbcMatchEventRepository events;
 
     @AfterEach
     void forgetCallers() {

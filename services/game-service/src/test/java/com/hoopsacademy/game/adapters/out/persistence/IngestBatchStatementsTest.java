@@ -59,7 +59,7 @@ class IngestBatchStatementsTest {
     MatchSeed seed;
 
     @InjectSpy
-    JpaMatchEventRepository events;
+    JdbcMatchEventRepository events;
 
     @InjectSpy
     JpaMatchRepository matches;

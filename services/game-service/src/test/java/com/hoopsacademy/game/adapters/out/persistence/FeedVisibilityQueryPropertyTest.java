@@ -40,7 +40,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * The feed query of {@link JpaMatchEventRepository} admits exactly the events {@link EventVisibility} (the domain rule,
+ * The feed query of {@link JdbcMatchEventRepository} admits exactly the events {@link EventVisibility} (the domain rule,
  * ADR-0030) admits, paged by {@code after} and {@code limit} (WP60). Random matches per seed, stored for real: player and
  * team-level events, notes with and without a player, VOIDs of anything (earlier or later events, other VOIDs, itself,
  * unknown ids, an event of another match), so chains and cycles of VOIDs occur. Seeded {@link Random} instead of a jqwik
