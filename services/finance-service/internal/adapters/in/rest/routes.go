@@ -14,6 +14,7 @@ const plans = "/api/finance/fee-plans"
 func (h *handler) routes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/finance/settings", h.api("/api/finance/settings", h.getSettings))
 	mux.HandleFunc("PUT /api/finance/settings", h.api("/api/finance/settings", h.putSettings))
+	mux.HandleFunc("GET /api/finance/balance", h.api("/api/finance/balance", h.seasonBalance))
 	mux.HandleFunc("GET "+plans, h.api(plans, h.listPlans))
 	mux.HandleFunc("POST "+plans, h.api(plans, h.createPlan))
 	mux.HandleFunc("GET "+plans+"/{id}", h.api(plans+"/{feePlanId}", h.withPlan(h.getPlan)))
@@ -176,9 +177,14 @@ func pageOf(page application.Page, total int64) pageDTO {
 // writePage answers a page of items in the academy's currency (nil only for an empty page) as {items, page}.
 func writePage[T, D any](w http.ResponseWriter, page application.Page, total int64, items []T,
 	currency *domain.Currency, dto func(T, domain.Currency) D) {
+	writeItems(w, page, total, items, func(item T) D { return dto(item, *currency) })
+}
+
+// writeItems answers a page of items as {items, page}.
+func writeItems[T, D any](w http.ResponseWriter, page application.Page, total int64, items []T, dto func(T) D) {
 	out := make([]D, len(items))
 	for i, item := range items {
-		out[i] = dto(item, *currency)
+		out[i] = dto(item)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"items": out, "page": pageOf(page, total)})
 }
@@ -207,11 +213,7 @@ func (h *handler) listPlans(w http.ResponseWriter, r *http.Request, caller domai
 		h.writeError(w, withCaller(r, caller), err)
 		return
 	}
-	items := make([]feePlanDTO, len(result.Items))
-	for i, view := range result.Items {
-		items[i] = feePlanOf(view)
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": items, "page": pageOf(page, result.Total)})
+	writeItems(w, page, result.Total, result.Items, feePlanOf)
 }
 
 type createPlanBody struct {

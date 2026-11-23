@@ -58,3 +58,16 @@ func readClear(raw jsonRaw, changes *domain.FeePlanChanges, add func(field, code
 	changes.ClearLastPeriod = readClearList(names, clearable, add)["lastPeriod"]
 	return nil
 }
+
+// readClearList checks a `clear` list: each name clearable and named once (else INVALID); returns the names seen.
+func readClearList(names []string, clearable map[string]bool, add func(field, code string)) map[string]bool {
+	seen := map[string]bool{}
+	for _, name := range names {
+		if !clearable[name] || seen[name] {
+			add("clear", "INVALID")
+			continue
+		}
+		seen[name] = true
+	}
+	return seen
+}

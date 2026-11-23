@@ -81,6 +81,4 @@ linters:
       - path: internal/testsupport/
         linters: [wrapcheck, gosec, funlen]
 
-formatters:
-  enable:
-    - gofmt
+# gofmt is not a formatter here: scripts/check.sh runs `gofmt -l` first, before this slower lint (FIN-10).

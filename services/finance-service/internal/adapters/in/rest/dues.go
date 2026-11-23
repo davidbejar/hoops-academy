@@ -17,6 +17,7 @@ const (
 func (h *handler) dueRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST "+plans+"/{id}/dues:generate", h.api(plans+"/{feePlanId}/dues:generate", h.withPlan(h.generateDues)))
 	mux.HandleFunc("GET "+dues, h.api(dues, h.listDues))
+	mux.HandleFunc("GET "+dues+":export", h.api(dues+":export", h.exportDues))
 	mux.HandleFunc("GET "+dues+"/{id}", h.api(dues+"/{dueId}", withID("dueId", h.getDue)))
 	mux.HandleFunc("POST "+dues+"/{target}", h.customMethod(dues, "dueId", map[string]idHandler{
 		"change-amount": h.changeDueAmount, "waive": h.waiveDue, "pay": h.payDue,
