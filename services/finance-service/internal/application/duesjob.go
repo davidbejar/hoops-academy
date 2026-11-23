@@ -74,8 +74,9 @@ func (f *Finance) generateAcademy(ctx context.Context, tenant domain.TenantID, r
 		return err
 	}
 	actor := domain.SystemActor(tenant)
+	seasons := seasonCache{roster: f.p.Roster, dates: map[domain.SeasonID]seasonDates{}}
 	for _, plan := range plans {
-		season, found, err := f.p.Roster.SeasonDates(ctx, plan.Season)
+		season, found, err := seasons.of(ctx, plan.Season)
 		if err != nil {
 			return err
 		}
@@ -96,4 +97,27 @@ func (f *Finance) generateAcademy(ctx context.Context, tenant domain.TenantID, r
 		}
 	}
 	return nil
+}
+
+// seasonCache reads each season's dates once per academy and run (plans of one season share them).
+type seasonCache struct {
+	roster RosterReads
+	dates  map[domain.SeasonID]seasonDates
+}
+
+type seasonDates struct {
+	dates domain.SeasonDates
+	found bool
+}
+
+func (c seasonCache) of(ctx context.Context, season domain.SeasonID) (domain.SeasonDates, bool, error) {
+	if known, ok := c.dates[season]; ok {
+		return known.dates, known.found, nil
+	}
+	dates, found, err := c.roster.SeasonDates(ctx, season)
+	if err != nil {
+		return domain.SeasonDates{}, false, err
+	}
+	c.dates[season] = seasonDates{dates: dates, found: found}
+	return dates, found, nil
 }
