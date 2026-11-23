@@ -1,9 +1,8 @@
 package com.hoopsacademy.athlete.adapters.out.persistence;
 
-import com.hoopsacademy.athlete.application.replica.ReplicaMembershipReads;
-import com.hoopsacademy.athlete.domain.PersonId;
-import com.hoopsacademy.athlete.domain.PlayerId;
-import com.hoopsacademy.athlete.domain.TeamId;
+import com.hoopsacademy.common.authz.Member;
+import com.hoopsacademy.common.authz.MembershipReads;
+import com.hoopsacademy.common.client.CoreMembership.TenantStatus;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -12,22 +11,21 @@ import jakarta.persistence.Query;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * The membership reads of the replica resolver, each one query in the caller's transaction (bound tenant, RLS: the
- * bound tenant's rows are the only ones visible; the tenant row itself is also matched on the requested tenant).
+ * The membership rule's reads (ADR-0066) on the replica, each one query in the caller's transaction (bound tenant,
+ * RLS: the bound tenant's rows are the only ones visible; the tenant row itself is also matched on the requested
+ * tenant). Removed rows are never read, nor guardian links to a removed player.
  */
 @ApplicationScoped
-class ReplicaMembershipRepository implements ReplicaMembershipReads {
+class ReplicaMembershipRepository implements MembershipReads {
 
     private final EntityManager em;
 
@@ -39,64 +37,59 @@ class ReplicaMembershipRepository implements ReplicaMembershipReads {
     public Optional<TenantState> tenant(TenantId tenant) {
         return first(em.createNativeQuery("select status, timezone from athlete.tenant_ref where tenant_id = :tenant and not removed")
                 .setParameter("tenant", tenant.value()))
-                .map(columns -> new TenantState((String) columns[0], ZoneId.of((String) columns[1])));
+                .map(columns -> new TenantState(TenantStatus.valueOf((String) columns[0]),
+                        ZoneId.of((String) columns[1])));
     }
 
     @Override
-    public Optional<Member> activeMemberWithLogin(String subject) {
+    public Optional<Member> activeMember(String subject) {
         return first(em.createNativeQuery("""
                         select id, array_to_string(roles, ',') from athlete.person_ref
                          where subject = :subject and active and not removed order by id limit 1""")
                 .setParameter("subject", subject))
-                .map(columns -> new Member(new PersonId(ReplicaRows.uuid(columns[0])), roles((String) columns[1])));
+                .map(columns -> new Member(ReplicaRows.uuid(columns[0]), roles((String) columns[1])));
     }
 
     @Override
-    public Optional<PlayerId> playerOf(PersonId person) {
-        return ids("select id from athlete.player_ref where person_id = :person and not removed order by id limit 1", person.value(),
-                PlayerId::new).stream().findFirst();
+    public Optional<UUID> ownPlayer(UUID personId) {
+        return ids("select id from athlete.player_ref where person_id = :person and not removed order by id limit 1",
+                personId).stream().findFirst();
     }
 
     @Override
-    public Set<PlayerId> guardedPlayers(PersonId guardian) {
+    public Set<UUID> guardedPlayers(UUID personId) {
         return Set.copyOf(ids("""
                 select l.player_id from athlete.guardian_link_ref l
                  where l.guardian_person_id = :person and not l.removed
                    and not exists (select 1 from athlete.player_ref p
                                     where p.tenant_id = l.tenant_id and p.id = l.player_id and p.removed)""",
-                guardian.value(), PlayerId::new));
+                personId));
     }
 
     @Override
-    public Set<TeamId> staffTeams(PersonId person) {
+    public Set<UUID> staffTeams(UUID personId) {
         return Set.copyOf(ids("select team_id from athlete.team_staff_ref where person_id = :person and not removed",
-                person.value(), TeamId::new));
+                personId));
     }
 
     @Override
-    public Set<TeamId> openValidTeamsOf(Collection<PlayerId> players) {
-        if (players.isEmpty()) {
-            return Set.of();
-        }
+    public Set<UUID> openValidTeamsOf(Set<UUID> players) {
         List<?> rows = em.createNativeQuery("""
                         select distinct team_id from athlete.team_player_ref
                          where player_id in (:players) and left_on is null and invalid_reason is null
                            and not removed""")
-                .setParameter("players", players.stream().map(PlayerId::value).toList()).getResultList();
-        return rows.stream().map(ReplicaRows::uuid).map(TeamId::new).collect(Collectors.toSet());
+                .setParameter("players", List.copyOf(players)).getResultList();
+        return rows.stream().map(ReplicaRows::uuid).collect(Collectors.toSet());
     }
 
     @Override
-    public Map<TeamId, LocalDate> seasonEnds(Collection<TeamId> teams) {
-        if (teams.isEmpty()) {
-            return Map.of();
-        }
+    public Map<UUID, LocalDate> seasonEnds(Set<UUID> teams) {
         List<?> rows = em.createNativeQuery("""
                         select id, season_end_date from athlete.team_ref
                          where id in (:teams) and not removed and season_end_date is not null""")
-                .setParameter("teams", teams.stream().map(TeamId::value).toList()).getResultList();
+                .setParameter("teams", List.copyOf(teams)).getResultList();
         return rows.stream().map(Object[].class::cast).collect(Collectors.toMap(
-                columns -> new TeamId(ReplicaRows.uuid(columns[0])), columns -> ReplicaRows.date(columns[1])));
+                columns -> ReplicaRows.uuid(columns[0]), columns -> ReplicaRows.date(columns[1])));
     }
 
     private static Optional<Object[]> first(Query query) {
@@ -104,9 +97,9 @@ class ReplicaMembershipRepository implements ReplicaMembershipReads {
         return rows.stream().findFirst().map(Object[].class::cast);
     }
 
-    private <T> List<T> ids(String sql, UUID person, Function<UUID, T> type) {
+    private List<UUID> ids(String sql, UUID person) {
         List<?> rows = em.createNativeQuery(sql).setParameter("person", person).getResultList();
-        return rows.stream().map(ReplicaRows::uuid).map(type).toList();
+        return rows.stream().map(ReplicaRows::uuid).toList();
     }
 
     private static Set<TenantRole> roles(String csv) {
