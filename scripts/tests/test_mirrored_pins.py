@@ -1,6 +1,7 @@
 """A pin that is repeated in another file is bumped in every copy: the weekly bump (scripts/bump_pins.py) must leave
 `deploy/helm/tests/run.sh` and `infra/tofu/check.sh` green. PR #6 (2026-11-22) moved Redpanda in the chart and Reloader
-in deploy/kind/up.sh only, and main went red on the copies in compose, Dev Services and deploy/cloud/install.sh.
+in deploy/kind/up.sh only, and main went red on the copies in compose, Dev Services and deploy/cloud/install.sh. Since
+WP136 (DEP-02) the operators kind and the cloud VM share are pinned once, in deploy/lib/platform.sh, which both source.
 Run: python3 -I -m unittest discover -s scripts/tests"""
 import pathlib
 import re
@@ -16,8 +17,11 @@ import bump_pins  # noqa: E402
 
 REDPANDA = "docker.io/redpandadata/redpanda"
 KIND, CLOUD = "deploy/kind/up.sh", "deploy/cloud/install.sh"
-# the pins infra/tofu/check.sh compares between kind and cloud, less Gateway API (bumped by hand, ADR-0031)
-MIRRORED_IN_CLOUD = ["Envoy Gateway", "CloudNativePG", "Stakater Reloader"]
+PLATFORM = "deploy/lib/platform.sh"
+# the operators kind and the cloud VM both install, pinned once in PLATFORM (Gateway API is bumped by hand, ADR-0031)
+SHARED_OPERATORS = ["Envoy Gateway", "CloudNativePG", "Stakater Reloader"]
+SHARED_PIN_VARS = ["ENVOY_GATEWAY_VERSION", "GATEWAY_API_VERSION", "CNPG_VERSION", "RELOADER_CHART_VERSION",
+                   "RELOADER_CHART_DIGEST", "RELOADER_IMAGE_DIGEST"]
 OLD_DIGEST, NEW_DIGEST = "sha256:" + "0" * 64, "sha256:" + "f" * 64
 
 
@@ -54,30 +58,37 @@ class RedpandaPin(unittest.TestCase):
         self.assertEqual(len(tags), 1, tags)
 
 
-class KindPinsMirroredInCloud(unittest.TestCase):
-    def test_the_pin_covers_kind_and_cloud(self):
-        for name in MIRRORED_IN_CLOUD:
-            self.assertEqual(set(pin(name).files), {KIND, CLOUD}, name)
+class SharedOperatorPinsInOneFile(unittest.TestCase):
+    def test_the_pin_covers_the_platform_file_only(self):
+        for name in SHARED_OPERATORS:
+            self.assertEqual(pin(name).files, [PLATFORM], name)
 
-    def test_kind_and_cloud_agree(self):
-        for name in MIRRORED_IN_CLOUD:
-            bump_pins.read_groups(pin(name), ROOT)  # raises when the files disagree
+    def test_kind_and_cloud_source_it_and_pin_nothing_themselves(self):
+        for rel in (KIND, CLOUD):
+            text = (ROOT / rel).read_text()
+            self.assertRegex(text, r"(?m)^\. deploy/lib/platform\.sh$", rel)
+            for var in SHARED_PIN_VARS:
+                self.assertNotRegex(text, rf"(?m)^\s*{var}=", f"{rel} sets {var}")
 
-    def test_a_reloader_bump_rewrites_both_scripts(self):
+    def test_the_platform_file_pins_them(self):
+        bump_pins.read_groups(pin("Stakater Reloader"), ROOT)  # raises when the file lacks the pin
+        text = (ROOT / PLATFORM).read_text()
+        for var in SHARED_PIN_VARS:
+            self.assertRegex(text, rf'(?m)^{var}="[^"]+"$', var)
+
+    def test_a_reloader_bump_rewrites_the_platform_file(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
-            for rel in (KIND, CLOUD):
-                (root / rel).parent.mkdir(parents=True)
-                shutil.copy(ROOT / rel, root / rel)
+            (root / PLATFORM).parent.mkdir(parents=True)
+            shutil.copy(ROOT / PLATFORM, root / PLATFORM)
             reloader = pin("Stakater Reloader")
             new = {"app": "v9.9.9", "tag": "9.8.7", "digest": NEW_DIGEST, "image_digest": OLD_DIGEST}
             bump_pins.rewrite(reloader, root, new)
             self.assertEqual(bump_pins.read_groups(reloader, root), new)
-            for rel in (KIND, CLOUD):
-                text = (root / rel).read_text()
-                self.assertIn('RELOADER_CHART_VERSION="9.8.7"', text, rel)
-                self.assertIn(f'RELOADER_CHART_DIGEST="{NEW_DIGEST}"', text, rel)
-                self.assertIn(f'RELOADER_IMAGE_DIGEST="{OLD_DIGEST}"', text, rel)
+            text = (root / PLATFORM).read_text()
+            self.assertIn('RELOADER_CHART_VERSION="9.8.7"', text)
+            self.assertIn(f'RELOADER_CHART_DIGEST="{NEW_DIGEST}"', text)
+            self.assertIn(f'RELOADER_IMAGE_DIGEST="{OLD_DIGEST}"', text)
 
 
 if __name__ == "__main__":

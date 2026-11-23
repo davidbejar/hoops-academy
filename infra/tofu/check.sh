@@ -57,11 +57,14 @@ if command -v shellcheck >/dev/null; then
 else echo "  skip shellcheck (not installed)"; fi
 
 step "cloud install pins = kind pins"
-# deploy/cloud/install.sh installs the same operators as deploy/kind/up.sh; a bump of one must bump the other.
+# deploy/cloud/install.sh installs the same operators as deploy/kind/up.sh, both from the pins of deploy/lib/platform.sh.
 pin() { sed -n "s/^$1=\"\(.*\)\"$/\1/p" "$2"; }
+for s in deploy/kind/up.sh deploy/cloud/install.sh; do
+  grep -qx '. deploy/lib/platform.sh' "$s" && ok "$s sources deploy/lib/platform.sh" || bad "$s does not source deploy/lib/platform.sh"
+done
 for v in ENVOY_GATEWAY_VERSION GATEWAY_API_VERSION CNPG_VERSION RELOADER_CHART_VERSION RELOADER_CHART_DIGEST RELOADER_IMAGE_DIGEST; do
-  k=$(pin "$v" deploy/kind/up.sh); c=$(pin "$v" deploy/cloud/install.sh)
-  if [ -n "$k" ] && [ "$k" = "$c" ]; then ok "$v $c"; else bad "$v: kind '$k', cloud '$c'"; fi
+  p=$(pin "$v" deploy/lib/platform.sh); k=$(pin "$v" deploy/kind/up.sh); c=$(pin "$v" deploy/cloud/install.sh)
+  if [ -n "$p" ] && [ -z "$k$c" ]; then ok "$v $p"; else bad "$v: platform.sh '$p', set again by kind '$k' / cloud '$c'"; fi
 done
 
 step "nothing secret or stateful tracked by git"

@@ -541,11 +541,12 @@ for f in umbrella-default umbrella-tls service-defaults; do
 done
 grep -qx '  reloader: {enabled: true}.*' "$CHART/values-kind.yaml" && ok "values-kind.yaml: global.reloader.enabled on" \
   || bad "values-kind.yaml does not switch global.reloader.enabled on"
-# The controller is installed by deploy/kind/up.sh, pinned by chart version + digest and image digest (like ESO).
-sha='sha256:[0-9a-f]\{64\}'
-grep -q "^RELOADER_CHART_VERSION=\"[0-9][0-9.]*\"$" deploy/kind/up.sh && grep -q "^RELOADER_CHART_DIGEST=\"$sha\"$" deploy/kind/up.sh \
-  && grep -q "^RELOADER_IMAGE_DIGEST=\"$sha\"$" deploy/kind/up.sh \
-  && ok "Reloader pinned in deploy/kind/up.sh (chart version + digest, image digest)" || bad "Reloader not pinned in deploy/kind/up.sh"
+# The controller is installed by deploy/kind/up.sh and deploy/cloud/install.sh from deploy/lib/platform.sh, pinned by
+# chart version + digest and image digest (like ESO).
+sha='sha256:[0-9a-f]\{64\}'; P=deploy/lib/platform.sh
+grep -q "^RELOADER_CHART_VERSION=\"[0-9][0-9.]*\"$" "$P" && grep -q "^RELOADER_CHART_DIGEST=\"$sha\"$" "$P" \
+  && grep -q "^RELOADER_IMAGE_DIGEST=\"$sha\"$" "$P" \
+  && ok "Reloader pinned in $P (chart version + digest, image digest)" || bad "Reloader not pinned in $P"
 
 echo "== observability (WP86 / WP120, ADR-0046: OpenTelemetry collector, Grafana LGTM on kind)"
 # global.observability.enabled (on in values-kind.yaml): an OTLP collector `otel-collector` (traces + logs over OTLP, the
