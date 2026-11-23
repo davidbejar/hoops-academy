@@ -462,7 +462,7 @@ compose, chart, properties and scripts and runs alone.
 | 2 | WP130 | Roster replica pipeline once in `common-quarkus` (decoder, consumer, history store) | Opus · high | Running |
 | 2 | WP131 | Finance: test support once, one Postgres per test run, `applied_event` retention, small clean-ups | Opus · medium | Running |
 | 2 | WP132 | pdf-service: test helpers and contract cache, `tower` to dev, token leeway and Problem names aligned | Sonnet · medium | Done (ADR-0064; token leeway 0 s as Quarkus; Problem slugs follow `ProblemType`; `pdf.yaml` unchanged 1.0.0; 105 Rust tests; PDF-01, 07–10 left with reasons) |
-| 2 | WP133 | CI and scripts: concurrency groups, gates run once, pins, composite actions, generator version | Sonnet · high | Running |
+| 2 | WP133 | CI and scripts: concurrency groups, gates run once, pins, composite actions, generator version | Sonnet · high | Done (ADR-0065; concurrency groups; static gates once; six composite actions; `images` without `charts`; pin tests for Go, Rust, Trivy; `gen-api.sh` reads the generator version; 70 script tests) |
 | 3 | WP134 | Replica authorisation rule once in `common-quarkus`, under mutation testing | Opus · high | After wave 2 |
 | 3 | WP135 | Web: one home for dates, validators, export buttons, error messages, section states | Sonnet · high | After wave 2 |
 | 3 | WP136 | Chart: library chart for the service sub-charts; one source for the kind and cloud install pins | Opus · high | After wave 2 |
