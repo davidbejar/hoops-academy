@@ -17,7 +17,6 @@ pdf-application.workspace = true
 jiff.workspace = true
 axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "tokio", "matched-path"] }
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "net", "signal", "time", "sync"] }
-tower = { version = "0.5.3", default-features = false, features = ["util"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 serde_path_to_error = "0.1.20"
@@ -40,8 +39,8 @@ jsonschema = { version = "0.61.2", default-features = false }
 lopdf = { version = "0.47.0", default-features = false }
 toml = "1.2.1"
 http-body-util = "0.1.5"
+tower = { version = "0.5.3", default-features = false, features = ["util"] }
 base64 = "0.23"
-tracing-subscriber = { version = "0.3.23", default-features = false, features = ["std", "fmt", "json", "registry"] }
 
 [lints]
 workspace = true
