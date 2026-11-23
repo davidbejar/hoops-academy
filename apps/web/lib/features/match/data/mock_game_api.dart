@@ -1,6 +1,7 @@
 import '../../../core/export/export_file_name.dart' show asciiSlug;
 import '../../../core/mock/mock_authz.dart';
 import '../../../core/mock/mock_core_api.dart';
+import '../../../core/mock/mock_query.dart';
 import '../domain/feed_visibility.dart';
 import '../domain/match_event.dart';
 import '../domain/projector/projection.dart';
@@ -328,15 +329,7 @@ class MockGameApi {
             a['scheduledAt']! as String,
           ),
         );
-    return MockResult.json(200, {
-      'items': items,
-      'page': {
-        'page': 0,
-        'size': 100,
-        'totalElements': items.length,
-        'totalPages': 1,
-      },
-    });
+    return MockQuery(q).page(items);
   }
 
   /// ADR-0032: null or absent is unchanged, `clear` empties the venue, a value that is also in `clear` is a 400.

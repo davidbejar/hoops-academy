@@ -174,6 +174,7 @@ class MockFinanceApi {
       method: 'GET',
       path: '/api/core/teams',
       query: {
+        'size': 200,
         'seasonId': plan['seasonId'],
         if (plan['ageCategoryId'] != null)
           'ageCategoryId': plan['ageCategoryId'],
@@ -410,7 +411,7 @@ class MockFinanceApi {
             (q.text('seasonId') == null || p['seasonId'] == q.text('seasonId')))
           p,
     ]..sort((a, b) => '${a['name']}'.compareTo('${b['name']}'));
-    return q.page(plans, defaultSize: 50);
+    return q.page(plans);
   }
 
   MockResult _getPlan(String id) {
@@ -475,7 +476,7 @@ class MockFinanceApi {
       tenantId: _coreTenant,
       method: 'GET',
       path: '/api/core/teams',
-      query: const {},
+      query: const {'size': 200},
     );
     return [
       for (final t in ((page!.json! as Map)['items']! as List))
@@ -652,7 +653,7 @@ class MockFinanceApi {
   };
 
   MockResult _listDues(MockQuery q) =>
-      q.page([for (final d in _filteredDues(q)) _view(d)], defaultSize: 50);
+      q.page([for (final d in _filteredDues(q)) _view(d)]);
 
   /// The dues of the filters, by period then player.
   List<Map<String, Object?>> _filteredDues(MockQuery q) =>

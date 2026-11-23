@@ -84,7 +84,7 @@ extension _MockFinanceReads on MockFinanceApi {
 
   // ---------------------------------------------------------------- expenses
   MockResult _listExpenses(MockQuery q) =>
-      q.page([for (final e in _filteredExpenses(q)) e], defaultSize: 50);
+      q.page([for (final e in _filteredExpenses(q)) e]);
 
   /// Newest first: the day, then the order of creation.
   List<Map<String, Object?>> _filteredExpenses(MockQuery q) {
@@ -321,7 +321,7 @@ extension _MockFinanceReads on MockFinanceApi {
               ? (d['payment']! as Map)['method']
               : null,
         },
-    ], defaultSize: 50);
+    ]);
   }
 
   // ----------------------------------------------------------------- exports

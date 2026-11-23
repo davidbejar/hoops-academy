@@ -43,10 +43,14 @@ class MockQuery {
     };
   }
 
-  /// One page of [items] as the contract's `*Page` shape (0-based `page`, `size` default 20).
-  MockResult page(List<Object?> items, {int defaultSize = 20}) {
-    final size = integer('size', defaultSize).clamp(1, 200);
+  /// One page of [items] as the contract's `*Page` shape, paged like the services (`Page` and `Size` in
+  /// common.yaml): 0-based `page`, `size` 1..200 with 50 by default; anything else is a 400.
+  MockResult page(List<Object?> items) {
+    final size = integer('size', 50);
     final page = integer('page', 0);
+    if (page < 0 || size < 1 || size > 200) {
+      return mockProblem(400, 'Bad Request');
+    }
     final totalPages = items.isEmpty ? 0 : (items.length + size - 1) ~/ size;
     final from = (page * size).clamp(0, items.length);
     final to = (from + size).clamp(0, items.length);

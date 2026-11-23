@@ -884,7 +884,7 @@ class MockAthleteApi {
                 ))
               s,
         ]..sort((a, c) => '${a['startsAt']}'.compareTo('${c['startsAt']}'));
-        return q.page(items, defaultSize: 200);
+        return q.page(items);
       }
       if (method == 'POST') {
         final denied = _gateTeam(b['teamId'] as String?, method);
@@ -1027,7 +1027,7 @@ class MockAthleteApi {
                 (from == null || '${a['toDate']}'.compareTo(from) >= 0) &&
                 (to == null || '${a['fromDate']}'.compareTo(to) <= 0))
               a,
-        ], defaultSize: 100);
+        ]);
       }
       if (method == 'POST') {
         final denied = _gatePlayer(
@@ -1237,7 +1237,7 @@ class MockAthleteApi {
                   when found.isNotEmpty ||
                       '${p['name']}'.toLowerCase().contains(text))
                 {..._summary(p), if (found.isNotEmpty) 'matchedItems': found},
-        ], defaultSize: 100);
+        ]);
       }
       if (method == 'POST') {
         final plan = <String, Object?>{
@@ -1429,7 +1429,6 @@ class MockAthleteApi {
                 ? byTitle
                 : '${a['id']}'.compareTo('${b['id']}');
           }),
-          defaultSize: 50,
         );
       }
       if (method == 'POST') {
@@ -1514,7 +1513,7 @@ class MockAthleteApi {
                     _targets(a).any((p) => _roster(team).contains(p))) &&
                 (player == null || _targets(a).contains(player)))
               _assignmentView(a),
-        ], defaultSize: 100);
+        ]);
       }
       if (method == 'POST') {
         final plan = _byId(_plans, '${b['planId']}');
@@ -1640,7 +1639,7 @@ class MockAthleteApi {
                 (team == null || _roster(team).contains(i['playerId'])) &&
                 (status == null || i['status'] == status))
               i,
-        ], defaultSize: 100);
+        ]);
       }
       if (method == 'POST') {
         final denied = _gatePlayer(b['playerId'] as String?, method);
@@ -1874,9 +1873,7 @@ class MockAthleteApi {
                 (type == null || r['testTypeId'] == type))
               r,
         ]..sort((a, c) => '${c['measuredOn']}'.compareTo('${a['measuredOn']}'));
-        return q.page([
-          for (final r in items) _resultView(r),
-        ], defaultSize: 200);
+        return q.page([for (final r in items) _resultView(r)]);
       }
       if (method == 'POST') {
         final denied = _gatePlayer(

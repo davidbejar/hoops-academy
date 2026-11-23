@@ -774,16 +774,6 @@ class MockCoreApi {
     'naturalCategory': ?_naturalCategory(p),
   };
 
-  static Map<String, Object?> _page(List<Object?> items) => {
-    'items': items,
-    'page': {
-      'page': 0,
-      'size': 100,
-      'totalElements': items.length,
-      'totalPages': 1,
-    },
-  };
-
   Map<String, Object?> _profileJson(String tenantId) => {
     'id': tenantId,
     ..._profile,
@@ -916,20 +906,16 @@ class MockCoreApi {
         return _members_(method, id, sub, query, b);
       case 'guardian-links':
         if (id == null && is_('GET')) {
-          return MockResult.json(
-            200,
-            _page([
-              for (final l in _links)
-                if ((query['playerId'] == null ||
-                        (l['player']! as Map)['id'] == query['playerId']) &&
-                    (query['guardianPersonId'] == null ||
-                        (l['guardian']! as Map)['personId'] ==
-                            query['guardianPersonId']) &&
-                    (authz.admin ||
-                        (l['guardian']! as Map)['personId'] == 'a1'))
-                  l,
-            ]),
-          );
+          return MockQuery(query).page([
+            for (final l in _links)
+              if ((query['playerId'] == null ||
+                      (l['player']! as Map)['id'] == query['playerId']) &&
+                  (query['guardianPersonId'] == null ||
+                      (l['guardian']! as Map)['personId'] ==
+                          query['guardianPersonId']) &&
+                  (authz.admin || (l['guardian']! as Map)['personId'] == 'a1'))
+                l,
+          ]);
         }
         if (id == null && is_('POST')) {
           final m = _members.firstWhere(
@@ -964,18 +950,15 @@ class MockCoreApi {
         if (id == null && is_('GET')) return _exportAudit(tenantId);
       case 'audit-events':
         if (id == null && is_('GET'))
-          return MockResult.json(200, _page(_auditEvents(tenantId)));
+          return MockQuery(query).page(_auditEvents(tenantId));
       case 'eligibility-cases':
         if (id == null && is_('GET')) {
-          return MockResult.json(
-            200,
-            _page([
-              for (final c in _cases)
-                if (_mayReadCase(c) &&
-                    (query['status'] == null || c['status'] == query['status']))
-                  c,
-            ]),
-          );
+          return MockQuery(query).page([
+            for (final c in _cases)
+              if (_mayReadCase(c) &&
+                  (query['status'] == null || c['status'] == query['status']))
+                c,
+          ]);
         }
         if (id != null && sub == 'resolve' && is_('POST')) {
           final c = _cases.where((c) => c['id'] == id).firstOrNull;
@@ -1143,23 +1126,17 @@ class MockCoreApi {
   ) {
     if (id == null && method == 'GET') {
       final text = (q['q'] as String?)?.toLowerCase();
-      return MockResult.json(
-        200,
-        _page([
-          for (final m in _members)
-            if ((text == null ||
-                    (m['displayName']! as String).toLowerCase().contains(
-                      text,
-                    ) ||
-                    ((m['email'] as String?) ?? '').toLowerCase().contains(
-                      text,
-                    )) &&
-                (q['active'] == null || '${m['active']}' == '${q['active']}') &&
-                (q['role'] == null ||
-                    (m['roles']! as List).contains(q['role'])))
-              m,
-        ]),
-      );
+      return MockQuery(q).page([
+        for (final m in _members)
+          if ((text == null ||
+                  (m['displayName']! as String).toLowerCase().contains(text) ||
+                  ((m['email'] as String?) ?? '').toLowerCase().contains(
+                    text,
+                  )) &&
+              (q['active'] == null || '${m['active']}' == '${q['active']}') &&
+              (q['role'] == null || (m['roles']! as List).contains(q['role'])))
+            m,
+      ]);
     }
     if (id == null && method == 'POST') {
       final m =
@@ -1270,21 +1247,18 @@ class MockCoreApi {
     Map<String, Object?> b,
   ) {
     if (id == null && method == 'GET') {
-      return MockResult.json(
-        200,
-        _page([
-          for (final t in _teams)
-            if (authz.canSeeTeam(t['id']! as String) &&
-                (q['staffedByMe'] != true ||
-                    authz.staffTeamIds.contains(t['id']) ||
-                    (q['includeEnded'] == true &&
-                        authz.historicStaffTeamIds.contains(t['id']))) &&
-                (q['seasonId'] == null || t['seasonId'] == q['seasonId']) &&
-                (q['ageCategoryId'] == null ||
-                    (t['ageCategory']! as Map)['id'] == q['ageCategoryId']))
-              t,
-        ]),
-      );
+      return MockQuery(q).page([
+        for (final t in _teams)
+          if (authz.canSeeTeam(t['id']! as String) &&
+              (q['staffedByMe'] != true ||
+                  authz.staffTeamIds.contains(t['id']) ||
+                  (q['includeEnded'] == true &&
+                      authz.historicStaffTeamIds.contains(t['id']))) &&
+              (q['seasonId'] == null || t['seasonId'] == q['seasonId']) &&
+              (q['ageCategoryId'] == null ||
+                  (t['ageCategory']! as Map)['id'] == q['ageCategoryId']))
+            t,
+      ]);
     }
     if (id == null && method == 'POST') {
       final cat = _categories.firstWhere((c) => c['id'] == b['ageCategoryId']);
@@ -1411,21 +1385,18 @@ class MockCoreApi {
   ) {
     if (id == null && method == 'GET') {
       final text = (q['q'] as String?)?.toLowerCase();
-      return MockResult.json(
-        200,
-        _page([
-          for (final p in _players)
-            if (authz.canSeePlayer(p['id']! as String) &&
-                (q['status'] == null || p['status'] == q['status']) &&
-                (q['teamId'] == null ||
-                    (p['teams']! as List).any(
-                      (a) => ((a as Map)['team'] as Map)['id'] == q['teamId'],
-                    )) &&
-                (text == null ||
-                    (p['displayName']! as String).toLowerCase().contains(text)))
-              _playerJson(p),
-        ]),
-      );
+      return MockQuery(q).page([
+        for (final p in _players)
+          if (authz.canSeePlayer(p['id']! as String) &&
+              (q['status'] == null || p['status'] == q['status']) &&
+              (q['teamId'] == null ||
+                  (p['teams']! as List).any(
+                    (a) => ((a as Map)['team'] as Map)['id'] == q['teamId'],
+                  )) &&
+              (text == null ||
+                  (p['displayName']! as String).toLowerCase().contains(text)))
+            _playerJson(p),
+      ]);
     }
     if (id == null && method == 'POST') {
       final admin = roles.contains('ADMIN');
@@ -1504,15 +1475,12 @@ class MockCoreApi {
     Map<String, Object?> b,
   ) {
     if (id == null && method == 'GET') {
-      return MockResult.json(
-        200,
-        _page([
-          for (final a in _approvals)
-            if (_mayReadApproval(a) &&
-                (q['status'] == null || a['status'] == q['status']))
-              a,
-        ]),
-      );
+      return MockQuery(q).page([
+        for (final a in _approvals)
+          if (_mayReadApproval(a) &&
+              (q['status'] == null || a['status'] == q['status']))
+            a,
+      ]);
     }
     final a = _approvals.where((a) => a['id'] == id).firstOrNull;
     if (a == null || !_mayReadApproval(a)) return _notFound;

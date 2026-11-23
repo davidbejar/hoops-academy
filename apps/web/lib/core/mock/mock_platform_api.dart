@@ -424,7 +424,7 @@ class MockPlatformApi {
     return q.page([
       for (final u in _users())
         if (matches(u)) u,
-    ], defaultSize: 50);
+    ]);
   }
 
   Map<String, Object?>? _find(String id) =>
@@ -548,7 +548,7 @@ class MockPlatformApi {
           for (final r in _requests.reversed)
             if (status == null || r['status'] == status) r,
         ];
-        return q.page(items, defaultSize: 50);
+        return q.page(items);
       }
       return null;
     }
@@ -667,7 +667,7 @@ class MockPlatformApi {
                 '${t['slug']}'.contains(text)))
           t,
     ];
-    return q.page(items, defaultSize: 100);
+    return q.page(items);
   }
 
   MockResult _create(Map<String, Object?> b) {
@@ -747,7 +747,7 @@ class MockPlatformApi {
       return mockProblem(409, 'Conflict', code: 'TENANT_WITHDRAWN');
     final admins = _admins.putIfAbsent('${tenant['id']}', () => []);
     if (rest.isEmpty) {
-      if (method == 'GET') return q.page(admins, defaultSize: 100);
+      if (method == 'GET') return q.page(admins);
       if (method == 'POST') {
         final email = '${b['email']}';
         if (admins.any((a) => a['email'] == email))
@@ -900,7 +900,7 @@ class MockPlatformApi {
   // ------------------------------------------------------------------ audit
   MockResult _auditList(MockQuery q) {
     final (items, problem) = _auditMatching(q);
-    return problem ?? q.page(items, defaultSize: 50);
+    return problem ?? q.page(items);
   }
 
   /// `GET /platform/audit-events:export` (core 3.5.0): the filtered trail as CSV, not one page.
