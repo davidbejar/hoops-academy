@@ -27,6 +27,13 @@ lib/
   server 403/404 gracefully.
 - **Errors**: map Problem+JSON to `AppError` once (core/errors); screens show localized messages.
 - **Offline** (live match only): write to Drift first, sync in background; never block the UI on network.
+- **Lists (ADR-0061)**: never read one page and show it as the whole list (the services serve at most 200 a page).
+  A list the screen needs whole goes through `fetchAll` (`core/api/fetch_all.dart`) in the repository, which returns
+  a `List`; a list that grows without bound pages on screen with the kit's `Pager` (or a "load more"). Prove a whole
+  read with a case in `test/core/lists_read_every_page_test.dart` (`ServerPagesAdapter`); mock lists page through
+  `MockQuery.page`.
+- **Provider lifetime**: a provider whose `build` opens streams, timers or watches is `autoDispose`, so leaving the
+  screen ends them (the live match, WEB-01).
 - **Formatting**: `apps/web` uses the default `dart format` (80 columns); run `just web-format` before committing, CI fails on unformatted files.
 - **Mobile-first**: design for 360 px width; test goldens at 360×780 and 1024×768.
 

@@ -69,3 +69,7 @@ become `StatusChip` with a `HoopsTone` (role, availability, match state, injury)
 `ContentFrame` stretches a narrower section to the column; `SectionCard` provides a transparent `Material`;
 `AsyncBody` renders `EmptyState`; `HoopsSize.fabClearance` replaces the per-feature copies; `PickerDialog` is the
 kit's list picker.
+
+## Amendment (WP129)
+`ModulePlaceholder` is deleted (nothing used it since WP12-WP14). `Pager` joins the kit: the page row of a list the
+server pages (ADR-0061), with its light and dark goldens.
