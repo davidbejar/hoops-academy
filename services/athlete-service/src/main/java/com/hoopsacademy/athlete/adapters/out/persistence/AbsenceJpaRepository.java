@@ -7,10 +7,8 @@ import com.hoopsacademy.athlete.domain.Actor;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlannedAbsence;
 import com.hoopsacademy.athlete.domain.PlayerId;
-import com.hoopsacademy.common.paging.PageOffset;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
@@ -65,20 +63,12 @@ class AbsenceJpaRepository implements AbsenceRepository {
         if (players != null && players.isEmpty()) {
             return new PageResult<>(List.of(), page, size, 0);
         }
-        String where = " where a.toDate >= :from and a.fromDate <= :to" + (players != null ? " and a.playerId in :players" : "");
-        TypedQuery<AbsenceEntity> select = em.createQuery(
-                "select a from AbsenceEntity a" + where + " order by a.fromDate, a.id", AbsenceEntity.class);
-        TypedQuery<Long> count = em.createQuery("select count(a) from AbsenceEntity a" + where, Long.class);
-        for (TypedQuery<?> q : List.of(select, count)) {
-            q.setParameter("from", from);
-            q.setParameter("to", to);
-            if (players != null) {
-                q.setParameter("players", players.stream().map(PlayerId::value).toList());
-            }
+        PagedQuery<AbsenceEntity> query = PagedQuery.over(em, AbsenceEntity.class, "a")
+                .where("a.toDate >= :from and a.fromDate <= :to").bind("from", from).bind("to", to);
+        if (players != null) {
+            query.where("a.playerId in :players").bind("players", players.stream().map(PlayerId::value).toList());
         }
-        List<PlannedAbsence> items = select.setFirstResult(PageOffset.of(page, size)).setMaxResults(size).getResultList().stream()
-                .map(AbsenceJpaRepository::toDomain).toList();
-        return new PageResult<>(items, page, size, count.getSingleResult());
+        return query.page("a.fromDate, a.id", page, size, AbsenceJpaRepository::toDomain);
     }
 
     @Override

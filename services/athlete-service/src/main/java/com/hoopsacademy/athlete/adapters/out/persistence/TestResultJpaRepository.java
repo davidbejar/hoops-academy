@@ -8,10 +8,8 @@ import com.hoopsacademy.athlete.domain.PhysicalTestResult;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TestResultId;
 import com.hoopsacademy.athlete.domain.TestTypeId;
-import com.hoopsacademy.common.paging.PageOffset;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
@@ -73,22 +71,13 @@ class TestResultJpaRepository implements TestResultRepository {
         if (players != null && players.isEmpty()) {
             return new PageResult<>(List.of(), page, size, 0);
         }
-        String where = " where r.measuredOn >= :from and r.measuredOn <= :to" + (players != null ? " and r.playerId in :players" : "")
-                + (type.isPresent() ? " and r.testTypeId = :type" : "");
-        TypedQuery<TestResultEntity> select = em.createQuery(
-                "select r from TestResultEntity r" + where + " order by r.measuredOn desc, r.id", TestResultEntity.class);
-        TypedQuery<Long> count = em.createQuery("select count(r) from TestResultEntity r" + where, Long.class);
-        for (TypedQuery<?> q : List.of(select, count)) {
-            q.setParameter("from", from);
-            q.setParameter("to", to);
-            if (players != null) {
-                q.setParameter("players", players.stream().map(PlayerId::value).toList());
-            }
-            type.ifPresent(t -> q.setParameter("type", t.value()));
+        PagedQuery<TestResultEntity> query = PagedQuery.over(em, TestResultEntity.class, "r")
+                .where("r.measuredOn >= :from and r.measuredOn <= :to").bind("from", from).bind("to", to);
+        if (players != null) {
+            query.where("r.playerId in :players").bind("players", players.stream().map(PlayerId::value).toList());
         }
-        List<PhysicalTestResult> items = select.setFirstResult(PageOffset.of(page, size)).setMaxResults(size).getResultList().stream()
-                .map(TestResultJpaRepository::toDomain).toList();
-        return new PageResult<>(items, page, size, count.getSingleResult());
+        type.ifPresent(t -> query.where("r.testTypeId = :type").bind("type", t.value()));
+        return query.page("r.measuredOn desc, r.id", page, size, TestResultJpaRepository::toDomain);
     }
 
     @Override

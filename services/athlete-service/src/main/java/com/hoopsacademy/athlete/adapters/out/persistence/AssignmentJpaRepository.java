@@ -169,24 +169,12 @@ class AssignmentJpaRepository implements AssignmentRepository {
         if (q.players() != null && q.players().isEmpty()) {
             return new PageResult<>(List.of(), q.page(), q.size(), 0);
         }
-        List<String> conditions = new ArrayList<>();
-        q.assignment().ifPresent(a -> conditions.add("c.assignmentId = :assignment"));
+        PagedQuery<CompletionEntity> query = PagedQuery.over(em, CompletionEntity.class, "c");
+        q.assignment().ifPresent(a -> query.where("c.assignmentId = :assignment").bind("assignment", a.value()));
         if (q.players() != null) {
-            conditions.add("c.playerId in :players");
+            query.where("c.playerId in :players").bind("players", q.players().stream().map(PlayerId::value).toList());
         }
-        String where = conditions.isEmpty() ? "" : " where " + String.join(" and ", conditions);
-        TypedQuery<CompletionEntity> select = em.createQuery(
-                "select c from CompletionEntity c" + where + " order by c.markedAt desc, c.id", CompletionEntity.class);
-        TypedQuery<Long> count = em.createQuery("select count(c) from CompletionEntity c" + where, Long.class);
-        for (TypedQuery<?> query : List.of(select, count)) {
-            q.assignment().ifPresent(a -> query.setParameter("assignment", a.value()));
-            if (q.players() != null) {
-                query.setParameter("players", q.players().stream().map(PlayerId::value).toList());
-            }
-        }
-        List<PlanCompletion> items = select.setFirstResult(PageOffset.of(q.page(), q.size())).setMaxResults(q.size()).getResultList()
-                .stream().map(AssignmentJpaRepository::toDomain).toList();
-        return new PageResult<>(items, q.page(), q.size(), count.getSingleResult());
+        return query.page("c.markedAt desc, c.id", q.page(), q.size(), AssignmentJpaRepository::toDomain);
     }
 
     @Override

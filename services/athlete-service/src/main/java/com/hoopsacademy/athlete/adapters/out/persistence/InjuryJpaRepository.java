@@ -9,10 +9,8 @@ import com.hoopsacademy.athlete.domain.InjurySeverity;
 import com.hoopsacademy.athlete.domain.InjuryStatus;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlayerId;
-import com.hoopsacademy.common.paging.PageOffset;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
@@ -71,22 +69,13 @@ class InjuryJpaRepository implements InjuryRepository {
         if (players != null && players.isEmpty()) {
             return new PageResult<>(List.of(), page, size, 0);
         }
-        String where = " where 1 = 1" + (players != null ? " and i.playerId in :players" : "")
-                + (status.isPresent() ? " and i.status = :status" : "")
-                + (occurredUntil.isPresent() ? " and i.occurredOn <= :until" : "");
-        TypedQuery<InjuryEntity> select = em.createQuery(
-                "select i from InjuryEntity i" + where + " order by i.occurredOn desc, i.id", InjuryEntity.class);
-        TypedQuery<Long> count = em.createQuery("select count(i) from InjuryEntity i" + where, Long.class);
-        for (TypedQuery<?> q : List.of(select, count)) {
-            if (players != null) {
-                q.setParameter("players", players.stream().map(PlayerId::value).toList());
-            }
-            status.ifPresent(s -> q.setParameter("status", s.name()));
-            occurredUntil.ifPresent(until -> q.setParameter("until", until));
+        PagedQuery<InjuryEntity> query = PagedQuery.over(em, InjuryEntity.class, "i");
+        if (players != null) {
+            query.where("i.playerId in :players").bind("players", players.stream().map(PlayerId::value).toList());
         }
-        List<Injury> items = select.setFirstResult(PageOffset.of(page, size)).setMaxResults(size).getResultList().stream()
-                .map(InjuryJpaRepository::toDomain).toList();
-        return new PageResult<>(items, page, size, count.getSingleResult());
+        status.ifPresent(s -> query.where("i.status = :status").bind("status", s.name()));
+        occurredUntil.ifPresent(until -> query.where("i.occurredOn <= :until").bind("until", until));
+        return query.page("i.occurredOn desc, i.id", page, size, InjuryJpaRepository::toDomain);
     }
 
     @Override
