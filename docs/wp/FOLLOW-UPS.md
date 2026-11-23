@@ -464,7 +464,7 @@ compose, chart, properties and scripts and runs alone.
 | 2 | WP132 | pdf-service: test helpers and contract cache, `tower` to dev, token leeway and Problem names aligned | Sonnet · medium | Done (ADR-0064; token leeway 0 s as Quarkus; Problem slugs follow `ProblemType`; `pdf.yaml` unchanged 1.0.0; 105 Rust tests; PDF-01, 07–10 left with reasons) |
 | 2 | WP133 | CI and scripts: concurrency groups, gates run once, pins, composite actions, generator version | Sonnet · high | Done (ADR-0065; concurrency groups; static gates once; six composite actions; `images` without `charts`; pin tests for Go, Rust, Trivy; `gen-api.sh` reads the generator version; 70 script tests) |
 | 3 | WP134 | Replica authorisation rule once in `common-quarkus`, under mutation testing | Opus · high | Running |
-| 3 | WP135 | Web: one home for dates, validators, export buttons, error messages, section states | Sonnet · high | Running |
+| 3 | WP135 | Web: one home for dates, validators, export buttons, error messages, section states | Sonnet · high | Done (ADR-0067; shared dates, validators, export button, error table, section states; four small bugs fixed; web 1921 tests; no golden changed; six findings partly done with reasons) |
 | 3 | WP136 | Chart: library chart for the service sub-charts; one source for the kind and cloud install pins | Opus · high | Running |
 | 4 | WP137 | Common plumbing: Problem exceptions, paging, language, clock, shared properties, poms, test support, vectors | Opus · high | After wave 3 |
 | 4 | WP138 | Web: the tests run against the demo mock; the separate test fakes go | Opus · high | After wave 3 |
