@@ -19,6 +19,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hoops_app/core/auth/auth_providers.dart';
+import 'package:hoops_app/core/auth/mock_auth_service.dart';
 import 'package:hoops_app/app/app.dart';
 import 'package:hoops_app/app/feature_modules.dart';
 import 'package:hoops_app/app/router.dart';
@@ -121,6 +123,7 @@ Future<ProviderContainer> _mockApp(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
       matchStoreProvider.overrideWithValue(store),
+      authServiceProvider.overrideWithValue(MockAuthService()),
       appConfigProvider.overrideWithValue(
         AppConfig(
           issuer: Uri.parse('http://unused'),

@@ -21,9 +21,11 @@ Uri appBaseUri() {
   );
 }
 
+/// The sign-in: Keycloak, or in a demo build ([mockBuild]) with the mock API on, the mock that signs anyone in.
+/// Tests of mock mode override this provider with a [MockAuthService].
 final authServiceProvider = Provider<AuthService>((ref) {
   final config = ref.watch(appConfigProvider);
-  return config.mockApi
+  return mockBuild && config.mockApi
       ? MockAuthService()
       : OidcAuthService(
           config,

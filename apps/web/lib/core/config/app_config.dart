@@ -54,6 +54,10 @@ String _currentOrigin() {
   return base.scheme == 'http' || base.scheme == 'https' ? base.origin : '';
 }
 
+/// Whether this build is the demo (`--dart-define=HOOPS_MOCK_API=true`). A compile-time constant: a release build,
+/// which `tool/build_web.sh` only makes without it, drops the mock sign-in (`tool/verify_no_mock.dart`).
+const mockBuild = AppConfig._mock;
+
 final appConfigProvider = Provider<AppConfig>(
   (ref) => AppConfig.fromEnvironment(),
 );
