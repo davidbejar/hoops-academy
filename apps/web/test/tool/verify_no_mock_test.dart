@@ -54,5 +54,9 @@ void main() {
     String read(String path) => File(path).readAsStringSync();
     expect(read('lib/core/mock/mock_query.dart'), contains(mockMarkers[0]));
     expect(read('lib/core/mock/mock_core_api.dart'), contains(mockMarkers[1]));
+    expect(
+      read('lib/core/auth/mock_auth_service.dart'),
+      contains(mockMarkers[2]),
+    );
   });
 }

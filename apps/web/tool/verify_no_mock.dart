@@ -1,5 +1,6 @@
-// Proves a release build holds none of the demo mock API (ADR-0070), and so
-// none of the seeding hooks the widget tests use, over the output of
+// Proves a release build holds none of the demo mock (ADR-0070): not the mock
+// API, and so none of the seeding hooks the widget tests use, and not
+// MockAuthService, which signs anyone in. Over the output of
 // `flutter build web`.
 //
 //   dart run tool/verify_no_mock.dart [build/web]
@@ -9,9 +10,14 @@
 // dropped the mock code too, so nothing the tests seed or inject can ship.
 import 'dart:io';
 
-/// Strings only the mock API holds; they survive minification because they
-/// are data: the problem type of the mock's errors, the demo academy's name.
-const mockMarkers = ['urn:hoops:problem:mock', 'Academia Demo'];
+/// Strings only the mock holds; they survive minification because they are
+/// data: the problem type of the mock API's errors, the demo academy's name,
+/// the token MockAuthService hands out.
+const mockMarkers = [
+  'urn:hoops:problem:mock',
+  'Academia Demo',
+  'mock-access-token',
+];
 
 /// The JavaScript files of [build] (main bundle and deferred parts) that hold
 /// a mock marker, with the marker (empty: no mock code in the build).
