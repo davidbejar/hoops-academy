@@ -245,6 +245,83 @@ class KafkaEventBrokerTest {
         }
     }
 
+    @Test
+    void aBatchIsSentWholeBeforeItsAcknowledgementsAreAwaited() {
+        // CORE-04: the broker answers only once the whole batch is in flight; a send that waited for each record's
+        // acknowledgement before the next would time out on the first one
+        KafkaEventBroker broker = new KafkaEventBroker(() -> acknowledgingFrom(3), TIMEOUT, 3, registry);
+
+        broker.sendAll(List.of(new EventBroker.Message("core.team", "t:a", "{\"n\":1}"),
+                new EventBroker.Message("core.team", "t:a", null),
+                new EventBroker.Message("core.player", "p:b", "{\"n\":2}")));
+
+        assertThat(created.getFirst().history())
+                .extracting(ProducerRecord::topic, ProducerRecord::key, ProducerRecord::value)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple("core.team", "t:a", "{\"n\":1}"),
+                        org.assertj.core.groups.Tuple.tuple("core.team", "t:a", null),
+                        org.assertj.core.groups.Tuple.tuple("core.player", "p:b", "{\"n\":2}"));
+    }
+
+    @Test
+    void aBatchWithAnUnacknowledgedRecordFailsAsOneFailure() {
+        KafkaEventBroker broker = broker(2);
+        List<EventBroker.Message> batch = List.of(new EventBroker.Message("core.team", "t:a", "{}"),
+                new EventBroker.Message("core.player", "p:b", "{}"), new EventBroker.Message("core.person", "x", "{}"));
+
+        assertThatThrownBy(() -> broker.sendAll(batch)).isInstanceOf(EventBroker.UnavailableException.class)
+                .hasMessageContaining("core.team").hasCauseInstanceOf(SaslAuthenticationException.class);
+        assertThat(created.getFirst().closed()).as("three failed records are one failed batch").isFalse();
+
+        assertThatThrownBy(() -> broker.sendAll(batch)).isInstanceOf(EventBroker.UnavailableException.class);
+        assertThat(created.getFirst().closed()).as("the second failed batch in a row").isTrue();
+        assertThat(resets()).isEqualTo(1);
+    }
+
+    @Test
+    void aBatchWaitsAtMostTheSendTimeoutAltogether() {
+        KafkaEventBroker broker = new KafkaEventBroker(
+                () -> new MockProducer<>(false, null, new StringSerializer(), new StringSerializer()), TIMEOUT, 3,
+                registry);
+        List<EventBroker.Message> batch = java.util.stream.IntStream.range(0, 10)
+                .mapToObj(i -> new EventBroker.Message("core.team", "t:" + i, "{}")).toList();
+        long started = System.nanoTime();
+
+        assertThatThrownBy(() -> broker.sendAll(batch)).isInstanceOf(EventBroker.UnavailableException.class)
+                .hasCauseInstanceOf(java.util.concurrent.TimeoutException.class);
+
+        assertThat(Duration.ofNanos(System.nanoTime() - started)).as("one timeout, not one per record")
+                .isLessThan(TIMEOUT.multipliedBy(5));
+    }
+
+    @Test
+    void anEmptyBatchSendsNothingAndCreatesNoProducer() {
+        KafkaEventBroker broker = broker(3);
+
+        broker.sendAll(List.of());
+
+        assertThat(created).isEmpty();
+    }
+
+    /** A producer that answers nothing until {@code batch} records are in flight, then acknowledges all of them. */
+    private MockProducer<String, String> acknowledgingFrom(int batch) {
+        MockProducer<String, String> producer = new MockProducer<>(false, null, new StringSerializer(),
+                new StringSerializer()) {
+            @Override
+            public synchronized java.util.concurrent.Future<org.apache.kafka.clients.producer.RecordMetadata> send(
+                    ProducerRecord<String, String> record, org.apache.kafka.clients.producer.Callback callback) {
+                var future = super.send(record, callback);
+                if (history().size() == batch) {
+                    while (completeNext()) {
+                        // acknowledge every record in flight
+                    }
+                }
+                return future;
+            }
+        };
+        created.add(producer);
+        return producer;
+    }
+
     private void failTimes(KafkaEventBroker broker, int times) {
         for (int i = 0; i < times; i++) {
             assertThatThrownBy(() -> broker.send("core.team", "t:a", "{}"))
