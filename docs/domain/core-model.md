@@ -1268,7 +1268,7 @@ classDiagram
         +require(TeamId) Team
         +findAll(Collection~TeamId~) List~Team~
         +inSeasons(Collection~SeasonId~) List~Team~
-        +seasonNotEnded(Collection~TeamId~,LocalDate) Set~TeamId~
+        +seasonEnds(Collection~TeamId~) Map~TeamId,LocalDate~
         +list(TeamFilter,PageRequest) PageResult~Team~
         +nameTaken(SeasonId,String,Optional~TeamId~) boolean
         +usesCategory(AgeCategoryId) boolean

@@ -579,12 +579,6 @@ classDiagram
         +team(TeamId) Optional~ReplicaTeam~
         +roster(TeamId) List~RosterLine~
         +players(Collection~PlayerId~) List~ReplicaPlayer~
-        +activePerson(String) Optional~ReplicaPerson~
-        +playerOf(UUID) Optional~PlayerId~
-        +linkedPlayers(UUID) Set~PlayerId~
-        +staffTeams(UUID) Set~TeamId~
-        +openValidTeamsOf(Collection~PlayerId~) Set~TeamId~
-        +seasonEnds(Collection~TeamId~) Map~TeamId,LocalDate~
     }
 ```
 

@@ -19,8 +19,9 @@ import java.util.UUID;
 /**
  * What one tenant's membership tables hold for one login, as the rule that builds an authorisation context sees them
  * (ADR-0066): the tenant's status, the login's active person and roles, the person's own player, guardian links and
- * staff rows, the open valid assignments of players and the season end of each team the store knows. Each service maps
- * it onto its own reads (core's repositories, a replica's queries) in {@link MembershipRuleContract}.
+ * staff rows, the open valid assignments of players and the season end of each team the store knows. A subclass of
+ * {@link MembershipRuleContract} maps it onto the reads of the implementation it tests (common's ports, core's
+ * repositories).
  */
 public final class MembershipWorld {
 
@@ -133,10 +134,5 @@ public final class MembershipWorld {
     /** The season end of a team the store knows; empty for {@link #UNKNOWN_TEAM} and any other id. */
     public Optional<LocalDate> seasonEnd(UUID team) {
         return Optional.ofNullable(KNOWN_TEAMS.get(team));
-    }
-
-    /** Every team the store knows (core's foreign keys make every referenced team one of them). */
-    public Set<UUID> knownTeams() {
-        return KNOWN_TEAMS.keySet();
     }
 }

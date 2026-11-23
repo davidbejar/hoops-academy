@@ -65,3 +65,9 @@ again once the Go and Rust services of ADR-0051 exist (PMD and CPD cover Java on
   class goes through. The comment names the method, and the review of the baselines catches it.
 - `ExcessiveParameterList` counts constructors, so a CDI use case may take at most 11 collaborators; at 12 it is time
   to split it (`CreatePlayer` is accepted at 12 and may not take a 13th).
+
+## Amendment 2026-11-24 (decision 107, WP134): a copy of the tenant-isolation rule between modules is not accepted
+ADR-0066 takes the "later look" above for one rule: the membership rule that builds every request's authorisation
+context lived in core, game and athlete. It is now written once in `com.hoopsacademy.common.authz` with one table test
+and one PIT entry; a copy of a tenant-isolation rule between Java modules is not accepted (the Go copy in
+finance-service is a language decision, ADR-0055). Other copies between modules keep the rule above.

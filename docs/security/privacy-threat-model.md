@@ -90,7 +90,7 @@ services ──OTLP (traces, logs incl. hoops.audit / hoops.security)──▶ o
 ## 3. game / athlete ↔ core (`/internal`)
 | LINDDUN | Threat | Mitigations (evidence) | Residual |
 |---|---|---|---|
-| L | game and athlete build person profiles from core's answers | Answers limited to ids, roles, team ids, display names (STRIDE §3); authz context computed by core (`MembershipLookup`) | — |
+| L | game and athlete build person profiles from core's answers | Answers limited to ids, roles, team ids, display names (STRIDE §3); authz context computed by core (`MembershipLookup`), or in replica mode by the same rule over the local replica (common's `MembershipRule`, ADR-0066) | — |
 | I | Internal DTOs carry more than the caller needs | As above; health stays in athlete and never travels to core | Core's roster contract requires birth date and gender of every player (`ReplicaPlayer.hasBirthDateAndGender` filters on them), so game receives both (P-10) |
 | N | — | Not applicable (service-to-service) | — |
 | D | A service learns memberships of other academies | `TenantScope.runAs(tenantId)` on internal endpoints, RLS; `@RolesAllowed("service")`; token audience per service (ADR-0034, `TokenAudienceKeycloakTest`) | A compromised pod may ask for any tenant (by design, STRIDE §3) |

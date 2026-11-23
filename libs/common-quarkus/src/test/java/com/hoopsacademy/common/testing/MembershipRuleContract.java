@@ -40,15 +40,10 @@ public abstract class MembershipRuleContract {
     /** The implementation under test: the context of {@link MembershipWorld#SUBJECT} in the world's tenant. */
     protected abstract Optional<AuthzContext> resolve(MembershipWorld world);
 
-    /** What the implementation must answer; an implementation that differs on a case says so here (ADR-0066). */
-    protected Optional<AuthzContext> expected(MembershipCase row) {
-        return row.expected();
-    }
-
     @ParameterizedTest(name = "{0}")
     @MethodSource("com.hoopsacademy.common.testing.MembershipRuleContract#cases")
     void theContextFollowsTheMembershipRule(MembershipCase row) {
-        assertThat(resolve(row.world())).isEqualTo(expected(row));
+        assertThat(resolve(row.world())).isEqualTo(row.expected());
     }
 
     public static Stream<MembershipCase> cases() {
@@ -67,7 +62,7 @@ public abstract class MembershipRuleContract {
                 row("a staff team whose season ended yesterday in the academy's zone (today in UTC) is history",
                         member(TenantRole.COACH).staffOf(ENDED_TEAM, CURRENT_TEAM),
                         context(Set.of(TenantRole.COACH)).staff(CURRENT_TEAM).historic(ENDED_TEAM).build()),
-                row(UNKNOWN_STAFF_TEAM,
+                row("a staff row of a team the store does not know grants nothing (ADR-0066, difference 1)",
                         member(TenantRole.COACH).staffOf(UNKNOWN_TEAM, CURRENT_TEAM),
                         context(Set.of(TenantRole.COACH)).staff(CURRENT_TEAM).build()),
                 row("an ASSISTANT_COACH has current and historic staff teams like a COACH",
@@ -102,9 +97,6 @@ public abstract class MembershipRuleContract {
                         context(Set.of(TenantRole.COACH, TenantRole.PARENT)).linked(CHILD).playerTeams(CURRENT_TEAM)
                                 .historic(ENDED_TEAM).build()));
     }
-
-    /** The name of the one case on which core's {@code MembershipLookup} differed (ADR-0066, difference 1). */
-    public static final String UNKNOWN_STAFF_TEAM = "a staff row of a team the store does not know grants nothing";
 
     private static MembershipCase row(String name, MembershipWorld world, AuthzContext expected) {
         return new MembershipCase(name, world, Optional.of(expected));

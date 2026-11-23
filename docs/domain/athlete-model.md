@@ -960,16 +960,6 @@ classDiagram
 
 ```mermaid
 classDiagram
-    class ReplicaMembershipReads {
-        <<interface>>
-        +tenant(TenantId) Optional~TenantState~
-        +activeMemberWithLogin(String) Optional~Member~
-        +playerOf(PersonId) Optional~PlayerId~
-        +guardedPlayers(PersonId) Set~PlayerId~
-        +staffTeams(PersonId) Set~TeamId~
-        +openValidTeamsOf(Collection~PlayerId~) Set~TeamId~
-        +seasonEnds(Collection~TeamId~) Map~TeamId,LocalDate~
-    }
     class RosterChange {
         <<interface>>
         +topic() RosterTopic
