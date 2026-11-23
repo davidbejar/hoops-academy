@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * {@link RosterPort} over the local replica (hoops.roster.source=replica, ADR-0037): answers what core's
@@ -38,13 +40,11 @@ public class ReplicaRosterRepository implements RosterPort {
     @Override
     @Transactional
     public TeamRoster teamRoster(TenantId tenant, TeamId team) {
-        if (!tenantActive(tenant)) {
-            throw new NotFoundException("Team not found");
-        }
         List<?> rows = em.createNativeQuery(
                         """
-                        select name, season_end_date from athlete.team_ref
-                         where tenant_id = :tenant and id = :team and not removed""")
+                        select t.name, t.season_end_date from athlete.team_ref t
+                          join athlete.tenant_ref r on r.tenant_id = t.tenant_id and r.status = 'ACTIVE' and not r.removed
+                         where t.tenant_id = :tenant and t.id = :team and not t.removed""")
                 .setParameter("tenant", tenant.value()).setParameter("team", team.value()).getResultList();
         Object[] row = rows.stream().map(Object[].class::cast).findFirst()
                 .orElseThrow(() -> new NotFoundException("Team not found"));
@@ -73,6 +73,30 @@ public class ReplicaRosterRepository implements RosterPort {
                     Optional.of(ReplicaRows.date(columns[3])), Optional.of(Gender.valueOf((String) columns[4]))));
         }
         return found;
+    }
+
+    /** One query: the open, valid assignments of complete players, on known teams of an ACTIVE tenant (as rosters). */
+    @Override
+    @Transactional
+    public Set<TeamId> teamsOf(TenantId tenant, Collection<PlayerId> players, Collection<TeamId> candidates) {
+        if (players.isEmpty() || candidates.isEmpty()) {
+            return Set.of();
+        }
+        List<?> rows = em.createNativeQuery("""
+                        select distinct a.team_id
+                          from athlete.team_player_ref a
+                          join athlete.player_ref p on p.tenant_id = a.tenant_id and p.id = a.player_id
+                          join athlete.team_ref t on t.tenant_id = a.tenant_id and t.id = a.team_id
+                          join athlete.tenant_ref r on r.tenant_id = a.tenant_id
+                         where a.tenant_id = :tenant and a.player_id in (:players) and a.team_id in (:teams)
+                           and a.left_on is null and a.invalid_reason is null and not a.removed
+                           and p.birth_date is not null and p.gender is not null and not p.removed
+                           and not t.removed and r.status = 'ACTIVE' and not r.removed""")
+                .setParameter("tenant", tenant.value())
+                .setParameter("players", players.stream().map(PlayerId::value).distinct().toList())
+                .setParameter("teams", candidates.stream().map(TeamId::value).distinct().toList())
+                .getResultList();
+        return rows.stream().map(ReplicaRows::uuid).map(TeamId::new).collect(Collectors.toSet());
     }
 
     private boolean tenantActive(TenantId tenant) {

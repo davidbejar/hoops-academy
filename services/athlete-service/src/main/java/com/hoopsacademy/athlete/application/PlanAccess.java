@@ -10,9 +10,9 @@ import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The plan part of the authorization matrix ({@code docs/domain/authz-matrix.md}): who writes plans, assigns them,
@@ -123,13 +123,17 @@ public class PlanAccess {
         }
     }
 
-    /** The teams among {@code candidates} whose current roster contains the player (the read-time fan-out). */
-    public List<TeamId> teamsOf(TenantId tenant, PlayerId player, Collection<TeamId> candidates) {
-        return candidates.stream().filter(team -> teamRoster(tenant, team).map(r -> r.hasPlayer(player)).orElse(false)).toList();
+    /**
+     * The teams among {@code candidates} whose current roster contains one of the players (the read-time expansion of
+     * team assignments), whatever their season: not {@code playerTeamIds}, which leaves out ended seasons.
+     */
+    public Set<TeamId> teamsOf(TenantId tenant, Collection<PlayerId> players, Collection<TeamId> candidates) {
+        return roster.teamsOf(tenant, players, candidates);
     }
 
     boolean isStaffOfPlayer(AuthzContext caller, PlayerId player) {
-        return caller.staffTeamIds().stream().filter(caller::isStaffOf)
-                .anyMatch(team -> teamRoster(caller.tenantId(), new TeamId(team)).map(r -> r.hasPlayer(player)).orElse(false));
+        Set<TeamId> staffTeams = caller.staffTeamIds().stream().filter(caller::isStaffOf).map(TeamId::new)
+                .collect(Collectors.toSet());
+        return !staffTeams.isEmpty() && !roster.teamsOf(caller.tenantId(), Set.of(player), staffTeams).isEmpty();
     }
 }

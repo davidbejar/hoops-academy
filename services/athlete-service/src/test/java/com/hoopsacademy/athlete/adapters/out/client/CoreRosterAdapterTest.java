@@ -3,7 +3,6 @@ package com.hoopsacademy.athlete.adapters.out.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hoopsacademy.athlete.application.RosterPort;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.athlete.support.CoreMockResource;
@@ -36,7 +35,7 @@ class CoreRosterAdapterTest {
 
     static final TenantId TENANT = TenantId.parse("c0000000-0000-4000-8000-000000000001");
 
-    @Inject RosterPort roster;
+    /** The adapter itself: the request memo of the produced RosterPort would hide the client's cache. */
     @Inject CoreRosterAdapter adapter;
     @Inject CoreRosterClient coreClient;
 
@@ -56,7 +55,7 @@ class CoreRosterAdapterTest {
         String p2 = UUID.randomUUID().toString();
         core.roster(TENANT.toString(), team, p1, p2);
 
-        var result = roster.teamRoster(TENANT, new TeamId(UUID.fromString(team)));
+        var result = adapter.teamRoster(TENANT, new TeamId(UUID.fromString(team)));
 
         assertThat(result.teamName()).isEqualTo("U12");
         assertThat(result.playerIds()).containsExactlyInAnyOrder(new PlayerId(UUID.fromString(p1)), new PlayerId(UUID.fromString(p2)));
@@ -67,7 +66,7 @@ class CoreRosterAdapterTest {
     void unknownTeamIsNotFound() {
         core.rosterNotFound(TENANT.toString(), team);
 
-        assertThatThrownBy(() -> roster.teamRoster(TENANT, new TeamId(UUID.fromString(team))))
+        assertThatThrownBy(() -> adapter.teamRoster(TENANT, new TeamId(UUID.fromString(team))))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -76,7 +75,7 @@ class CoreRosterAdapterTest {
         core.rosterDelayed(TENANT.toString(), team, 4_000);
         long started = System.nanoTime();
 
-        assertThatThrownBy(() -> roster.teamRoster(TENANT, new TeamId(UUID.fromString(team))))
+        assertThatThrownBy(() -> adapter.teamRoster(TENANT, new TeamId(UUID.fromString(team))))
                 .isInstanceOf(UpstreamUnavailableException.class);
 
         assertThat((System.nanoTime() - started) / 1_000_000).isLessThan(3_500);
@@ -87,8 +86,8 @@ class CoreRosterAdapterTest {
         core.rosterFails(TENANT.toString(), team, 500);
         var id = new TeamId(UUID.fromString(team));
 
-        assertThatThrownBy(() -> roster.teamRoster(TENANT, id)).isInstanceOf(UpstreamUnavailableException.class);
-        assertThatThrownBy(() -> roster.teamRoster(TENANT, id)).isInstanceOf(UpstreamUnavailableException.class);
+        assertThatThrownBy(() -> adapter.teamRoster(TENANT, id)).isInstanceOf(UpstreamUnavailableException.class);
+        assertThatThrownBy(() -> adapter.teamRoster(TENANT, id)).isInstanceOf(UpstreamUnavailableException.class);
 
         assertThat(core.rosterCalls(team)).isEqualTo(2);
     }
@@ -98,8 +97,8 @@ class CoreRosterAdapterTest {
         core.roster(TENANT.toString(), team, UUID.randomUUID().toString());
         var id = new TeamId(UUID.fromString(team));
 
-        roster.teamRoster(TENANT, id);
-        roster.teamRoster(TENANT, id);
+        adapter.teamRoster(TENANT, id);
+        adapter.teamRoster(TENANT, id);
 
         assertThat(core.rosterCalls(team)).isEqualTo(1);
     }
@@ -110,8 +109,8 @@ class CoreRosterAdapterTest {
         core.roster(TENANT.toString(), team).roster(other.toString(), team);
         var id = new TeamId(UUID.fromString(team));
 
-        roster.teamRoster(TENANT, id);
-        roster.teamRoster(other, id);
+        adapter.teamRoster(TENANT, id);
+        adapter.teamRoster(other, id);
 
         assertThat(core.rosterCalls(team)).isEqualTo(2);
     }
@@ -120,10 +119,10 @@ class CoreRosterAdapterTest {
     void clearCacheForcesANewCall() {
         core.roster(TENANT.toString(), team);
         var id = new TeamId(UUID.fromString(team));
-        roster.teamRoster(TENANT, id);
+        adapter.teamRoster(TENANT, id);
 
         adapter.clearCache();
-        roster.teamRoster(TENANT, id);
+        adapter.teamRoster(TENANT, id);
 
         assertThat(core.rosterCalls(team)).isEqualTo(2);
     }
@@ -134,14 +133,14 @@ class CoreRosterAdapterTest {
         core.knownPlayers(TENANT.toString(), known);
         var knownId = new PlayerId(UUID.fromString(known));
 
-        var first = roster.players(TENANT, List.of(knownId));
-        var second = roster.players(TENANT, List.of(knownId));
+        var first = adapter.players(TENANT, List.of(knownId));
+        var second = adapter.players(TENANT, List.of(knownId));
 
         assertThat(first).containsOnlyKeys(knownId);
         assertThat(first.get(knownId).displayName()).startsWith("Player ");
         assertThat(second).isEqualTo(first);
         assertThat(core.batchCalls()).isEqualTo(1);
-        assertThat(roster.playerExists(TENANT, knownId)).isTrue();
+        assertThat(adapter.playerExists(TENANT, knownId)).isTrue();
     }
 
     @Test
@@ -149,8 +148,8 @@ class CoreRosterAdapterTest {
         core.knownPlayers(TENANT.toString(), UUID.randomUUID().toString());
         var stranger = new PlayerId(UUID.randomUUID());
 
-        assertThat(roster.players(TENANT, List.of(stranger))).isEmpty();
-        assertThat(roster.playerExists(TENANT, stranger)).isFalse();
+        assertThat(adapter.players(TENANT, List.of(stranger))).isEmpty();
+        assertThat(adapter.playerExists(TENANT, stranger)).isFalse();
     }
 
     @Test
@@ -207,8 +206,8 @@ class CoreRosterAdapterTest {
         String other = UUID.randomUUID().toString();
         core.roster(TENANT.toString(), other);
 
-        roster.teamRoster(TENANT, new TeamId(UUID.fromString(team)));
-        roster.teamRoster(TENANT, new TeamId(UUID.fromString(other)));
+        adapter.teamRoster(TENANT, new TeamId(UUID.fromString(team)));
+        adapter.teamRoster(TENANT, new TeamId(UUID.fromString(other)));
 
         assertThat(core.tokenCalls()).isLessThanOrEqualTo(1);
     }

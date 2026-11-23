@@ -7,9 +7,11 @@ import com.hoopsacademy.athlete.application.replica.ReplicaAuthzResolver;
 import com.hoopsacademy.common.client.CoreRosterClient;
 import com.hoopsacademy.common.client.RosterAuthzResolver;
 import com.hoopsacademy.common.tenancy.AuthzContextResolver;
+import io.quarkus.arc.Arc;
 import io.quarkus.runtime.Startup;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
+import java.util.Optional;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -33,10 +35,14 @@ public class RosterSourceProducer {
         LOG.infof("Roster source: %s (replica consumer %s)", this.source, consume ? "on" : "off");
     }
 
+    /** The source's port, each team's roster read once per request ({@link RequestMemoRosterPort}). */
     @Produces
     @ApplicationScoped
-    RosterPort rosterPort(CoreRosterAdapter rest, ReplicaRosterRepository replica) {
-        return source == RosterSource.REPLICA ? replica : rest;
+    RosterPort rosterPort(CoreRosterAdapter rest, ReplicaRosterRepository replica, RequestRosterAnswers answers) {
+        RosterPort port = source == RosterSource.REPLICA ? replica : rest;
+        return new RequestMemoRosterPort(port, () -> Arc.container().requestContext().isActive()
+                ? Optional.of(answers.answers())
+                : Optional.empty());
     }
 
     @Produces

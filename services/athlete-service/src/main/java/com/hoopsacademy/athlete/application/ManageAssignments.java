@@ -17,7 +17,6 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -120,8 +119,7 @@ public class ManageAssignments {
     private Scope forPlayers(AuthzContext caller, Set<PlayerId> players, Optional<TeamId> onlyTeam) {
         List<TeamId> candidates = assignments.teamsWithAssignments().stream()
                 .filter(team -> onlyTeam.map(team::equals).orElse(true)).toList();
-        Set<TeamId> teams = new LinkedHashSet<>();
-        players.forEach(player -> teams.addAll(access.teamsOf(caller.tenantId(), player, candidates)));
+        Set<TeamId> teams = candidates.isEmpty() ? Set.of() : access.teamsOf(caller.tenantId(), players, candidates);
         return new Scope(new ArrayList<>(teams), players);
     }
 
