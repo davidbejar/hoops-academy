@@ -53,7 +53,7 @@ impl Problem {
             violations,
             ..Self::new(
                 StatusCode::BAD_REQUEST,
-                "validation-failed",
+                "validation",
                 "VALIDATION_FAILED",
                 "The body does not follow the contract; see violations.",
             )
@@ -72,7 +72,7 @@ impl Problem {
                 }],
                 ..Self::new(
                     StatusCode::UNPROCESSABLE_ENTITY,
-                    "too-many-rows",
+                    "domain-rule-violation",
                     "TOO_MANY_ROWS",
                     &format!("{field} holds more than {max} rows; send fewer."),
                 )
@@ -81,11 +81,11 @@ impl Problem {
     }
 
     pub fn unauthenticated() -> Self {
-        Self::new(StatusCode::UNAUTHORIZED, "unauthenticated", "UNAUTHENTICATED", "A bearer token is required.")
+        Self::new(StatusCode::UNAUTHORIZED, "unauthorized", "UNAUTHENTICATED", "A bearer token is required.")
     }
 
     pub fn invalid_token() -> Self {
-        Self::new(StatusCode::UNAUTHORIZED, "invalid-token", "INVALID_TOKEN", "The token is not valid for pdf-service.")
+        Self::new(StatusCode::UNAUTHORIZED, "unauthorized", "INVALID_TOKEN", "The token is not valid for pdf-service.")
     }
 
     pub fn forbidden() -> Self {
@@ -95,7 +95,7 @@ impl Problem {
     pub fn auth_unavailable() -> Self {
         Self::new(
             StatusCode::SERVICE_UNAVAILABLE,
-            "auth-unavailable",
+            "upstream-unavailable",
             "AUTH_UNAVAILABLE",
             "The realm's signing keys could not be read; retry later.",
         )
@@ -169,7 +169,7 @@ mod tests {
     fn too_many_rows_names_the_list_and_its_limit() {
         let problem = Problem::from_sheet(&SheetError::TooManyRows { field: "players".into(), max: 60 });
         assert_eq!((problem.status, problem.code.as_str()), (422, "TOO_MANY_ROWS"));
-        assert_eq!(problem.kind, "urn:hoops:problem:too-many-rows");
+        assert_eq!(problem.kind, "urn:hoops:problem:domain-rule-violation");
         assert_eq!(problem.title, "Unprocessable Entity");
         assert_eq!(problem.violations[0].field, "players");
         assert_eq!(problem.detail, "players holds more than 60 rows; send fewer.");

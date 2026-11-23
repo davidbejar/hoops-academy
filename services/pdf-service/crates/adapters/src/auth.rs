@@ -21,7 +21,8 @@ use crate::security::{Denial, DenialKind};
 /// The realm role every caller needs (`/internal/**`, ADR-0034).
 pub const SERVICE_ROLE: &str = "service";
 const REFRESH_EVERY: Duration = Duration::from_secs(30);
-const LEEWAY_SECONDS: u64 = 5;
+/// No clock leeway, like the Java services (Quarkus OIDC without `lifespan-grace`; ADR-0064).
+const LEEWAY_SECONDS: u64 = 0;
 
 /// A verified caller: core-service or game-service.
 #[derive(Debug, Clone, PartialEq, Eq)]
