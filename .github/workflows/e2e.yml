@@ -15,17 +15,19 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request cancels the superseded run. A run on main, a schedule or a dispatch is never cancelled
+# (its group is the run itself, so it cannot even replace a queued one).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   journeys:
     runs-on: ubuntu-24.04
     timeout-minutes: 130 # images of pdf/finance ~10 min + journeys ~25 min + four ZAP API scans of at most ~20 min each
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
-        with:
-          distribution: temurin
-          java-version: '25'
-          cache: maven
+      - uses: ./.github/actions/setup-java
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
       - name: Podman compose
         # `podman compose` delegates to the runner's docker-compose plugin, which talks to $DOCKER_HOST: start the
@@ -61,23 +63,9 @@ jobs:
           e2e/bin/services-up.sh --no-build
       - name: Journeys
         run: ./mvnw -B -ntp -pl e2e test -De2e.baseUrl=http://localhost:8080
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
-        with:
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - id: chrome
-        uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2.2.0
-        with:
-          chrome-version: 157.0.8103.38
-          install-chromedriver: true
-      # chromedriver finds the runner's own Chrome (/opt/google/chrome, another major) before the action's, so remove
-      # it and make `google-chrome` a wrapper around the pinned build with the flags a headless runner needs.
-      - name: Make the pinned Chrome the only google-chrome
-        run: |
-          sudo rm -rf /opt/google/chrome /usr/bin/google-chrome   # the latter is a symlink into the former
-          printf '#!/bin/sh\nexec "%s" --no-sandbox --disable-dev-shm-usage "$@"\n' "${{ steps.chrome.outputs.chrome-path }}" | sudo tee /usr/bin/google-chrome >/dev/null
-          sudo chmod +x /usr/bin/google-chrome
-          google-chrome --version
+        uses: ./.github/actions/setup-pinned-chrome
       - name: Browser login round trip (first sign-in, temporary password)
         # headless Chrome + chromedriver against the stack: app -> Keycloak `hoops` theme -> update-password -> signed in
         working-directory: apps/web

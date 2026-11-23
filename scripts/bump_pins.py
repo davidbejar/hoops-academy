@@ -34,7 +34,7 @@ class Pin:
 #   values.yaml compose.yaml consumer_test.go (finance)  redpanda tag+digest (one pin over the three files) | skopeo
 #   microprofile-config.properties (common-quarkus)  redpanda tag of the Dev Services | skopeo
 #   values.yaml compose.yaml  grafana/otel-lgtm tag+digest (one pin over both files) | skopeo
-#   ci.yml images.yml sbom.sh aquasec/trivy tag       | skopeo list-tags (Docker Hub)
+#   ci.yml image-publish action sbom.sh infra/tofu/check.sh  aquasec/trivy tag | skopeo list-tags (Docker Hub)
 #   sbom.sh                cyclonedx-cli, oras tag+digest | skopeo
 #   semgrep.yml            semgrep tag+digest         | skopeo
 #   ci.yml zap-api-scan.sh zaproxy:stable digest      | skopeo inspect (floating tag)
@@ -72,7 +72,8 @@ PINS = [
     Pin("grafana otel-lgtm (chart, compose)", ["deploy/helm/hoops/values.yaml", "infra/compose/compose.yaml"],
         rf"grafana/otel-lgtm(?::|\n\s+tag: )(?P<tag>[\w.\-]+)(?:@|\n\s+digest: )(?P<digest>{DIGEST})", "image",
         repo="docker.io/grafana/otel-lgtm", tag_re=r"^(\d+\.\d+\.\d+)$"),
-    Pin("trivy", [".github/workflows/ci.yml", ".github/workflows/images.yml", "scripts/sbom.sh"],
+    Pin("trivy", [".github/workflows/ci.yml", ".github/actions/image-publish/action.yml", "scripts/sbom.sh",
+                  "infra/tofu/check.sh"],
         r"aquasec/trivy:(?P<tag>[\w.\-]+)", "image", repo="docker.io/aquasec/trivy", tag_re=SEMVER),
     Pin("semgrep", [".github/workflows/semgrep.yml"],
         rf"semgrep/semgrep:(?P<tag>[\w.\-]+)@(?P<digest>{DIGEST})", "image",

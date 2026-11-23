@@ -1,0 +1,12 @@
+name: setup-java
+description: >-
+  The JDK of the build (Temurin, the maven.compiler.release of the root pom; scripts/tests/test_jdk_pins.py keeps the
+  two equal) with the Maven cache. Run actions/checkout first: the cache key hashes the poms.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+      with:
+        distribution: temurin
+        java-version: '25'
+        cache: maven

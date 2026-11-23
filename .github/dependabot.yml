@@ -68,7 +68,10 @@ updates:
 
   # Actions are pinned to full commit SHAs with the version as a comment (WP50); Dependabot updates both together.
   - package-ecosystem: github-actions
-    directory: /
+    # the workflows, and the composite actions under .github/actions/ (they pin third-party actions too)
+    directories:
+      - /
+      - /.github/actions/*
     schedule:
       interval: weekly
       day: monday

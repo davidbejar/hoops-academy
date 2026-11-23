@@ -18,6 +18,12 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request cancels the superseded run. A run on main, a schedule or a dispatch is never cancelled
+# (its group is the run itself, so it cannot even replace a queued one).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 defaults:
   run:
     shell: bash
@@ -36,9 +42,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Tests of the gate scripts and the repository rules
+      # the Python tests of the gate and pin scripts run in the `scripts` job of ci.yml
+      - name: Tests of the repository rules
         run: |
-          python3 -m unittest discover -s scripts/tests
           docker run --rm -v "$PWD:/src:ro" -w /src/.semgrep "$SEMGREP_IMAGE" \
             semgrep --test --metrics off --config rules tests
       - name: Semgrep scan

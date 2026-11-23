@@ -275,13 +275,19 @@ Dependabot covers Maven, pub and GitHub Actions. Everything else that is pinned 
 | redis, mailpit | `deploy/helm/hoops/values.yaml` | registry |
 | redpanda tag + digest (one pin) | `values.yaml`, `infra/compose/compose.yaml`, finance-service's `consumer_test.go` | registry |
 | redpanda tag of the Dev Services | common-quarkus `microprofile-config.properties` | registry |
-| Trivy tag | `ci.yml`, `images.yml`, `scripts/sbom.sh` | Docker Hub |
+| Trivy tag | `ci.yml`, `.github/actions/image-publish/action.yml`, `scripts/sbom.sh`, `infra/tofu/check.sh` | Docker Hub |
 | cyclonedx-cli, ORAS tag + digest | `scripts/sbom.sh` | registry |
 | Semgrep tag + digest | `semgrep.yml` | Docker Hub |
 | ZAP `stable` digest | `ci.yml`, `scripts/zap-api-scan.sh` | ghcr.io |
 | Envoy Gateway, CloudNativePG | `deploy/kind/up.sh`, `deploy/cloud/install.sh` | GitHub releases |
 | External Secrets | `deploy/kind/up.sh` | GitHub releases |
 | Reloader chart version + digest + image digest | `deploy/kind/up.sh`, `deploy/cloud/install.sh` | ghcr.io (chart appVersion names the image) |
+
+Not in the inventory, bumped by hand and each named in as few files as possible, with a test that keeps the copies equal
+(`scripts/tests/test_toolchain_pins.py`, `test_jdk_pins.py`): Go (`go.mod`, `.github/actions/setup-go`,
+`finance.Containerfile`), Rust (`rust-toolchain.toml`, `pdf.Containerfile` twice), the JDK (`pom.xml`, the Containerfile,
+`.github/actions/setup-java`, `scripts/env.sh`), the pinned Chrome (`.github/actions/setup-pinned-chrome`), kubeconform
+and gitleaks (`.github/actions/setup-chart-tools`, with the SHA-256 of their release archives).
 
 A pin repeated in several files is one inventory entry over all of them (`scripts/tests/test_mirrored_pins.py`), so the
 copies that `deploy/helm/tests/run.sh` and `just tofu-check` compare move together. What is recorded from the pins, the

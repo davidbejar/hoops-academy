@@ -1,0 +1,17 @@
+name: setup-go
+description: >-
+  Go of finance-service (ADR-0055), installed from the release archive and checked against its SHA-256 (no third-party
+  action). The version is go.mod's `toolchain` line; scripts/tests/test_toolchain_pins.py keeps go.mod, this file and
+  deploy/containers/finance.Containerfile equal. Put Go on the PATH before any CodeQL init.
+runs:
+  using: composite
+  steps:
+    - name: Go 1.27.4 (go.mod's toolchain line), checked against its SHA-256
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$RUNNER_TEMP"
+        curl -sSLO https://go.dev/dl/go1.27.4.linux-amd64.tar.gz
+        echo '7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840  go1.27.4.linux-amd64.tar.gz' | sha256sum -c -
+        tar -xzf go1.27.4.linux-amd64.tar.gz
+        echo "$RUNNER_TEMP/go/bin" >> "$GITHUB_PATH"

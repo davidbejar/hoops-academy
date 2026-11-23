@@ -26,12 +26,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-      - name: Install Zensical (pinned)
-        run: |
-          python3 -m venv .venv-docs
-          .venv-docs/bin/pip install --quiet --disable-pip-version-check -r config/docs/requirements.txt
+      - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
+      # the recipe installs Zensical from the pinned config/docs/requirements.txt, then builds with --strict into target/docs-site
       - name: Strict build
-        run: .venv-docs/bin/zensical build --clean --strict
+        run: just docs-build
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: target/docs-site

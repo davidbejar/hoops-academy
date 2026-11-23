@@ -1,0 +1,11 @@
+name: setup-flutter
+description: >-
+  Flutter (stable channel) with the pub cache. Run actions/checkout first. `flutter pub get` stays with the caller:
+  its working directory differs per job.
+runs:
+  using: composite
+  steps:
+    - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+      with:
+        channel: stable
+        cache: true

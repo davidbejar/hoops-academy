@@ -16,6 +16,12 @@ on:
 permissions:
   contents: read
 
+# A newer push to a pull request cancels the superseded run. A run on main, a schedule or a dispatch is never cancelled
+# (its group is the run itself, so it cannot even replace a queued one).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 defaults:
   run:
     shell: bash
@@ -39,23 +45,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+      - uses: ./.github/actions/setup-java
         if: matrix.language == 'java-kotlin'
-        with:
-          distribution: temurin
-          java-version: '25'
-          cache: maven
       # Go must be on the PATH before init: the Go toolchain is statically linked, so CodeQL traces it through a
       # wrapper it sets up at init around the `go` it finds then (run 43792899979 built nothing it could see).
-      - name: Go 1.27.4 (finance-service, ADR-0055), checked against its SHA-256
+      - uses: ./.github/actions/setup-go
         if: matrix.language == 'go'
-        run: |
-          set -euo pipefail
-          cd "$RUNNER_TEMP"
-          curl -sSLO https://go.dev/dl/go1.27.4.linux-amd64.tar.gz
-          echo '7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840  go1.27.4.linux-amd64.tar.gz' | sha256sum -c -
-          tar -xzf go1.27.4.linux-amd64.tar.gz
-          echo "$RUNNER_TEMP/go/bin" >> "$GITHUB_PATH"
       - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           languages: ${{ matrix.language }}

@@ -10,10 +10,12 @@ name: images
 # artifact type application/vnd.cyclonedx+json): services `<svc>-maven.cdx.json` (runtime dependencies,
 # cyclonedx-maven-plugin in the image's Maven stage) and `<svc>-image.cdx.json` (Trivy: OS packages and jars of the
 # image); web `web-image.cdx.json` (Trivy). Same commands locally: scripts/sbom.sh.
+# The scan, SBOM and push steps of every job are the composite action .github/actions/image-publish; the chart tests
+# are the `helm-chart-tests` job of ci.yml (this workflow gates no push on them, so it no longer repeats them).
 on:
   push:
     branches: [main]
-    paths: ['services/**', 'libs/**', 'apps/web/**', 'deploy/containers/**', 'infra/db/**', 'pom.xml', 'scripts/sbom.sh', '.github/workflows/images.yml']
+    paths: ['services/**', 'libs/**', 'apps/web/**', 'deploy/containers/**', 'infra/db/**', 'pom.xml', 'scripts/sbom.sh', '.github/workflows/images.yml', '.github/actions/image-publish/**']
   workflow_dispatch:
 
 permissions:
@@ -49,43 +51,16 @@ jobs:
           user=$(podman image inspect --format '{{.Config.User}}' "$IMAGE")
           case "${user%%:*}" in ''|0|root) echo "::error::image user is '$user'"; exit 1 ;; esac
           podman run --rm --read-only --entrypoint /usr/bin/java "$IMAGE" -version
-      - name: Trivy scan (fail on fixable HIGH/CRITICAL)
-        run: |
-          podman save -o image.tar "$IMAGE"
-          docker run --rm -v "$PWD:/w" aquasec/trivy:0.76.1 image --input /w/image.tar \
-            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress
-      - name: SBOM (CycloneDX of the Maven build and of the image, validated)
-        run: |
-          # the Maven stage is cached from the build step: this only copies out its target/bom.json
-          scripts/sbom.sh maven ${{ matrix.service }} sbom
-          scripts/sbom.sh generate ${{ matrix.service }} "$IMAGE" sbom
-      - name: Keep the SBOMs
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - uses: ./.github/actions/image-publish
         with:
-          name: sbom-${{ matrix.service }}
-          path: sbom/*.cdx.json
-          if-no-files-found: error
-          retention-days: 90
-      - name: Push
-        if: ${{ github.ref == 'refs/heads/main' && vars.IMAGE_REGISTRY != '' }}
-        env:
-          REGISTRY: ${{ vars.IMAGE_REGISTRY }}
-          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NAME: ${{ matrix.service }}
-          REGISTRY_AUTH_FILE: ${{ runner.temp }}/registry-auth.json
-        run: |
-          set -euo pipefail
-          registry=$(printf '%s' "$REGISTRY" | tr '[:upper:]' '[:lower:]'); registry="${registry%/}"
-          if [ -n "$REGISTRY_USERNAME" ] && [ -n "$REGISTRY_PASSWORD" ]; then user="$REGISTRY_USERNAME"; pass="$REGISTRY_PASSWORD"
-          elif [ -z "$REGISTRY_USERNAME" ] && [ -z "$REGISTRY_PASSWORD" ]; then user="${{ github.actor }}"; pass="$GITHUB_TOKEN"
-          else echo "::error::set both REGISTRY_USERNAME and REGISTRY_PASSWORD, or neither (GITHUB_TOKEN -> ghcr.io)"; exit 1; fi
-          echo "$pass" | podman login -u "$user" --password-stdin "${registry%%/*}"
-          podman tag "$IMAGE" "$registry/$NAME:${{ github.sha }}"
-          podman push --digestfile digest.txt "$registry/$NAME:${{ github.sha }}"
-          # the SBOMs as OCI referrers of the pushed digest (ghcr.io: ORAS falls back to the referrers tag schema)
-          scripts/sbom.sh attach "$registry/$NAME@$(cat digest.txt)" sbom "$REGISTRY_AUTH_FILE"
+          name: ${{ matrix.service }}
+          image: ${{ env.IMAGE }}
+          maven-sbom: 'true'
+          push: ${{ github.ref == 'refs/heads/main' && vars.IMAGE_REGISTRY != '' }}
+          registry: ${{ vars.IMAGE_REGISTRY }}
+          registry-username: ${{ secrets.REGISTRY_USERNAME }}
+          registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   web:
     runs-on: ubuntu-latest
@@ -96,8 +71,7 @@ jobs:
       IMAGE: localhost/hoops/web:${{ github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
-        with: {channel: stable, cache: true}
+      - uses: ./.github/actions/setup-flutter
       - name: flutter build web
         working-directory: apps/web
         run: flutter pub get && flutter build web --release --pwa-strategy=offline-first
@@ -107,52 +81,15 @@ jobs:
             --build-arg WEB_SOURCE=host --build-arg SOURCE_URL=https://github.com/${{ github.repository }} -t "$IMAGE" .
       - name: Runs as non-root
         run: test "$(podman run --rm --entrypoint id "$IMAGE" -u)" != 0
-      - name: Trivy scan (fail on fixable HIGH/CRITICAL)
-        run: |
-          podman save -o image.tar "$IMAGE"
-          docker run --rm -v "$PWD:/w" aquasec/trivy:0.76.1 image --input /w/image.tar \
-            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress
-      - name: SBOM (CycloneDX of the image, validated)
-        run: scripts/sbom.sh generate web "$IMAGE" sbom
-      - name: Keep the SBOM
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - uses: ./.github/actions/image-publish
         with:
-          name: sbom-web
-          path: sbom/*.cdx.json
-          if-no-files-found: error
-          retention-days: 90
-      - name: Push
-        if: ${{ github.ref == 'refs/heads/main' && vars.IMAGE_REGISTRY != '' }}
-        env:
-          REGISTRY: ${{ vars.IMAGE_REGISTRY }}
-          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NAME: web
-          REGISTRY_AUTH_FILE: ${{ runner.temp }}/registry-auth.json
-        run: |
-          set -euo pipefail
-          registry=$(printf '%s' "$REGISTRY" | tr '[:upper:]' '[:lower:]'); registry="${registry%/}"
-          if [ -n "$REGISTRY_USERNAME" ] && [ -n "$REGISTRY_PASSWORD" ]; then user="$REGISTRY_USERNAME"; pass="$REGISTRY_PASSWORD"
-          elif [ -z "$REGISTRY_USERNAME" ] && [ -z "$REGISTRY_PASSWORD" ]; then user="${{ github.actor }}"; pass="$GITHUB_TOKEN"
-          else echo "::error::set both REGISTRY_USERNAME and REGISTRY_PASSWORD, or neither (GITHUB_TOKEN -> ghcr.io)"; exit 1; fi
-          echo "$pass" | podman login -u "$user" --password-stdin "${registry%%/*}"
-          podman tag "$IMAGE" "$registry/$NAME:${{ github.sha }}"
-          podman push --digestfile digest.txt "$registry/$NAME:${{ github.sha }}"
-          # the SBOMs as OCI referrers of the pushed digest (ghcr.io: ORAS falls back to the referrers tag schema)
-          scripts/sbom.sh attach "$registry/$NAME@$(cat digest.txt)" sbom "$REGISTRY_AUTH_FILE"
-
-  charts:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
-      - name: Install kubeconform + gitleaks
-        run: |
-          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz | sudo tar -xz -C /usr/local/bin kubeconform
-          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | sudo tar -xz -C /usr/local/bin gitleaks
-      - name: Chart tests (lint, snapshots, kubeconform, policy asserts, gitleaks)
-        run: deploy/helm/tests/run.sh
+          name: web
+          image: ${{ env.IMAGE }}
+          push: ${{ github.ref == 'refs/heads/main' && vars.IMAGE_REGISTRY != '' }}
+          registry: ${{ vars.IMAGE_REGISTRY }}
+          registry-username: ${{ secrets.REGISTRY_USERNAME }}
+          registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   # pdf-service (Rust, ADR-0052): context services/pdf-service, distroless cc base, cargo-auditable binary, so Trivy's
   # scan and SBOM list the crates (rustbinary) besides the Debian packages. One SBOM: `pdf-service-image.cdx.json`.
@@ -179,39 +116,15 @@ jobs:
           curl -fs http://127.0.0.1:8084/q/health/ready
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8084/internal/pdf/team-roster)" = 401
           podman rm -f pdf
-      - name: Trivy scan (fail on fixable HIGH/CRITICAL)
-        run: |
-          podman save -o image.tar "$IMAGE"
-          docker run --rm -v "$PWD:/w" aquasec/trivy:0.76.1 image --input /w/image.tar \
-            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress
-      - name: SBOM (CycloneDX of the image, crates included, validated)
-        run: scripts/sbom.sh generate pdf-service "$IMAGE" sbom
-      - name: Keep the SBOM
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - uses: ./.github/actions/image-publish
         with:
-          name: sbom-pdf-service
-          path: sbom/*.cdx.json
-          if-no-files-found: error
-          retention-days: 90
-      - name: Push
-        if: ${{ github.ref == 'refs/heads/main' && vars.IMAGE_REGISTRY != '' }}
-        env:
-          REGISTRY: ${{ vars.IMAGE_REGISTRY }}
-          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NAME: pdf-service
-          REGISTRY_AUTH_FILE: ${{ runner.temp }}/registry-auth.json
-        run: |
-          set -euo pipefail
-          registry=$(printf '%s' "$REGISTRY" | tr '[:upper:]' '[:lower:]'); registry="${registry%/}"
-          if [ -n "$REGISTRY_USERNAME" ] && [ -n "$REGISTRY_PASSWORD" ]; then user="$REGISTRY_USERNAME"; pass="$REGISTRY_PASSWORD"
-          elif [ -z "$REGISTRY_USERNAME" ] && [ -z "$REGISTRY_PASSWORD" ]; then user="${{ github.actor }}"; pass="$GITHUB_TOKEN"
-          else echo "::error::set both REGISTRY_USERNAME and REGISTRY_PASSWORD, or neither (GITHUB_TOKEN -> ghcr.io)"; exit 1; fi
-          echo "$pass" | podman login -u "$user" --password-stdin "${registry%%/*}"
-          podman tag "$IMAGE" "$registry/$NAME:${{ github.sha }}"
-          podman push --digestfile digest.txt "$registry/$NAME:${{ github.sha }}"
-          scripts/sbom.sh attach "$registry/$NAME@$(cat digest.txt)" sbom "$REGISTRY_AUTH_FILE"
+          name: pdf-service
+          image: ${{ env.IMAGE }}
+          push: ${{ github.ref == 'refs/heads/main' && vars.IMAGE_REGISTRY != '' }}
+          registry: ${{ vars.IMAGE_REGISTRY }}
+          registry-username: ${{ secrets.REGISTRY_USERNAME }}
+          registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   # finance-service (Go, ADR-0055): context services/finance-service, distroless static base, a static binary whose
   # module list Trivy reads. The start check needs a database: a throwaway Postgres with infra/db/init, then the image
@@ -253,36 +166,12 @@ jobs:
           # the checks above decide; on the runner, rootless Podman can fail to tear down the network namespace
           # ("rootless netns: kill network process: permission denied", exit 125, run 43792899975)
           podman rm -f finance db || true
-      - name: Trivy scan (fail on fixable HIGH/CRITICAL)
-        run: |
-          podman save -o image.tar "$IMAGE"
-          docker run --rm -v "$PWD:/w" aquasec/trivy:0.76.1 image --input /w/image.tar \
-            --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress
-      - name: SBOM (CycloneDX of the image, Go modules included, validated)
-        run: scripts/sbom.sh generate finance-service "$IMAGE" sbom
-      - name: Keep the SBOM
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      - uses: ./.github/actions/image-publish
         with:
-          name: sbom-finance-service
-          path: sbom/*.cdx.json
-          if-no-files-found: error
-          retention-days: 90
-      - name: Push
-        if: ${{ github.ref == 'refs/heads/main' && vars.IMAGE_REGISTRY != '' }}
-        env:
-          REGISTRY: ${{ vars.IMAGE_REGISTRY }}
-          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NAME: finance-service
-          REGISTRY_AUTH_FILE: ${{ runner.temp }}/registry-auth.json
-        run: |
-          set -euo pipefail
-          registry=$(printf '%s' "$REGISTRY" | tr '[:upper:]' '[:lower:]'); registry="${registry%/}"
-          if [ -n "$REGISTRY_USERNAME" ] && [ -n "$REGISTRY_PASSWORD" ]; then user="$REGISTRY_USERNAME"; pass="$REGISTRY_PASSWORD"
-          elif [ -z "$REGISTRY_USERNAME" ] && [ -z "$REGISTRY_PASSWORD" ]; then user="${{ github.actor }}"; pass="$GITHUB_TOKEN"
-          else echo "::error::set both REGISTRY_USERNAME and REGISTRY_PASSWORD, or neither (GITHUB_TOKEN -> ghcr.io)"; exit 1; fi
-          echo "$pass" | podman login -u "$user" --password-stdin "${registry%%/*}"
-          podman tag "$IMAGE" "$registry/$NAME:${{ github.sha }}"
-          podman push --digestfile digest.txt "$registry/$NAME:${{ github.sha }}"
-          scripts/sbom.sh attach "$registry/$NAME@$(cat digest.txt)" sbom "$REGISTRY_AUTH_FILE"
+          name: finance-service
+          image: ${{ env.IMAGE }}
+          push: ${{ github.ref == 'refs/heads/main' && vars.IMAGE_REGISTRY != '' }}
+          registry: ${{ vars.IMAGE_REGISTRY }}
+          registry-username: ${{ secrets.REGISTRY_USERNAME }}
+          registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}

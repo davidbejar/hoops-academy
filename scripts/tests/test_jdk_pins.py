@@ -1,5 +1,5 @@
 """Every place that names the JDK major agrees with `maven.compiler.release` in the root pom.xml: the build and runtime
-images of the service Containerfile, `actions/setup-java` in the workflows, and the JDK that scripts/env.sh selects.
+images of the service Containerfile, the `setup-java` composite action of the workflows, and the JDK that scripts/env.sh selects.
 Also: every pin that scripts/bump_pins.py maintains is still found in its files (else the weekly bump fails).
 Run: python3 -I -m unittest discover -s scripts/tests"""
 import pathlib
@@ -11,7 +11,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 import bump_pins  # noqa: E402
 
-WORKFLOWS = ["ci.yml", "e2e.yml", "mutation.yml", "codeql.yml"]
+SETUP_JAVA = ".github/actions/setup-java/action.yml"  # the one place CI names the JDK
 
 
 def release():
@@ -35,11 +35,13 @@ class JdkPinsAgree(unittest.TestCase):
         digest = bump_pins.read_groups(pins[0], ROOT)["digest"]
         self.assertEqual(f"{pins[0].opts['repo']}:{pins[0].opts['floating']}@{digest}", image)
 
-    def test_every_setup_java_uses_the_release(self):
-        for name in WORKFLOWS:
-            versions = re.findall(r"java-version: '(\d+)'", (ROOT / ".github/workflows" / name).read_text())
-            self.assertTrue(versions, name)
-            self.assertEqual(set(versions), {release()}, name)
+    def test_the_setup_java_action_uses_the_release(self):
+        self.assertEqual(re.findall(r"java-version: '(\d+)'", (ROOT / SETUP_JAVA).read_text()), [release()])
+
+    def test_no_workflow_names_its_own_jdk(self):
+        for path in sorted((ROOT / ".github/workflows").glob("*.yml")):
+            with self.subTest(workflow=path.name):
+                self.assertNotIn("java-version", path.read_text())
 
     def test_env_sh_selects_the_release(self):
         self.assertRegex((ROOT / "scripts/env.sh").read_text(), rf"(?m)^_JDK_MAJOR={release()}$")

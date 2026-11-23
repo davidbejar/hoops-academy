@@ -70,6 +70,14 @@ class ActionsArePinned(unittest.TestCase):
                         self.assertLess(first_checkout, local[0])
 
 
+class DependabotKeepsTheCompositeActionsCurrent(unittest.TestCase):
+    def test_the_github_actions_entry_scans_the_composite_actions_too(self):
+        text = (GITHUB / "dependabot.yml").read_text()
+        entry = text[text.index("package-ecosystem: github-actions"):]
+        entry = entry.split("\n  - package-ecosystem:")[0]
+        self.assertIn("/.github/actions/*", entry)
+
+
 class HeavyWorkflowsCancelSupersededPullRequestRuns(unittest.TestCase):
     def test_concurrency_group_per_pull_request_and_unique_elsewhere(self):
         for name in CANCELLING:
@@ -84,15 +92,23 @@ class HeavyWorkflowsCancelSupersededPullRequestRuns(unittest.TestCase):
                 self.assertRegex(block, r"cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}")
 
 
+def maven_commands(block):
+    """The ./mvnw invocations of a job (a command may continue on the next line with a trailing backslash)."""
+    return [m[0].replace("\\\n", " ") for m in re.finditer(r"\./mvnw[^\n]*(?:\\\n[^\n]*)*", block)]
+
+
 class GatesRunOnce(unittest.TestCase):
     def test_dependency_check_calls_its_goal_and_not_the_static_gates(self):
-        block = job_block(GITHUB / "workflows/ci.yml", "dependency-check")
-        self.assertIn("org.owasp:dependency-check-maven:aggregate", block)
-        self.assertNotRegex(block, r"\bverify\b")
+        commands = maven_commands(job_block(GITHUB / "workflows/ci.yml", "dependency-check"))
+        self.assertEqual(len(commands), 1)
+        self.assertIn("org.owasp:dependency-check-maven:aggregate", commands[0])
+        self.assertIsNone(re.search(r"\b(verify|package|install)\b", commands[0]))
 
-    def test_trivy_fs_does_not_package_the_reactor(self):
-        block = job_block(GITHUB / "workflows/ci.yml", "trivy-fs")
-        self.assertNotRegex(block, r"\bpackage\b")
+    def test_trivy_fs_resolves_the_dependencies_without_packaging_the_reactor(self):
+        commands = maven_commands(job_block(GITHUB / "workflows/ci.yml", "trivy-fs"))
+        self.assertEqual(len(commands), 1)
+        self.assertIn("dependency:go-offline", commands[0])
+        self.assertIsNone(re.search(r"\b(verify|package|install)\b", commands[0]))
 
     def test_the_charts_job_of_images_is_gone(self):
         self.assertNotIn("deploy/helm/tests/run.sh", (GITHUB / "workflows/images.yml").read_text())

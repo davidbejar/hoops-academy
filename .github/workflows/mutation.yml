@@ -22,11 +22,7 @@ jobs:
         module: [common-quarkus, core-service, game-service, athlete-service]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
-        with:
-          distribution: temurin
-          java-version: '25'
-          cache: maven
+      - uses: ./.github/actions/setup-java
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
       - name: Mutation testing (${{ matrix.module }})
         run: just mutation ${{ matrix.module }}
@@ -43,10 +39,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
-        with:
-          channel: stable
-          cache: true
+      - uses: ./.github/actions/setup-flutter
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
       - name: Mutation testing (web rule code)
         run: just web-mutation --workers 2

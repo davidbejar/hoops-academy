@@ -72,11 +72,11 @@ jobs:
       # every other chart assertion, so a bump that breaks one fails here and opens no PR.
       - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
         if: steps.check.outputs.outdated == '1'
+      - uses: ./.github/actions/setup-chart-tools
+        if: steps.check.outputs.outdated == '1'
       - name: Re-record the ESO schema and the chart snapshots
         if: steps.check.outputs.outdated == '1'
         run: |
-          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz | sudo tar -xz -C /usr/local/bin kubeconform
-          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | sudo tar -xz -C /usr/local/bin gitleaks
           deploy/helm/tests/schemas/update-eso.sh
           deploy/helm/tests/run.sh --update
 
