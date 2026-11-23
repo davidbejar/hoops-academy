@@ -79,6 +79,9 @@ func TestTokensAreRefusedWithTheirReason(t *testing.T) {
 // The clock leeway is the Java services' (X-11): none. They set no quarkus.oidc.token.lifespan-grace, and quarkus-oidc
 // then leaves jose4j's allowed clock skew at its default of 0 seconds; a token expired two seconds ago is refused.
 func TestTheClockLeewayIsTheJavaServicesZeroSeconds(t *testing.T) {
+	if Leeway != 0 {
+		t.Errorf("leeway %s, want 0 s as the Java services", Leeway)
+	}
 	r := realm.Start(t)
 	now := time.Now()
 	claims := func(key string, at time.Time) jwt.MapClaims {

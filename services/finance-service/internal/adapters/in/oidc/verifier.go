@@ -56,6 +56,10 @@ type Verifier struct {
 
 const defaultMinRefetch = 30 * time.Second
 
+// Leeway is the clock skew allowed on exp, nbf and iat: none, as the Java services (they set no
+// quarkus.oidc.token.lifespan-grace, so quarkus-oidc leaves jose4j's allowed clock skew at 0 seconds; X-11).
+const Leeway = 0 * time.Second
+
 // NewVerifier reads the realm lazily.
 func NewVerifier(config Config) *Verifier {
 	if config.MinRefetch <= 0 {
@@ -80,7 +84,7 @@ func (v *Verifier) Verify(ctx context.Context, raw string) (Claims, error) {
 		return key, err
 	},
 		jwt.WithValidMethods([]string{"RS256"}), jwt.WithIssuer(issuer), jwt.WithExpirationRequired(),
-		jwt.WithLeeway(10*time.Second))
+		jwt.WithLeeway(Leeway))
 	if unavailable != nil {
 		return Claims{}, unavailable
 	}
