@@ -138,11 +138,13 @@ func (c *Consumer) Healthy() error {
 }
 
 // Metrics counts what the consumer did: hoops_roster_replica_events_total{topic,outcome} and
-// hoops_roster_replica_parked_total{topic}, the names of the Java consumers.
+// hoops_roster_replica_parked_total{topic}, and what the retention deleted: hoops_roster_replica_pruned_total{table},
+// the names of the Java services.
 type Metrics struct {
 	mu     sync.Mutex
 	events map[[2]string]uint64
 	park   map[string]uint64
+	pruned uint64
 }
 
 // NewMetrics starts every topic's parked count at 0.
@@ -166,6 +168,13 @@ func (m *Metrics) parked(topic string) {
 	m.park[topic]++
 }
 
+// PrunedAppliedEvents counts n applied event ids the retention deleted.
+func (m *Metrics) PrunedAppliedEvents(n int) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.pruned += uint64(max(n, 0))
+}
+
 // Write writes the counters in the Prometheus text format.
 func (m *Metrics) Write(w io.Writer) {
 	m.mu.Lock()
@@ -183,4 +192,6 @@ func (m *Metrics) Write(w io.Writer) {
 	for _, topic := range Topics {
 		_, _ = fmt.Fprintf(w, "hoops_roster_replica_parked_total{topic=%q} %d\n", topic, m.park[topic])
 	}
+	_, _ = fmt.Fprint(w, "# TYPE hoops_roster_replica_pruned_total counter\n")
+	_, _ = fmt.Fprintf(w, "hoops_roster_replica_pruned_total{table=\"applied_event\"} %d\n", m.pruned)
 }

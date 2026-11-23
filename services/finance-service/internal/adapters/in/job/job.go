@@ -1,6 +1,7 @@
-// Package job triggers finance-service's scheduled work: the dues job (decision 98, ADR-0056). Every instance ticks;
-// the job's database lock lets one of them run at a time, and each run works on every academy's own date, so a
-// period's dues appear within one interval after midnight in the academy's time zone.
+// Package job triggers finance-service's scheduled work: the dues job (decision 98, ADR-0056) and the replica
+// retention (ADR-0037 amendment WP82). Every instance ticks; each job's database lock lets one of them run at a time.
+// The dues job works on every academy's own date, so a period's dues appear within one interval after midnight in the
+// academy's time zone.
 package job
 
 import (
@@ -19,11 +20,14 @@ type Runner struct {
 }
 
 // Run blocks until ctx ends.
-func (r Runner) Run(ctx context.Context) {
-	ticker := time.NewTicker(r.Interval)
+func (r Runner) Run(ctx context.Context) { every(ctx, r.Interval, r.once) }
+
+// every runs once at start and then every interval until ctx ends.
+func every(ctx context.Context, interval time.Duration, once func(context.Context)) {
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
-		r.once(ctx)
+		once(ctx)
 		select {
 		case <-ctx.Done():
 			return
@@ -47,6 +51,44 @@ func (r Runner) once(ctx context.Context) {
 			slog.Int("skipped", report.Skipped), slog.Int("failed", report.Failed))
 		for _, failure := range report.Failures {
 			r.Log.WarnContext(ctx, "dues job: an academy failed (retried on the next run)", slog.String("failure", failure))
+		}
+	}
+}
+
+// RetentionInterval is how often the replica retention runs.
+const RetentionInterval = 24 * time.Hour
+
+// Retention runs the replica retention at start and then every Interval until its context ends.
+type Retention struct {
+	Job      application.ReplicaRetention
+	Interval time.Duration
+	Log      *slog.Logger
+	// Pruned counts the deleted ids (hoops_roster_replica_pruned_total{table="applied_event"}); nil counts nothing.
+	Pruned func(int)
+}
+
+// Run blocks until ctx ends.
+func (r Retention) Run(ctx context.Context) { every(ctx, r.Interval, r.once) }
+
+// once runs the retention and logs what it did: counts and failing academies, never event content.
+func (r Retention) once(ctx context.Context) {
+	report, ran, err := r.Job.Run(ctx)
+	switch {
+	case err != nil:
+		if ctx.Err() == nil {
+			r.Log.ErrorContext(ctx, "replica retention failed", slog.String("error", err.Error()))
+		}
+	case !ran:
+		r.Log.InfoContext(ctx, "replica retention skipped: another instance holds its lock")
+	default:
+		if r.Pruned != nil {
+			r.Pruned(report.Deleted)
+		}
+		r.Log.InfoContext(ctx, "replica retention ran", slog.Int("academies", report.Tenants),
+			slog.Int("deleted", report.Deleted), slog.Time("appliedBefore", report.Before), slog.Int("failed", report.Failed))
+		for _, failure := range report.Failures {
+			r.Log.WarnContext(ctx, "replica retention: an academy failed (retried on the next run)",
+				slog.String("failure", failure))
 		}
 	}
 }

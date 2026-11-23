@@ -3,6 +3,7 @@ package persistence
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -43,6 +44,25 @@ func (ReplicaStore) MarkApplied(ctx context.Context, event domain.UUID, topic st
 		return false, fmt.Errorf("mark applied: %w", err)
 	}
 	return tag.RowsAffected() == 1, nil
+}
+
+// deleteApplied deletes the oldest of the bound tenant's ids applied before $1, at most $2 (index
+// applied_event_applied_at_idx); rows another transaction holds are skipped, the next batch or run takes them.
+const deleteApplied = `delete from finance.applied_event where tenant_id = app.current_tenant() and event_id in (
+		select event_id from finance.applied_event where tenant_id = app.current_tenant() and applied_at < $1
+		order by applied_at limit $2 for update skip locked)`
+
+// DeleteAppliedBefore implements application.AppliedEvents.
+func (ReplicaStore) DeleteAppliedBefore(ctx context.Context, before time.Time, limit int) (int, error) {
+	q, err := txOf(ctx)
+	if err != nil {
+		return 0, err
+	}
+	tag, err := q.Exec(ctx, deleteApplied, before, limit)
+	if err != nil {
+		return 0, fmt.Errorf("delete applied event ids: %w", err)
+	}
+	return int(tag.RowsAffected()), nil
 }
 
 // NoteTenant records the bound tenant in finance.replica_tenant.

@@ -65,6 +65,11 @@ func run() error {
 
 	tx := persistence.NewTransactions(pool)
 	finance := application.NewFinance(persistence.NewPorts(pool, clock.System{}, log))
+	metrics := events.NewMetrics()
+	retention := job.Retention{Interval: job.RetentionInterval, Log: log, Pruned: metrics.PrunedAppliedEvents,
+		Job: application.NewReplicaRetention(tx, persistence.TenantDirectory{Pool: pool}, persistence.Exclusive{Pool: pool},
+			persistence.ReplicaStore{}, clock.System{})}
+	go retention.Run(ctx)
 	if cfg.DuesJob.Enabled {
 		runner := job.Runner{Interval: cfg.DuesJob.Interval, Log: log, Job: application.NewDuesJob(finance,
 			persistence.TenantDirectory{Pool: pool}, persistence.Exclusive{Pool: pool})}
@@ -72,7 +77,6 @@ func run() error {
 	} else {
 		log.Warn("dues job off (FINANCE_DUES_JOB_ENABLED=false): automatic plans create no dues")
 	}
-	metrics := events.NewMetrics()
 	live := func() error { return nil }
 	if cfg.Kafka.Enabled {
 		consumer, err := events.NewConsumer(events.Config{Brokers: cfg.Kafka.Brokers, Group: "finance-service.roster",

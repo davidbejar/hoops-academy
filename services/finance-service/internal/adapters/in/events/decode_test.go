@@ -188,3 +188,14 @@ func TestTheRosterEventsKeepWhatTheFinanceRulesNeed(t *testing.T) {
 		t.Errorf("topics %v", Topics)
 	}
 }
+
+func TestTheRetentionsDeletionsAreCounted(t *testing.T) {
+	metrics := NewMetrics()
+	metrics.PrunedAppliedEvents(3)
+	metrics.PrunedAppliedEvents(2)
+	var text strings.Builder
+	metrics.Write(&text)
+	if !strings.Contains(text.String(), `hoops_roster_replica_pruned_total{table="applied_event"} 5`) {
+		t.Errorf("got\n%s", text.String())
+	}
+}
