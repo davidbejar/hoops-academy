@@ -3,7 +3,8 @@
 #   1. gofmt -l                              formatting (no file may need a change)
 #   2. go mod tidy -diff, go mod verify      go.mod / go.sum tidy and the module cache intact
 #   3. golangci-lint run                     lints (.golangci.yml: complexity, duplication, unused code, errors, gosec)
-#   4. go test with coverage                 unit, contract, HTTP, RLS / isolation (Postgres by Testcontainers), layering
+#   4. go test with coverage                 unit, contract, HTTP, RLS / isolation, layering; one Postgres (Testcontainers)
+#                                            for the run, a copy of its migrated database per test binary
 #   5. scripts/coverage_gate.py              >= 80 % statements in the module, >= 90 % in internal/domain
 #   6. go tool govulncheck                   Go vulnerability database, reachable code only
 # The toolchain is the one go.mod pins (`toolchain` line; GOTOOLCHAIN=auto fetches it when the local Go is older).
@@ -34,9 +35,27 @@ step "golangci-lint"
 golangci-lint run ./...
 step "tests with coverage"
 mkdir -p target
+# One PostgreSQL for the whole run: each test binary copies its migrated database (internal/testsupport/pgtest).
+go build -o target/pgtest-serve ./internal/testsupport/pgtest/serve
+server_url=target/pgtest-server.url
+rm -f "$server_url"
+target/pgtest-serve "$server_url" &
+server=$!
+trap 'kill "$server" 2>/dev/null; wait "$server" 2>/dev/null || true' EXIT
+for _ in $(seq 1 180); do
+  [ -s "$server_url" ] && break
+  kill -0 "$server" 2>/dev/null || { echo "finance-service: the test database did not start" >&2; exit 1; }
+  sleep 1
+done
+[ -s "$server_url" ] || { echo "finance-service: the test database did not start within 180 s" >&2; exit 1; }
+PGTEST_TEMPLATE_URL=$(cat "$server_url")
+export PGTEST_TEMPLATE_URL
+rm -f "$server_url"
 go test -count=1 -p 2 -shuffle=on -coverpkg=./... -coverprofile=target/coverage.out ./...
 step "coverage gate"
 python3 -I scripts/coverage_gate.py target/coverage.out
+kill "$server" 2>/dev/null; wait "$server" 2>/dev/null || true
+trap - EXIT
 if [ "$offline" -eq 0 ]; then
   step "vulnerability check"
   go tool govulncheck ./...
