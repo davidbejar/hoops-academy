@@ -16,44 +16,12 @@ cd "$(dirname "$0")/../.."
 
 CLUSTER="${KIND_CLUSTER:-hoops}"
 NS="${HOOPS_NAMESPACE:-hoops}"
-# Envoy Gateway v1.10.x bundles and needs Gateway API v1.6.1, Kubernetes 1.34 to 1.37 (CRDs installed by its chart;
-# compatibility matrix: https://gateway.envoyproxy.io/news/releases/matrix/). Bump both together, see
-# docs/adr/0031-gateway-api.md (amendment WP100).
-ENVOY_GATEWAY_VERSION="v1.10.0"
-GATEWAY_API_VERSION="v1.6.1"
-CNPG_VERSION="1.30.1"
-CNPG_BRANCH="release-${CNPG_VERSION%.*}"
+# The operator pins and installs kind shares with the cloud VM (Reloader, Envoy Gateway, CNPG).
+# shellcheck source=deploy/lib/platform.sh
+. deploy/lib/platform.sh
 # External Secrets Operator (--eso): API external-secrets.io/v1. The chart tests validate the ExternalSecrets against this
 # version's CRD (deploy/helm/tests/schemas, regenerate with update-eso.sh when bumping).
 ESO_VERSION="v2.15.0"
-# Stakater Reloader (WP87, ADR-0012 amendment): rolls every Deployment/StatefulSet annotated with
-# secret.reloader.stakater.com/auto (the chart with global.reloader.enabled, on in values-kind.yaml; envoy-ratelimit through
-# EG_VALUES) when a Secret it reads changes, whether ESO refreshed it or secrets.sh re-applied it. Pinned by chart version +
-# digest and image digest (v1.4.24). Least privilege: namespaced Roles in $NS and envoy-gateway-system only (no
-# ClusterRole), Secrets only (ConfigMap changes already roll through the chart's checksum annotations), no Jobs/CronJobs,
-# reload strategy `annotations` (a pod-template annotation, not an injected env var).
-RELOADER_CHART_VERSION="2.2.20"
-RELOADER_CHART_DIGEST="sha256:065ab124e7e704a43465fad9b71363563157312e8ee410db30c4da83c5ac131b"
-RELOADER_IMAGE_DIGEST="sha256:3ab43d3eb96c59798644bf826b0444a846c0197d22ab4b6c101c4da3e1d6ef23"
-# Global rate limiting (WP40, ADR-0033): Envoy Gateway deploys its rate limit service (Deployment envoy-ratelimit) with
-# a Redis backend; values-kind.yaml deploys that Redis in namespace $NS (rateLimit.redis.enabled). failClosed=false:
-# when the rate limit service or Redis does not answer within the timeout, requests pass (fail open). Other clusters
-# set the same keys in the operator's Envoy Gateway install (docs/runbooks/release.md section 4).
-# Redis ACL (WP46): the rate limit pods log in as user `ratelimit` with REDIS_AUTH=<user>:<password> from Secret
-# envoy-ratelimit-redis-auth (deploy/kind/secrets.sh). Not in the URL: envoyproxy/ratelimit logs the URL unmasked
-# ("Creating single with urls ..."), so redis.urlRef with credentials would leak the password into its log.
-EG_VALUES=(
-  --set config.envoyGateway.rateLimit.backend.type=Redis
-  --set "config.envoyGateway.rateLimit.backend.redis.url=ratelimit-redis.${NS}.svc.cluster.local:6379"
-  --set-json 'config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.env=[{"name":"REDIS_AUTH","valueFrom":{"secretKeyRef":{"name":"envoy-ratelimit-redis-auth","key":"auth"}}}]'
-  --set config.envoyGateway.rateLimit.failClosed=false
-  --set config.envoyGateway.rateLimit.timeout=100ms
-  --set config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.resources.requests.cpu=10m
-  --set config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.resources.requests.memory=32Mi
-  --set config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.resources.limits.memory=128Mi
-  # WP87: Reloader restarts envoy-ratelimit when envoy-ratelimit-redis-auth changes (RATELIMIT_REDIS_PASSWORD rotation)
-  --set-json 'config.envoyGateway.provider.kubernetes.rateLimitDeployment.patch={"type":"StrategicMerge","value":{"metadata":{"annotations":{"secret.reloader.stakater.com/auto":"true"}}}}'
-)
 DEPLOY=0 ESO=0 BUILD_FLAGS=()
 for a in "$@"; do
   case "$a" in
@@ -80,6 +48,7 @@ else
 fi
 kubectl config use-context "kind-$CLUSTER" >/dev/null
 K=(kubectl --context "kind-$CLUSTER")
+H=(helm --kube-context "kind-$CLUSTER")
 
 # Secrets first (ADR-0012): the rate limit pods of Envoy Gateway read their Redis login from envoy-gateway-system.
 if [ "$ESO" = 0 ]; then
@@ -93,30 +62,20 @@ else
   for n in "$NS" envoy-gateway-system hoops-secret-store; do
     "${K[@]}" create namespace "$n" --dry-run=client -o yaml | "${K[@]}" apply -f -
   done
-  helm --kube-context "kind-$CLUSTER" upgrade --install external-secrets oci://ghcr.io/external-secrets/charts/external-secrets \
+  "${H[@]}" upgrade --install external-secrets oci://ghcr.io/external-secrets/charts/external-secrets \
     --version "${ESO_VERSION#v}" -n external-secrets --create-namespace --wait --timeout 15m
   HOOPS_NAMESPACE="$NS" deploy/kind/eso-store.sh | "${K[@]}" apply -f -
   "${K[@]}" wait clustersecretstore/hoops --for=condition=Ready --timeout=120s
 fi
 
 step "Stakater Reloader (chart $RELOADER_CHART_VERSION, watches $NS and envoy-gateway-system)"
-helm --kube-context "kind-$CLUSTER" upgrade --install reloader \
-  "oci://ghcr.io/stakater/charts/reloader:${RELOADER_CHART_VERSION}@${RELOADER_CHART_DIGEST}" \
-  -n hoops-reloader --create-namespace --wait --timeout 10m \
-  --set image.digest="$RELOADER_IMAGE_DIGEST" \
-  --set reloader.watchGlobally=false --set-json "reloader.namespaces=[\"$NS\",\"envoy-gateway-system\"]" \
-  --set reloader.ignoreConfigMaps=true --set reloader.ignoreJobs=true --set reloader.ignoreCronJobs=true \
-  --set reloader.reloadStrategy=annotations --set reloader.readOnlyRootFileSystem=true \
-  --set-json 'reloader.deployment.containerSecurityContext={"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true}' \
-  --set reloader.deployment.resources.requests.cpu=10m --set reloader.deployment.resources.requests.memory=32Mi \
-  --set reloader.deployment.resources.limits.memory=128Mi
+install_reloader "${H[@]}"
 
 step "Envoy Gateway $ENVOY_GATEWAY_VERSION (Gateway API $GATEWAY_API_VERSION CRDs)"
 # `helm upgrade` never updates CRDs: on a version bump apply them first (docs/adr/0031-gateway-api.md, upgrade path).
 eg_config() { "${K[@]}" -n envoy-gateway-system get configmap envoy-gateway-config -o jsonpath='{.data}' 2>/dev/null || true; }
 eg_config_before=$(eg_config)
-helm --kube-context "kind-$CLUSTER" upgrade --install eg oci://docker.io/envoyproxy/gateway-helm \
-  --version "$ENVOY_GATEWAY_VERSION" -n envoy-gateway-system --create-namespace "${EG_VALUES[@]}"
+install_envoy_gateway "${H[@]}"
 # The chart has no checksum annotation on the controller, so a changed config would not roll it: restart it when the
 # config changed on an existing install (e.g. a cluster created before WP40 gaining the rate limit backend).
 if [ -n "$eg_config_before" ] && [ "$eg_config_before" != "$(eg_config)" ]; then
@@ -124,8 +83,7 @@ if [ -n "$eg_config_before" ] && [ "$eg_config_before" != "$(eg_config)" ]; then
 fi
 
 step "CloudNativePG operator $CNPG_VERSION"
-"${K[@]}" apply --server-side --force-conflicts \
-  -f "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/${CNPG_BRANCH}/releases/cnpg-${CNPG_VERSION}.yaml"
+install_cnpg "${K[@]}"
 
 # Single replica on kind: no leader election (WP86). Under VM load the operator lost its lease ("leader election lost",
 # CrashLoopBackOff with a 5-minute backoff) and no database came up; kube-controller-manager and kube-scheduler run without
@@ -136,13 +94,7 @@ cnpg_args=$("${K[@]}" -n cnpg-system get deployment cnpg-controller-manager -o j
   -p "[{\"op\":\"replace\",\"path\":\"/spec/template/spec/containers/0/args\",\"value\":$cnpg_args}]"
 
 step "waiting for Envoy Gateway and CNPG (first run pulls images; slow links take minutes)"
-"${K[@]}" -n envoy-gateway-system rollout status deployment/envoy-gateway --timeout=900s
-"${K[@]}" -n cnpg-system rollout status deployment/cnpg-controller-manager --timeout=900s
-crd_version=$("${K[@]}" get crd gateways.gateway.networking.k8s.io \
-  -o jsonpath='{.metadata.annotations.gateway\.networking\.k8s\.io/bundle-version}')
-[ "$crd_version" = "$GATEWAY_API_VERSION" ] \
-  || { echo "up.sh: Gateway API CRDs are $crd_version, Envoy Gateway $ENVOY_GATEWAY_VERSION needs $GATEWAY_API_VERSION" >&2; exit 1; }
-echo "Gateway API CRDs $crd_version"
+wait_for_platform "${K[@]}"
 
 step "TLS secret for the Gateway"
 # Self-signed certificate for https://localhost:8453 (the Gateway's HTTPS listener). Generated once per cluster in a
@@ -163,7 +115,7 @@ if [ "$DEPLOY" = 1 ]; then
   VALUES=(-f deploy/helm/hoops/values-kind.yaml)
   [ ! -f deploy/helm/hoops/values-local.yaml ] || VALUES+=(-f deploy/helm/hoops/values-local.yaml)
   [ "$ESO" = 0 ] || VALUES+=(--set externalSecrets.enabled=true)
-  helm --kube-context "kind-$CLUSTER" upgrade --install hoops deploy/helm/hoops -n "$NS" "${VALUES[@]}" \
+  "${H[@]}" upgrade --install hoops deploy/helm/hoops -n "$NS" "${VALUES[@]}" \
     --wait --timeout 15m
   # The Job redpanda-bootstrap (a post-install hook) creates the broker users only after --wait, so on a fresh install the
   # services start before their users exist and log `SASL authentication failed` for a while. Everyone recovers by itself:

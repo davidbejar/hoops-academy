@@ -60,7 +60,8 @@ step "cloud install pins = kind pins"
 # deploy/cloud/install.sh installs the same operators as deploy/kind/up.sh, both from the pins of deploy/lib/platform.sh.
 pin() { sed -n "s/^$1=\"\(.*\)\"$/\1/p" "$2"; }
 for s in deploy/kind/up.sh deploy/cloud/install.sh; do
-  grep -qx '. deploy/lib/platform.sh' "$s" && ok "$s sources deploy/lib/platform.sh" || bad "$s does not source deploy/lib/platform.sh"
+  if grep -qx '. deploy/lib/platform.sh' "$s"; then ok "$s sources deploy/lib/platform.sh"
+  else bad "$s does not source deploy/lib/platform.sh"; fi
 done
 for v in ENVOY_GATEWAY_VERSION GATEWAY_API_VERSION CNPG_VERSION RELOADER_CHART_VERSION RELOADER_CHART_DIGEST RELOADER_IMAGE_DIGEST; do
   p=$(pin "$v" deploy/lib/platform.sh); k=$(pin "$v" deploy/kind/up.sh); c=$(pin "$v" deploy/cloud/install.sh)

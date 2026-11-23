@@ -38,14 +38,14 @@ class Pin:
 #   sbom.sh                cyclonedx-cli, oras tag+digest | skopeo
 #   semgrep.yml            semgrep tag+digest         | skopeo
 #   ci.yml zap-api-scan.sh zaproxy:stable digest      | skopeo inspect (floating tag)
-#   kind/up.sh cloud/install.sh  Envoy Gateway, CNPG  | GitHub releases API (one pin over both scripts)
+#   deploy/lib/platform.sh Envoy Gateway, CNPG     | GitHub releases API (kind/up.sh and cloud/install.sh source it)
 #   kind/up.sh             ESO                        | GitHub releases API
-#   kind/up.sh cloud/install.sh  Reloader chart+digest+image digest | skopeo (OCI chart, appVersion)
+#   deploy/lib/platform.sh Reloader chart+digest+image digest | skopeo (OCI chart, appVersion)
 # Recorded from the pins, not pins themselves: the chart snapshots (deploy/helm/tests/run.sh --update) and the
 # ExternalSecret schema of the ESO version (deploy/helm/tests/schemas/update-eso.sh). bump-pins.yml re-records both.
-# Gateway API (up.sh) is NOT bumped here: it must match Envoy Gateway's compatibility matrix (ADR-0031), by hand.
+# Gateway API (platform.sh) is NOT bumped here: it must match Envoy Gateway's compatibility matrix (ADR-0031), by hand.
 SEMVER = r"^v?(\d+\.\d+\.\d+)$"
-KIND_AND_CLOUD = ["deploy/kind/up.sh", "deploy/cloud/install.sh"]
+PLATFORM = ["deploy/lib/platform.sh"]
 PINS = [
     Pin("distroless java25 nonroot", ["deploy/containers/service.Containerfile"],
         rf"distroless/java25-debian13:nonroot@(?P<digest>{DIGEST})", "image",
@@ -87,14 +87,14 @@ PINS = [
     Pin("zaproxy stable", [".github/workflows/ci.yml", "scripts/zap-api-scan.sh"],
         rf"zaproxy/zaproxy:stable@(?P<digest>{DIGEST})", "image",
         repo="ghcr.io/zaproxy/zaproxy", floating="stable"),
-    # kind and the cloud VM install the same operators (infra/tofu/check.sh compares the two scripts): one pin over both.
-    Pin("Envoy Gateway", KIND_AND_CLOUD, r'^ENVOY_GATEWAY_VERSION="(?P<tag>[^"]+)"', "release",
+    # kind and the cloud VM install the same operators from one sourced file (infra/tofu/check.sh, DEP-02).
+    Pin("Envoy Gateway", PLATFORM, r'^ENVOY_GATEWAY_VERSION="(?P<tag>[^"]+)"', "release",
         gh="envoyproxy/gateway"),
-    Pin("CloudNativePG", KIND_AND_CLOUD, r'^CNPG_VERSION="(?P<tag>[^"]+)"', "release",
+    Pin("CloudNativePG", PLATFORM, r'^CNPG_VERSION="(?P<tag>[^"]+)"', "release",
         gh="cloudnative-pg/cloudnative-pg"),
     Pin("External Secrets Operator", ["deploy/kind/up.sh"], r'^ESO_VERSION="(?P<tag>[^"]+)"', "release",
         gh="external-secrets/external-secrets"),
-    Pin("Stakater Reloader", KIND_AND_CLOUD,
+    Pin("Stakater Reloader", PLATFORM,
         rf'image digest \((?P<app>v[\d.]+)\)\..*?^RELOADER_CHART_VERSION="(?P<tag>[^"]+)"\n'
         rf'RELOADER_CHART_DIGEST="(?P<digest>{DIGEST})"\nRELOADER_IMAGE_DIGEST="(?P<image_digest>{DIGEST})"',
         "chart", chart="ghcr.io/stakater/charts/reloader", image="ghcr.io/stakater/reloader",

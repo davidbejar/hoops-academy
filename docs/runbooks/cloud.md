@@ -127,8 +127,8 @@ Everything in the cluster (databases included) goes with the instance; there are
   stays), then steps 4-6.
 - New home address: update `admin_cidrs`, `tofu apply` (only the rules change).
 - Bump k3s: the version and both SHA-256 sums in `infra/tofu/main.tf` (`locals.k3s`) and the test; then a rebuild.
-- Bump Envoy Gateway, CNPG or Reloader: in `deploy/kind/up.sh` and `deploy/cloud/install.sh` together (`just tofu-check`
-  fails when they differ).
+- Bump Envoy Gateway, CNPG or Reloader: in `deploy/lib/platform.sh`, which `deploy/kind/up.sh` and `deploy/cloud/install.sh`
+  both source (`just tofu-check` fails when either pins one again).
 
 ## Troubleshooting (expected, not yet seen)
 - Plan error "No zone of ap-southeast-5 sells ...": pick another `instance_type` (step 2).

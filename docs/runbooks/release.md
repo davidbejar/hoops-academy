@@ -128,8 +128,8 @@ first (e.g. cert-manager) and set `gateway.tls.enabled=true`, `gateway.tls.certi
 Values renamed in chart 0.2.0: `ingress.*` -> `route.*`, `networkPolicy.ingressControllerNamespace` -> `gatewayNamespace`.
 
 Global rate limits (chart 0.3.0, ADR-0033): the rate-limit policies are global, so Envoy Gateway must run its rate
-limit service with a Redis backend. The cluster operator owns the Envoy Gateway install; these are the values kind pins
-in `deploy/kind/up.sh`:
+limit service with a Redis backend. The cluster operator owns the Envoy Gateway install; these are the values kind and the cloud VM pin
+in `deploy/lib/platform.sh` (`install_envoy_gateway`):
 ```bash
 helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm --version v1.10.0 -n envoy-gateway-system --reuse-values \
   --set config.envoyGateway.rateLimit.backend.type=Redis \
@@ -207,9 +207,9 @@ Rotation without manual restarts (chart 0.8.0, WP87, ADR-0012 amendment): `globa
 Deployment/StatefulSet that reads a Secret (core, game, athlete, keycloak, ratelimit-redis, redpanda) with
 `secret.reloader.stakater.com/auto: "true"`; a Stakater Reloader controller in the cluster then rolls them when one of
 those Secrets changes (an ESO refresh or a re-applied Secret). The chart does not install Reloader: install it like
-`deploy/kind/up.sh` does (pinned chart and image digest, `reloader.watchGlobally=false` with `reloader.namespaces` = the
+`deploy/lib/platform.sh` does for kind and the cloud VM (pinned chart and image digest, `reloader.watchGlobally=false` with `reloader.namespaces` = the
 release namespace and `envoy-gateway-system`, `ignoreConfigMaps`, `ignoreJobs`, `ignoreCronJobs`, `reloadStrategy=annotations`),
-and give Envoy Gateway's `rateLimitDeployment` the same annotation (`patch`, see `EG_VALUES` in `up.sh`). Without a
+and give Envoy Gateway's `rateLimitDeployment` the same annotation (`patch`, see `install_envoy_gateway` in `deploy/lib/platform.sh`). Without a
 controller the annotation does nothing and section E of `rotate-secrets.md` lists the manual restarts. Upgrading from 0.7.0
 rolls every pod once (chart labels in the ConfigMap checksums). Check: `kubectl -n hoops-reloader logs deploy/reloader-reloader`
 starts with `Watching scoped namespaces: ...` and logs each workload it rolls after a rotation.
@@ -279,9 +279,9 @@ Dependabot covers Maven, pub and GitHub Actions. Everything else that is pinned 
 | cyclonedx-cli, ORAS tag + digest | `scripts/sbom.sh` | registry |
 | Semgrep tag + digest | `semgrep.yml` | Docker Hub |
 | ZAP `stable` digest | `ci.yml`, `scripts/zap-api-scan.sh` | ghcr.io |
-| Envoy Gateway, CloudNativePG | `deploy/kind/up.sh`, `deploy/cloud/install.sh` | GitHub releases |
+| Envoy Gateway, CloudNativePG | `deploy/lib/platform.sh` (sourced by `deploy/kind/up.sh`, `deploy/cloud/install.sh`) | GitHub releases |
 | External Secrets | `deploy/kind/up.sh` | GitHub releases |
-| Reloader chart version + digest + image digest | `deploy/kind/up.sh`, `deploy/cloud/install.sh` | ghcr.io (chart appVersion names the image) |
+| Reloader chart version + digest + image digest | `deploy/lib/platform.sh` | ghcr.io (chart appVersion names the image) |
 
 Not in the inventory, bumped by hand and each named in as few files as possible, with a test that keeps the copies equal
 (`scripts/tests/test_toolchain_pins.py`, `test_jdk_pins.py`): Go (`go.mod`, `.github/actions/setup-go`,
@@ -311,6 +311,6 @@ Never merge it on a red `helm-chart-tests` or `tofu-check`: on 2026-11-22 PR #6 
 were aligned by hand.
 A bump of Envoy Gateway, CloudNativePG or External Secrets also needs the chart and kind proofs: `deploy/helm/tests/run.sh`
 (for ESO regenerate the CRD schemas with `deploy/helm/tests/schemas/update-eso.sh`), then `just kind-up` and the isolation check on
-the new cluster. A Reloader bump needs `deploy/helm/tests/run.sh` (it asserts the digest pins in `up.sh`) and a kind run.
+the new cluster. A Reloader bump needs `deploy/helm/tests/run.sh` (it asserts the digest pins in `deploy/lib/platform.sh`) and a kind run.
 One-time repository setup: Settings > Actions > "Allow GitHub Actions to create and approve pull requests", and a
 `dependencies` label.

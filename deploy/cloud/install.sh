@@ -16,27 +16,9 @@ TAG="${1:-}"
 [[ "$TAG" =~ ^[0-9a-f]{40}$ ]] || { echo "install.sh: give the image tag, the full git sha of a main commit whose images.yml pushed" >&2; exit 2; }
 NS="${HOOPS_NAMESPACE:-hoops}"
 ENV_FILE="${ENV_FILE:-.env}"
-# Same pins as deploy/kind/up.sh (`just tofu-check` fails when they differ); the reasons are there.
-ENVOY_GATEWAY_VERSION="v1.10.0"
-GATEWAY_API_VERSION="v1.6.1"
-CNPG_VERSION="1.30.1"
-CNPG_BRANCH="release-${CNPG_VERSION%.*}"
-# Stakater Reloader: chart version + digest and image digest (v1.4.24).
-RELOADER_CHART_VERSION="2.2.20"
-RELOADER_CHART_DIGEST="sha256:065ab124e7e704a43465fad9b71363563157312e8ee410db30c4da83c5ac131b"
-RELOADER_IMAGE_DIGEST="sha256:3ab43d3eb96c59798644bf826b0444a846c0197d22ab4b6c101c4da3e1d6ef23"
-# Envoy Gateway's rate limit service with the chart's Redis (ADR-0033), as on kind.
-EG_VALUES=(
-  --set config.envoyGateway.rateLimit.backend.type=Redis
-  --set "config.envoyGateway.rateLimit.backend.redis.url=ratelimit-redis.${NS}.svc.cluster.local:6379"
-  --set-json 'config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.env=[{"name":"REDIS_AUTH","valueFrom":{"secretKeyRef":{"name":"envoy-ratelimit-redis-auth","key":"auth"}}}]'
-  --set config.envoyGateway.rateLimit.failClosed=false
-  --set config.envoyGateway.rateLimit.timeout=100ms
-  --set config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.resources.requests.cpu=10m
-  --set config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.resources.requests.memory=32Mi
-  --set config.envoyGateway.provider.kubernetes.rateLimitDeployment.container.resources.limits.memory=128Mi
-  --set-json 'config.envoyGateway.provider.kubernetes.rateLimitDeployment.patch={"type":"StrategicMerge","value":{"metadata":{"annotations":{"secret.reloader.stakater.com/auto":"true"}}}}'
-)
+# The same operator pins and installs as deploy/kind/up.sh.
+# shellcheck source=deploy/lib/platform.sh
+. deploy/lib/platform.sh
 step() { printf '\n==> %s\n' "$*"; }
 
 [ -f "$ENV_FILE" ] || { echo "install.sh: $ENV_FILE missing (cp .env.example .env, set strong values)" >&2; exit 1; }
@@ -51,28 +33,14 @@ for n in "$NS" envoy-gateway-system; do cloud_kubectl create namespace "$n" --dr
 ENV_FILE="$ENV_FILE" HOOPS_NAMESPACE="$NS" deploy/kind/secrets.sh | cloud_kubectl apply -f -
 
 step "Stakater Reloader (chart $RELOADER_CHART_VERSION)"
-cloud_helm upgrade --install reloader "oci://ghcr.io/stakater/charts/reloader:${RELOADER_CHART_VERSION}@${RELOADER_CHART_DIGEST}" \
-  -n hoops-reloader --create-namespace --wait --timeout 10m \
-  --set image.digest="$RELOADER_IMAGE_DIGEST" \
-  --set reloader.watchGlobally=false --set-json "reloader.namespaces=[\"$NS\",\"envoy-gateway-system\"]" \
-  --set reloader.ignoreConfigMaps=true --set reloader.ignoreJobs=true --set reloader.ignoreCronJobs=true \
-  --set reloader.reloadStrategy=annotations --set reloader.readOnlyRootFileSystem=true \
-  --set-json 'reloader.deployment.containerSecurityContext={"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true}' \
-  --set reloader.deployment.resources.requests.cpu=10m --set reloader.deployment.resources.requests.memory=32Mi \
-  --set reloader.deployment.resources.limits.memory=128Mi
+install_reloader cloud_helm
 
 step "Envoy Gateway $ENVOY_GATEWAY_VERSION (Gateway API $GATEWAY_API_VERSION CRDs)"
-cloud_helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm --version "$ENVOY_GATEWAY_VERSION" \
-  -n envoy-gateway-system --create-namespace "${EG_VALUES[@]}"
+install_envoy_gateway cloud_helm
 
 step "CloudNativePG operator $CNPG_VERSION"
-cloud_kubectl apply --server-side --force-conflicts \
-  -f "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/${CNPG_BRANCH}/releases/cnpg-${CNPG_VERSION}.yaml"
-cloud_kubectl -n envoy-gateway-system rollout status deployment/envoy-gateway --timeout=900s
-cloud_kubectl -n cnpg-system rollout status deployment/cnpg-controller-manager --timeout=900s
-crd_version=$(cloud_kubectl get crd gateways.gateway.networking.k8s.io -o jsonpath='{.metadata.annotations.gateway\.networking\.k8s\.io/bundle-version}')
-[ "$crd_version" = "$GATEWAY_API_VERSION" ] \
-  || { echo "install.sh: Gateway API CRDs are $crd_version, Envoy Gateway $ENVOY_GATEWAY_VERSION needs $GATEWAY_API_VERSION" >&2; exit 1; }
+install_cnpg cloud_kubectl
+wait_for_platform cloud_kubectl
 
 step "TLS Secret hoops-gateway-tls for $host (self-signed until the TLS slice)"
 # Generated once in a temporary directory that is removed again; the key never leaves the cluster afterwards. The public

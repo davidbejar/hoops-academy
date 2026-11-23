@@ -85,7 +85,7 @@ compose edge must keep the same routes and limits; the chart tests and `docs/run
 
 ## Upgrade path
 1. Pick the new Envoy Gateway version and read its row in the compatibility matrix (Gateway API version, Kubernetes
-   range). Bump `ENVOY_GATEWAY_VERSION` and `GATEWAY_API_VERSION` in `deploy/kind/up.sh` together (and the kind node
+   range). Bump `ENVOY_GATEWAY_VERSION` and `GATEWAY_API_VERSION` in `deploy/lib/platform.sh` (since WP136; was `deploy/kind/up.sh`) together (and the kind node
    image if the Kubernetes range moved).
 2. CRDs first: `helm upgrade` never updates CRDs. Apply them server-side before upgrading the controller:
    `helm pull oci://docker.io/envoyproxy/gateway-helm --version <v> --untar -d <tmp>` and
