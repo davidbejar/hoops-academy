@@ -93,14 +93,14 @@ async fn authenticate(
     mut request: Request,
     next: Next,
 ) -> Response {
-    let resource = format!("{} {}", request.method(), matched.as_str());
-    match state.verifier.verify(request.headers().get(header::AUTHORIZATION)).await {
+    let outcome = state.verifier.verify(request.headers().get(header::AUTHORIZATION)).await;
+    match outcome {
         Ok(caller) => {
             request.extensions_mut().insert(caller);
             next.run(request).await
         }
         Err(AuthFailure::Denied(denial)) => {
-            state.events.deny(&denial, &resource);
+            state.events.deny(&denial, &format!("{} {}", request.method(), matched.as_str()));
             let problem = match denial.kind {
                 DenialKind::Unauthenticated => Problem::unauthenticated(),
                 DenialKind::InvalidToken => Problem::invalid_token(),
