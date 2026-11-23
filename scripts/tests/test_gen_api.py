@@ -56,7 +56,7 @@ class GeneratorVersionFollowsThePom(unittest.TestCase):
     def test_the_readmes_name_every_generated_service(self):
         for rel in ["libs/contracts/README.md", "apps/web/README.md"]:
             with self.subTest(readme=rel):
-                self.assertNotIn("{core,game,athlete}", (ROOT / rel).read_text(), rel)
+                self.assertFalse("{core,game,athlete}" in (ROOT / rel).read_text(), rel)
 
 
 if __name__ == "__main__":

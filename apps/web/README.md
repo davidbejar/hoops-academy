@@ -118,7 +118,7 @@ lib/
                  session (guard as a pure function), navigation (role -> destinations), l10n, tenancy, ui
   features/<name>/{data,domain,application,presentation}
   l10n/          app_es.arb (template), app_en.arb, app_id.arb, gen/ (generated, committed)
-packages/        GENERATED API clients hoops_{core,game,athlete}_api (do not edit; path dependencies)
+packages/        GENERATED API clients hoops_{core,game,athlete,finance}_api (do not edit; path dependencies)
 ```
 
 ### Adding a feature (WP12-WP14)
