@@ -12,6 +12,7 @@ import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
+import java.time.ZoneId;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
@@ -32,6 +33,9 @@ public final class ApiSupport {
                     .withLevel("validation.request", ValidationReport.Level.IGNORE)
                     .build())
             .build();
+
+    /** The tenant zone of the members built here. */
+    public static final ZoneId ZONE = ZoneId.of("Europe/Madrid");
 
     private ApiSupport() {}
 
@@ -60,15 +64,27 @@ public final class ApiSupport {
         return member(tenant, roles, staffTeams, linked, ownPlayer, Set.of());
     }
 
-    /** As above, with the teams of the own / linked players ({@code AuthzContext.playerTeamIds}, from core). */
+    /**
+     * As above, with the teams of the own / linked players ({@code AuthzContext.playerTeamIds}, from core). The tenant
+     * zone is {@link #ZONE}, as core always sends one.
+     */
     public static AuthzContext member(String tenant, Set<TenantRole> roles, Set<String> staffTeams, Set<String> linked,
             String ownPlayer, Set<String> playerTeams) {
         AuthzContext context = new AuthzContext("tenant-user", UUID.nameUUIDFromBytes(("person-" + tenant).getBytes()),
                 TenantId.parse(tenant), roles.isEmpty() ? Set.of() : EnumSet.copyOf(roles),
                 uuids(staffTeams), uuids(linked), Optional.ofNullable(ownPlayer).map(UUID::fromString), uuids(playerTeams),
-                Optional.empty());
+                Optional.of(ZONE));
         TenantUserRegistry.register(context);
         return context;
+    }
+
+    /** Registers {@code context} again with the tenant zone {@code zone} (core reports a changed zone). */
+    public static AuthzContext inZone(AuthzContext context, String zone) {
+        AuthzContext moved = new AuthzContext(context.subject(), context.personId(), context.tenantId(), context.roles(),
+                context.staffTeamIds(), context.linkedPlayerIds(), context.ownPlayerId(), context.playerTeamIds(),
+                Optional.of(ZoneId.of(zone)), context.historicStaffTeamIds());
+        TenantUserRegistry.register(moved);
+        return moved;
     }
 
     /** A coach of {@code staffTeams} today who was staff of {@code historicTeams} in seasons that have ended. */

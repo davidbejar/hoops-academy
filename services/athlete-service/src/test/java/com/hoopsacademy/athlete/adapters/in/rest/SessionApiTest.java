@@ -52,6 +52,23 @@ class SessionApiTest {
                 .post(SESSIONS).then().statusCode(201).extract().path("id");
     }
 
+    /**
+     * Calendar dates are in the zone the caller's context carries (core's answer), not in the one an earlier call left
+     * in the tenant registry: 12:00Z is 1 December in Pago Pago (UTC-11) but 2 December in Kiritimati (UTC+14).
+     */
+    @Test
+    @TenantUser(tenant = TENANT, roles = TenantRole.ADMIN, timezone = "Pacific/Kiritimati")
+    void calendarDatesFollowTheZoneOfTheCallersContext() {
+        String session = createSession(TEAM, "2031-12-01T12:00:00Z");
+
+        ApiSupport.inZone(ApiSupport.member(TENANT, TenantRole.ADMIN), "Pacific/Pago_Pago");
+
+        api(TENANT).queryParam("teamId", TEAM).queryParam("from", "2031-12-01").queryParam("to", "2031-12-01")
+                .get(SESSIONS).then().statusCode(200).body("items.id", org.hamcrest.Matchers.contains(session));
+        api(TENANT).queryParam("teamId", TEAM).queryParam("from", "2031-12-02").queryParam("to", "2031-12-02")
+                .get(SESSIONS).then().statusCode(200).body("items", hasSize(0));
+    }
+
     @Test
     @TenantUser(tenant = TENANT, roles = TenantRole.COACH, staffTeams = TEAM)
     void staffCreatesAnAdHocSession() {
