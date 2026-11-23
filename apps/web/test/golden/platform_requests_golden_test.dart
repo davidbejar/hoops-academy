@@ -2,7 +2,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 
-import '../support/fake_academy_requests.dart';
+import '../support/mock_backend.dart';
+import '../support/platform_seed.dart';
 import '../support/pump_helpers.dart';
 
 /// The academy requests workbench (WP90). Regenerate with
@@ -15,20 +16,21 @@ void main() {
   }) async {
     tester.platformDispatcher.platformBrightnessTestValue = brightness;
     addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-    final repo = FakeAcademyRequestRepository([
-      academyRequestOf('r-1', 'Escuela de Baloncesto Valle'),
-      academyRequestOf(
-        'r-2',
-        'Hoops Bali',
-        name: null,
-        email: 'admin@hoopsbali.example',
-        role: api.AcademyRequestRole.ADMIN,
-        locale: api.ApiLocale.id,
-      ),
-    ]);
+    final backend = MockBackend()
+      ..seedAcademyRequests([
+        academyRequestOf('r-1', 'Escuela de Baloncesto Valle'),
+        academyRequestOf(
+          'r-2',
+          'Hoops Bali',
+          name: null,
+          email: 'admin@hoopsbali.example',
+          role: api.AcademyRequestRole.ADMIN,
+          locale: api.ApiLocale.id,
+        ),
+      ]);
     await pumpAsSuperAdmin(
       tester,
-      requests: repo,
+      backend: backend,
       size: size,
       location: '/platform/requests',
     );

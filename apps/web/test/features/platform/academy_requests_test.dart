@@ -2,40 +2,46 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 
-import '../../support/fake_academy_requests.dart';
 import '../../support/fake_platform.dart';
 import '../../support/fake_repos.dart';
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
+import '../../support/mock_backend.dart';
+import '../../support/platform_seed.dart';
 
-FakeAcademyRequestRepository _requests() => FakeAcademyRequestRepository([
-  academyRequestOf('r-1', 'Escuela de Baloncesto Valle'),
-  academyRequestOf(
-    'r-2',
-    'Hoops Bali',
-    name: null,
-    email: 'admin@hoopsbali.example',
-    role: api.AcademyRequestRole.ADMIN,
-    locale: api.ApiLocale.id,
-  ),
-  academyRequestOf(
-    'r-3',
-    'Futsal Friends',
-    status: api.AcademyRequestStatus.REJECTED,
-    reason: 'Solo baloncesto',
-    notified: false,
-  ),
-  academyRequestOf(
-    'r-4',
-    'Club Norte',
-    status: api.AcademyRequestStatus.ACCEPTED,
-    tenantId: 't-a',
-  ),
-]);
+const _requestsPath = '/platform/academy-requests';
+
+/// Four requests, and Club Norte (`t-a`), the academy of the accepted one.
+MockBackend _requests() => MockBackend()
+  ..seedTenants([tenantOf('t-a', 'Club Norte')])
+  ..seedAcademyRequests([
+    academyRequestOf('r-1', 'Escuela de Baloncesto Valle'),
+    academyRequestOf(
+      'r-2',
+      'Hoops Bali',
+      name: null,
+      email: 'admin@hoopsbali.example',
+      role: api.AcademyRequestRole.ADMIN,
+      locale: api.ApiLocale.id,
+    ),
+    academyRequestOf(
+      'r-3',
+      'Futsal Friends',
+      status: api.AcademyRequestStatus.REJECTED,
+      reason: 'Solo baloncesto',
+      notified: false,
+    ),
+    academyRequestOf(
+      'r-4',
+      'Club Norte',
+      status: api.AcademyRequestStatus.ACCEPTED,
+      tenantId: 't-a',
+    ),
+  ]);
 
 Future<Harness> _pump(
   WidgetTester tester,
-  FakeAcademyRequestRepository repo, {
+  MockBackend backend, {
   bool superAdmin = true,
   String location = '/app-admin/requests',
   FakePlatformRepository? platform,
@@ -48,7 +54,7 @@ Future<Harness> _pump(
           platform ??
           FakePlatformRepository(tenants: [tenantOf('t-a', 'Club Norte')]),
     ),
-    academyRequests: repo,
+    backend: backend,
   );
   await h.pump(tester, size: const Size(390, 1400));
   await h.go(tester, location);
@@ -106,26 +112,30 @@ void main() {
   });
 
   testWidgets('empty and error with retry', (tester) async {
-    final repo = FakeAcademyRequestRepository()..failWith = StateError('x');
-    await _pump(tester, repo);
+    final backend = MockBackend()..fail(_requestsPath);
+    await _pump(tester, backend);
     expect(find.text('Reintentar'), findsOneWidget);
-    repo.failWith = null;
+    backend.heal();
     await tester.tap(find.text('Reintentar'));
     await tester.pumpAndSettle();
     expect(find.text('No hay solicitudes aquí'), findsOneWidget);
   });
 
   testWidgets('only the super admin reaches the workbench', (tester) async {
-    final repo = _requests();
-    await _pump(tester, repo, superAdmin: false);
+    final backend = _requests();
+    await _pump(tester, backend, superAdmin: false);
     expect(find.text('Escuela de Baloncesto Valle'), findsNothing);
-    expect(repo.calls, isEmpty, reason: 'nothing is even loaded');
+    expect(
+      backend.requestsTo(_requestsPath),
+      isEmpty,
+      reason: 'nothing is even loaded',
+    );
   });
 
   testWidgets('accept proposes the request\'s data, creates the academy and '
       'shows the temporary password once', (tester) async {
-    final repo = _requests();
-    await _pump(tester, repo);
+    final backend = _requests();
+    await _pump(tester, backend);
     await tapKey2(tester, 'request-accept-r-1');
 
     String text(String key) =>
@@ -139,14 +149,21 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Aceptar').last);
     await tester.pumpAndSettle();
 
-    expect(repo.accepted!.slug, 'valle');
-    expect(repo.accepted!.defaultLocale, api.ApiLocale.es);
-    expect(repo.accepted!.firstAdmin.givenName, 'Lucía');
-    expect(repo.accepted!.firstAdmin.locale, api.ApiLocale.es);
-    expect(find.text('Request-Temp-Pass1'), findsOneWidget);
+    const accept = '$_requestsPath/r-1:accept';
+    final sent = backend.lastBody(accept);
+    expect(sent['slug'], 'valle');
+    expect(sent['defaultLocale'], 'es');
+    final admin = sent['firstAdmin']! as Map;
+    expect(admin['givenName'], 'Lucía');
+    expect(admin['locale'], 'es');
+    final password =
+        (backend.lastAnswer(accept, method: 'POST')!
+                as Map)['temporaryPassword']
+            as String;
+    expect(find.text(password), findsOneWidget);
     await tester.tap(find.byKey(const Key('temp-password-done')));
     await tester.pumpAndSettle();
-    expect(find.text('Request-Temp-Pass1'), findsNothing);
+    expect(find.text(password), findsNothing);
     expect(
       find.text('Escuela de Baloncesto Valle'),
       findsNothing,
@@ -155,20 +172,24 @@ void main() {
   });
 
   testWidgets('a nameless request leaves the names to fill in', (tester) async {
-    final repo = _requests();
-    await _pump(tester, repo);
+    final backend = _requests();
+    await _pump(tester, backend);
     await tapKey2(tester, 'request-accept-r-2');
     await tester.tap(find.widgetWithText(FilledButton, 'Aceptar').last);
     await tester.pumpAndSettle();
-    expect(repo.accepted, isNull);
+    expect(backend.requestsTo(RegExp(':accept\$'), method: 'POST'), isEmpty);
     expect(find.text('Campo obligatorio'), findsNWidgets(2));
   });
 
   testWidgets('a taken identifier keeps the form open with a clear message', (
     tester,
   ) async {
-    final repo = _requests()..decisionFails = problem(409, 'SLUG_TAKEN');
-    await _pump(tester, repo);
+    // The proposed identifier belongs to another academy: the server says 409.
+    final backend = _requests()
+      ..seedTenants([
+        tenantOf('t-v', 'Otra Valle', slug: 'escuela-de-baloncesto-valle'),
+      ]);
+    await _pump(tester, backend);
     await tapKey2(tester, 'request-accept-r-1');
     await tester.tap(find.widgetWithText(FilledButton, 'Aceptar').last);
     await tester.pumpAndSettle();
@@ -177,12 +198,12 @@ void main() {
   });
 
   testWidgets('reject needs a reason and sends it', (tester) async {
-    final repo = _requests();
-    await _pump(tester, repo);
+    final backend = _requests();
+    await _pump(tester, backend);
     await tapKey2(tester, 'request-reject-r-2');
     await tester.tap(find.widgetWithText(FilledButton, 'Rechazar').last);
     await tester.pumpAndSettle();
-    expect(repo.rejectedReason, isNull);
+    expect(backend.requestsTo(RegExp(':reject\$'), method: 'POST'), isEmpty);
     expect(find.text('Campo obligatorio'), findsOneWidget);
 
     await tester.enterText(
@@ -191,15 +212,21 @@ void main() {
     );
     await tester.tap(find.widgetWithText(FilledButton, 'Rechazar').last);
     await tester.pumpAndSettle();
-    expect(repo.rejectedReason, 'Solo academias de baloncesto.');
+    expect(
+      backend.lastBody('$_requestsPath/r-2:reject')['reason'],
+      'Solo academias de baloncesto.',
+    );
     expect(find.text('Solicitud rechazada'), findsOneWidget);
     expect(find.text('Hoops Bali'), findsNothing);
   });
 
   testWidgets('a request decided meanwhile says so', (tester) async {
-    final repo = _requests()
-      ..decisionFails = problem(409, 'REQUEST_NOT_PENDING');
-    await _pump(tester, repo);
+    final backend = _requests();
+    await _pump(tester, backend);
+    // Another super admin accepts it while this one is reading.
+    backend.platform.academyRequests.firstWhere(
+      (r) => r['id'] == 'r-1',
+    )['status'] = 'ACCEPTED';
     await tapKey2(tester, 'request-reject-r-1');
     await tester.enterText(find.byKey(const Key('reject-reason')), 'x');
     await tester.tap(find.widgetWithText(FilledButton, 'Rechazar').last);

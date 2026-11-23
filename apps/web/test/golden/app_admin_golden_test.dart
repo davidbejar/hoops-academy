@@ -3,7 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
-import '../support/fake_academy_requests.dart';
+import '../support/mock_backend.dart';
+import '../support/platform_seed.dart';
 import '../support/fake_platform.dart';
 import '../support/fake_repos.dart';
 import '../support/fixtures.dart';
@@ -91,11 +92,12 @@ Future<Harness> _pumpApplicationAdmin(
   return pumpAsSuperAdmin(
     tester,
     platform: platform,
-    requests: FakeAcademyRequestRepository([
-      academyRequestOf('r-1', 'Escuela de Baloncesto Valle'),
-      academyRequestOf('r-2', 'Hoops Bali'),
-      academyRequestOf('r-3', 'Canasta Club'),
-    ]),
+    backend: MockBackend()
+      ..seedAcademyRequests([
+        academyRequestOf('r-1', 'Escuela de Baloncesto Valle'),
+        academyRequestOf('r-2', 'Hoops Bali'),
+        academyRequestOf('r-3', 'Canasta Club'),
+      ]),
     size: size,
     location: location == '/app-admin' ? null : location,
   );

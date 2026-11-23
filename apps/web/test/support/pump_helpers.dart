@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
-import 'fake_academy_requests.dart';
 import 'fake_athlete.dart';
 import 'fake_game.dart';
 import 'fake_platform.dart';
@@ -66,7 +65,6 @@ Future<Harness> pumpAs(
 Future<Harness> pumpAsSuperAdmin(
   WidgetTester tester, {
   FakePlatformRepository? platform,
-  FakeAcademyRequestRepository? requests,
   String? location,
   Size size = const Size(360, 780),
   bool settle = true,
@@ -78,7 +76,6 @@ Future<Harness> pumpAsSuperAdmin(
     me: FakeMeRepository(userWith(const [], superAdmin: true)),
     core: FakeCore(),
     platform: FakePlatform(repo: platform ?? FakePlatformRepository()),
-    academyRequests: requests,
     extraOverrides: overrides,
   );
   await h.pump(tester, size: size);

@@ -8,9 +8,10 @@ import 'package:hoops_app/core/session/session_providers.dart';
 import 'package:hoops_app/core/tenancy/tenant_selection.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
-import '../support/fake_academy_requests.dart';
 import '../support/fixtures.dart';
 import '../support/harness.dart';
+import '../support/mock_backend.dart';
+import '../support/platform_seed.dart';
 
 /// Contexts and landing (WP99, decisions 71 and 73): the academies of the
 /// login plus "Application admin" for a super admin, each with its own menu.
@@ -352,16 +353,17 @@ void main() {
     ) async {
       final h = Harness(
         me: FakeMeRepository(userWith([], superAdmin: true)),
-        academyRequests: FakeAcademyRequestRepository([
-          academyRequestOf('r-1', 'Escuela Valle'),
-          academyRequestOf('r-2', 'Hoops Bali'),
-          academyRequestOf(
-            'r-3',
-            'Ya aceptada',
-            status: api.AcademyRequestStatus.ACCEPTED,
-            tenantId: 't',
-          ),
-        ]),
+        backend: MockBackend()
+          ..seedAcademyRequests([
+            academyRequestOf('r-1', 'Escuela Valle'),
+            academyRequestOf('r-2', 'Hoops Bali'),
+            academyRequestOf(
+              'r-3',
+              'Ya aceptada',
+              status: api.AcademyRequestStatus.ACCEPTED,
+              tenantId: 't',
+            ),
+          ]),
       );
       await h.pump(tester);
 
@@ -390,15 +392,15 @@ void main() {
     });
 
     testWidgets('an academy menu never asks for them', (tester) async {
-      final requests = FakeAcademyRequestRepository();
+      final backend = MockBackend();
       final h = Harness(
         me: FakeMeRepository(userWith([_hangtuah], superAdmin: true)),
         prefs: {'hoops.selectedTenantId': _hangtuah.tenantId},
-        academyRequests: requests,
+        backend: backend,
       );
       await h.pump(tester);
 
-      expect(requests.calls, isEmpty);
+      expect(backend.requestsTo('/platform/academy-requests'), isEmpty);
     });
   });
 }

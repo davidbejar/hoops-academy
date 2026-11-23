@@ -5,11 +5,12 @@ import 'package:hoops_app/app/shell.dart';
 import 'package:hoops_app/core/navigation/destinations.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
-import '../../support/fake_academy_requests.dart';
 import '../../support/fake_platform.dart';
 import '../../support/fake_repos.dart';
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
+import '../../support/mock_backend.dart';
+import '../../support/platform_seed.dart';
 import '../../support/pump_helpers.dart';
 
 /// The application admin hub (WP99): one entry per area of what a super
@@ -17,14 +18,14 @@ import '../../support/pump_helpers.dart';
 Future<Harness> _pump(
   WidgetTester tester, {
   FakePlatformRepository? repo,
-  FakeAcademyRequestRepository? requests,
+  MockBackend? backend,
   Size size = const Size(360, 780),
   String location = '/app-admin',
 }) async {
   return pumpAsSuperAdmin(
     tester,
     platform: repo,
-    requests: requests,
+    backend: backend,
     size: size,
     location: location == '/app-admin' ? null : location,
   );
@@ -93,12 +94,10 @@ void main() {
   testWidgets('the hub badge follows the decisions of the workbench', (
     tester,
   ) async {
-    final requests = FakeAcademyRequestRepository([
-      academyRequestOf('r-1', 'Escuela Valle'),
-    ]);
     final h = await _pump(
       tester,
-      requests: requests,
+      backend: MockBackend()
+        ..seedAcademyRequests([academyRequestOf('r-1', 'Escuela Valle')]),
       size: const Size(390, 1400),
     );
     expect(find.byKey(const Key('app-admin-requests-badge')), findsOneWidget);
