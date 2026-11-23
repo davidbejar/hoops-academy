@@ -33,6 +33,12 @@ CORE-08, CORE-15, CORE-18, CORET-07, GAME-07, GAME-09..12, ATH-06, ATH-08, ATH-0
    vectors: one copy in `libs/contracts/vectors`, game and the web read it or a generated copy; the two sync tests and
    the script go if nothing is left to sync).
 7. **The rest**: LIB-07, LIB-08, LIB-12, LIB-13 and whatever else of your scope is confirmed.
+8. **Added at merge time of wave 1 (2026-11-24)**: WP127 and WP128 each wrote a paged-query builder
+   (`PagedQuery` in athlete's and in core's `adapters/out/persistence`, two different APIs). One builder in the
+   library, used by both; the semgrep acceptances for the two classes in `.semgrep/accepted.json` move to the one
+   place (run the scan as `semgrep.yml` does, with the pinned image under Podman, and `scripts/sarif-gate.py`). A
+   new call of core's `SessionSettingsRepository.set` / `.with` is flagged by `hoops-tenant-setting-rebound-by-hand`:
+   do not add one.
 
 Not yours: X-08 / CORE-06 (`PatchBody` copies: FOLLOW-UPS and ADR-0053): leave. The realm variables (X-05) are WP139:
 do not rename them while moving properties.
