@@ -212,9 +212,11 @@ void main() {
       'a week of sessions with attendance, create, update with clear, cancel',
       () async {
         final repo = ApiTrainingRepository(athlete, t);
+        // A week back, so a finished session is inside whatever the weekday
+        // and the host's time zone (the mock reads "today" in the academy's).
         final sessions = await repo.sessions(
           teamId: team,
-          from: inDays(-3),
+          from: inDays(-7),
           to: inDays(10),
         );
         expect(sessions.length, greaterThanOrEqualTo(4));
