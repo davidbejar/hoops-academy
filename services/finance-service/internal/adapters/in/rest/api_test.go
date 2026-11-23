@@ -158,7 +158,8 @@ type call struct {
 	token        string // a raw token instead
 	body         any
 	header       map[string]string
-	// outside: not an operation of finance.yaml (CORS preflight, unknown route): the answer is not validated
+	// outside: not an operation of finance.yaml (CORS preflight, unknown route) or a status it does not declare
+	// yet (413, 415): the answer is not validated
 	outside bool
 }
 
@@ -200,7 +201,7 @@ func (a *api) do(t testing.TB, c call) answer {
 	defer func() { _ = response.Body.Close() }()
 	body, _ := io.ReadAll(response.Body)
 	exchange := contract.Exchange{Request: request, RequestBody: payload, Response: response, ResponseBody: body}
-	if strings.HasPrefix(c.path, "/api/finance/") && !c.outside && response.StatusCode != http.StatusNotImplemented {
+	if strings.HasPrefix(c.path, "/api/finance/") && !c.outside {
 		contract.CheckResponse(t, exchange)
 		if response.StatusCode < 300 {
 			contract.CheckRequest(t, exchange)
@@ -238,7 +239,9 @@ type recordingT struct {
 	errors []string
 }
 
-func (r *recordingT) Errorf(format string, args ...any) { r.errors = append(r.errors, fmt.Sprintf(format, args...)) }
+func (r *recordingT) Errorf(format string, args ...any) {
+	r.errors = append(r.errors, fmt.Sprintf(format, args...))
+}
 
 func expect(t *testing.T, got answer, status int) answer {
 	t.Helper()

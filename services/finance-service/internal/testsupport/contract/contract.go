@@ -55,6 +55,8 @@ func Document(t testing.TB) (*openapi3.T, routers.Router) {
 var options = &openapi3filter.Options{
 	AuthenticationFunc: openapi3filter.NoopAuthenticationFunc,
 	MultiError:         true,
+	// a status the operation does not declare is a contract break (kin-openapi lets it pass by default)
+	IncludeResponseStatus: true,
 }
 
 // Exchange is one request and its answer, with the bodies kept.

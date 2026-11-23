@@ -242,13 +242,15 @@ func TestInvalidRequestsAreProblemsNamingFieldsNeverValues(t *testing.T) {
 	expect(t, a.do(t, call{method: "PATCH", path: "/api/finance/fee-plans/" + uuid(), tenant: academy, subject: admin,
 		body: `{"clear":["name"]}`}), 400)
 	expect(t, a.do(t, call{method: "GET", path: "/api/finance/fee-plans/not-a-uuid", tenant: academy, subject: admin}), 400)
+	// finance.yaml declares no 413 or 415 yet (core.yaml does): outside the contract check until it does (WP131
+	// handover); do still requires a Problem.
 	tooLarge := `{"currency":"EUR","x":"` + strings.Repeat("a", 70_000) + `"}`
 	if got := expect(t, a.do(t, call{method: "PUT", path: "/api/finance/settings", tenant: academy, subject: admin,
-		body: tooLarge}), 413); problemCode(t, got) != "REQUEST_TOO_LARGE" {
+		body: tooLarge, outside: true}), 413); problemCode(t, got) != "REQUEST_TOO_LARGE" {
 		t.Errorf("413: %s", got.body)
 	}
 	expect(t, a.do(t, call{method: "PUT", path: "/api/finance/settings", tenant: academy, subject: admin,
-		body: `{"currency":"EUR"}`, header: map[string]string{"Content-Type": "text/plain"}}), 415)
+		body: `{"currency":"EUR"}`, header: map[string]string{"Content-Type": "text/plain"}, outside: true}), 415)
 	if strings.Contains(a.logs.String(), secret) {
 		t.Error("a request value reached the log")
 	}
