@@ -136,7 +136,7 @@ With `--set externalSecrets.enabled=true` the render also holds `envoy-gateway-s
 
 ## Charts
 `deploy/helm/hoops` (umbrella) → `databases`, `keycloak`, `hoops-service` ×3 (aliases `core`, `game`, `athlete`),
-`web`. Values: `values.yaml` (defaults), `values-kind.yaml`, optional git-ignored `values-local.yaml`.
+`web`, `pdf-service`, `finance-service`; the three service sub-charts share the library chart `hoops-lib` (ADR-0068). Values: `values.yaml` (defaults), `values-kind.yaml`, optional git-ignored `values-local.yaml`.
 - The realm JSON and the DB init SQL are **copied** into the charts (`charts/keycloak/files`,
   `charts/databases/files`) by `scripts/sync-chart-files.sh` (WP17 replaced the WP16 symlinks so `helm package`
   works). `deploy/kind/up.sh` runs the script; `deploy/helm/tests/run.sh` fails on drift. The Tiltfile does **not**
@@ -144,7 +144,9 @@ With `--set externalSecrets.enabled=true` the render also holds `envoy-gateway-s
   or `infra/db/init/01_roles_schemas.sql`. The realm's `http://localhost:8080` redirect URIs/web origins are rewritten to `keycloak.publicUrl` at render time.
 - Tests: `deploy/helm/tests/run.sh` (lint, golden snapshots in `tests/snapshots`, kubeconform incl. the CNPG CRD,
   security assertions, gitleaks on the rendered output). After an intended change: `run.sh --update` and review
-  the snapshot diff (it also changes when the realm JSON or init SQL change — on purpose).
+  the snapshot diff (it also changes when the realm JSON or init SQL change — on purpose). `umbrella-kind.yaml` is the
+  whole render; the other `umbrella-*.yaml` hold only the documents that differ from their base render, and the
+  password blocklist is a pointer to its chart file, compared whole by the script (ADR-0068).
 
 ## Secrets
 See ADR-0012. `deploy/kind/secrets.sh` prints the 19 Secrets from `.env` (18 in `hoops`, among them the four event broker logins

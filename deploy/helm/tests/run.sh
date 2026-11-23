@@ -2,6 +2,8 @@
 # Helm chart tests (WP16): lint, golden snapshots, schema validation, policy assertions, secret scan.
 #   deploy/helm/tests/run.sh            verify
 #   deploy/helm/tests/run.sh --update   re-record snapshots after an intended change (review the diff!)
+# Snapshots: umbrella-kind and the service-* renders whole; the other umbrella renders as their difference to a base
+# render (see "== snapshots"); every check below runs on the whole renders.
 # Snapshots include infra/keycloak/realm-academy.json and infra/db/init/01_roles_schemas.sql (copied into the charts
 # by scripts/sync-chart-files.sh; a stale copy fails the drift check), so a change there shows up here on purpose.
 set -euo pipefail
@@ -64,13 +66,52 @@ render umbrella-eso       hoops "$CHART" -n hoops -f "$CHART/values-kind.yaml" -
 render umbrella-cloud     hoops "$CHART" -n hoops -f "$CHART/values-cloud.yaml" -f deploy/helm/tests/values/umbrella-cloud.yaml
 
 echo "== snapshots"
+# DEP-03: the five umbrella renders share most of their documents. umbrella-kind is stored whole; each other umbrella
+# render stores only what differs from its base (base_of): its documents whose text differs from the base's document of the
+# same source, kind, namespace and name, its new documents, and a "# removed:" line per base document it lacks. The
+# password blocklist (10,000 lines, a verbatim chart file) is stored as a pointer; the check below compares it whole.
+BLOCKLIST="$CHART/charts/keycloak/files/hoops-password-blocklist.txt"
+BLOCKLIST_KEY='  hoops-password-blocklist.txt: |'
+base_of() { case "$1" in umbrella-default|umbrella-eso|umbrella-cloud) echo umbrella-kind ;; umbrella-tls) echo umbrella-default ;; esac; }
+compact() { # render $1 with the blocklist body replaced by a pointer to its file
+  awk -v key="$BLOCKLIST_KEY" -v file="$BLOCKLIST" '
+    skip && /^    / { next } { skip=0 }
+    $0 == key { print; print "    # = " file " (not stored; deploy/helm/tests/run.sh compares it whole)"; skip=1; next }
+    { print }' "$1"; }
+delta() { # documents of render $2 that differ from render $1 (both compacted), as described above
+  awk 'function id(d,   s, k, ns, n) {
+         s = match(d, /# Source: [^\n]*/) ? substr(d, RSTART + 10, RLENGTH - 10) : ""
+         k = match(d, /\nkind: [^\n]*/) ? substr(d, RSTART + 7, RLENGTH - 7) : ""
+         ns = match(d, /\n  namespace: [^\n]*/) ? substr(d, RSTART + 13, RLENGTH - 13) : ""
+         n = match(d, /\nmetadata:\n  name: [^\n]*/) ? substr(d, RSTART + 18, RLENGTH - 18) : ""
+         return s " " k " " ns "/" n }
+       BEGIN { RS = "\n---\n" }
+       { sub(/^---\n/, ""); sub(/\n+$/, ""); i = id($0) }
+       FNR == NR { if (i in base) { print "duplicate document " i > "/dev/stderr"; exit 2 } base[i] = $0; order[++nb] = i; next }
+       { seen[i] = 1; if (base[i] != $0) printf "---\n%s\n", $0 }
+       END { for (j = 1; j <= nb; j++) if (!(order[j] in seen)) print "# removed: " order[j] }' \
+    <(compact "$1") <(compact "$2"); }
+mkdir -p "$WORK/snap"
 for f in "$WORK"/*.yaml; do
+  n=$(basename "$f" .yaml); b=$(base_of "$n")
+  if [ -n "$b" ]; then
+    { echo "# $n: the documents that differ from $b (deploy/helm/tests/run.sh, DEP-03)"; delta "$WORK/$b.yaml" "$f"; } > "$WORK/snap/$n.yaml"
+  else compact "$f" > "$WORK/snap/$n.yaml"; fi
+done
+for f in "$WORK"/snap/*.yaml; do
   n=$(basename "$f")
   if [ "$UPDATE" = 1 ]; then cp "$f" "$SNAP/$n"; ok "recorded $n"
   elif [ ! -f "$SNAP/$n" ]; then bad "missing snapshot $n (run with --update)"
   elif diff -u "$SNAP/$n" "$f" > "$WORK/$n.diff"; then ok "$n"
   else bad "$n differs:"; head -60 "$WORK/$n.diff"; fi
 done
+blocklist_ok=1
+for n in umbrella-default umbrella-kind umbrella-tls umbrella-eso umbrella-cloud; do
+  # (nindent leaves one whitespace-only line after the file's last newline)
+  awk -v key="$BLOCKLIST_KEY" 'on && /^    / { print substr($0, 5); next } { on=0 } $0 == key { on=1 }' "$WORK/$n.yaml" \
+    | sed '$ { /^$/d; }' | cmp -s - "$BLOCKLIST" || { blocklist_ok=0; bad "$n: the password blocklist ConfigMap is not $BLOCKLIST verbatim"; }
+done
+[ "$blocklist_ok" = 1 ] && ok "every umbrella render carries $BLOCKLIST verbatim (the snapshots store a pointer)"
 
 echo "== schema validation"
 # WP65: the ExternalSecret schema comes from the CRD of the ESO version kind pins (tests/schemas, update-eso.sh).
