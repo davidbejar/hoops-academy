@@ -6,7 +6,7 @@ use jiff::Timestamp;
 use jiff::civil::Date;
 
 use crate::academy::Academy;
-use crate::document::{Block, Column, Fact, Orientation, PrintDocument, Row, RowStyle, Table};
+use crate::document::{Block, Column, Fact, PrintDocument, Row, RowStyle, Table};
 use crate::error::{Checks, SheetError};
 use crate::file_name;
 use crate::labels::{Label, Locale};
@@ -125,16 +125,13 @@ impl TeamRoster {
         let mut team = vec![Fact::new(t(Label::Team), self.team.name.clone())];
         team.extend(self.team.season.iter().map(|season| Fact::new(t(Label::Season), season.clone())));
         team.extend(self.team.category.iter().map(|category| Fact::new(t(Label::Category), category.clone())));
-        PrintDocument {
-            locale: self.locale,
-            orientation: Orientation::Landscape,
-            academy: self.academy.name.clone(),
-            title: t(Label::TeamRosterTitle).to_owned(),
-            blocks: vec![Block::Facts(team), Block::Table(self.players_table()), Block::Table(self.staff_table())],
-            footer: crate::match_sheet::footer(self.locale, &self.academy, printed_at),
-            page_word: t(Label::Page).to_owned(),
-            of_word: t(Label::PageOf).to_owned(),
-        }
+        PrintDocument::new(
+            self.locale,
+            &self.academy,
+            Label::TeamRosterTitle,
+            vec![Block::Facts(team), Block::Table(self.players_table()), Block::Table(self.staff_table())],
+            printed_at,
+        )
     }
 
     /// `hoops-<academy>-roster-<team>-<yyyyMMdd>.pdf`, today in the academy's zone (as core's CSV, with `.pdf`).
@@ -275,6 +272,7 @@ fn iso(day: Date) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::document::Orientation;
     use jiff::civil::date;
     use jiff::tz::TimeZone;
 

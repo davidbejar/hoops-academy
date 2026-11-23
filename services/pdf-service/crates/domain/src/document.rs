@@ -2,7 +2,10 @@
 //! formatted in the academy's zone); a renderer (port of the application layer) only draws it: page size, fonts,
 //! pagination with a repeated table header, cells cut to their column, the page number in the footer.
 
-use crate::labels::Locale;
+use jiff::Timestamp;
+
+use crate::academy::Academy;
+use crate::labels::{Label, Locale};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Orientation {
@@ -23,6 +26,25 @@ pub struct PrintDocument {
     /// Words of "Page 1 of 2" in the document's language.
     pub page_word: String,
     pub of_word: String,
+}
+
+impl PrintDocument {
+    /// The frame every sheet shares: a landscape page headed by the academy, the title, the footer "Printed on
+    /// 2026-11-15 10:30 (Europe/Madrid)" (the print's instant in the academy's zone) and the page words, all in
+    /// the document's language.
+    pub fn new(locale: Locale, academy: &Academy, title: Label, blocks: Vec<Block>, printed_at: Timestamp) -> Self {
+        let (date, time) = academy.date_and_time(printed_at);
+        Self {
+            locale,
+            orientation: Orientation::Landscape,
+            academy: academy.name.clone(),
+            title: locale.text(title).to_owned(),
+            blocks,
+            footer: format!("{} {date} {time} ({})", locale.text(Label::PrintedOn), academy.zone_id()),
+            page_word: locale.text(Label::Page).to_owned(),
+            of_word: locale.text(Label::PageOf).to_owned(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

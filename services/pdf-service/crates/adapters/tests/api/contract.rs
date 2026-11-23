@@ -139,7 +139,7 @@ fn the_contracts_limits_are_the_domains() {
     assert_eq!(max_items("TeamRosterRequest", "staff"), r::MAX_STAFF as u64);
     assert_eq!(max_items("RosterPlayer", "guardians"), r::MAX_GUARDIANS as u64);
     assert_eq!(max_length("Academy", "name"), academy::MAX_NAME as u64);
-    assert_eq!(max_length("MatchInfo", "teamName"), m::MAX_NAME as u64);
+    assert_eq!(max_length("MatchInfo", "teamName"), m::MAX_DISPLAY_NAME as u64);
     assert_eq!(max_length("MatchInfo", "venue"), m::MAX_VENUE as u64);
     assert_eq!(max_length("RosterPlayer", "givenName"), r::MAX_PERSON_NAME as u64);
     assert_eq!(max_length("RosterPlayer", "email"), r::MAX_EMAIL as u64);

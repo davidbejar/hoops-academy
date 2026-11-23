@@ -4,7 +4,7 @@
 use jiff::Timestamp;
 
 use crate::academy::Academy;
-use crate::document::{Block, Column, Fact, Orientation, PrintDocument, Row, RowStyle, Table};
+use crate::document::{Block, Column, Fact, PrintDocument, Row, RowStyle, Table};
 use crate::error::{Checks, SheetError};
 use crate::file_name;
 use crate::labels::{Label, Locale};
@@ -14,8 +14,8 @@ use crate::text;
 pub const MAX_PLAYERS: usize = 30;
 /// Period scores per sheet (periods 1..=12, overtimes included, `MatchEventBase.period`).
 pub const MAX_PERIODS: usize = 12;
-/// Team and opponent names (`CreateMatchRequest.opponentName`), player display names.
-pub const MAX_NAME: usize = 120;
+/// Team and opponent names (`CreateMatchRequest.opponentName`), player display names (not the academy: `academy::MAX_DISPLAY_NAME`).
+pub const MAX_DISPLAY_NAME: usize = 120;
 /// `CreateMatchRequest.venue`.
 pub const MAX_VENUE: usize = 200;
 
@@ -101,8 +101,8 @@ impl MatchSheet {
         checks.rows("players", self.players.len(), MAX_PLAYERS);
         checks.rows("periodScores", self.period_scores.len(), MAX_PERIODS);
         self.academy.check(&mut checks);
-        checks.add(text::required("match.teamName", &self.team_name, MAX_NAME));
-        checks.add(text::required("match.opponentName", &self.opponent_name, MAX_NAME));
+        checks.add(text::required("match.teamName", &self.team_name, MAX_DISPLAY_NAME));
+        checks.add(text::required("match.opponentName", &self.opponent_name, MAX_DISPLAY_NAME));
         checks.add(text::optional("match.venue", self.venue.as_deref(), MAX_VENUE));
         checks.add(text::within("match.periodCount", self.period_count, 1, 8));
         checks.add(text::within("match.periodMinutes", self.period_minutes, 1, 60));
@@ -110,7 +110,7 @@ impl MatchSheet {
             checks.add(text::within(&format!("periodScores[{i}].period"), period.period, 1, 12));
         }
         for (i, player) in self.players.iter().enumerate() {
-            checks.add(text::required(&format!("players[{i}].displayName"), &player.display_name, MAX_NAME));
+            checks.add(text::required(&format!("players[{i}].displayName"), &player.display_name, MAX_DISPLAY_NAME));
             checks.add(text::jersey(&format!("players[{i}].jerseyNumber"), player.jersey_number.as_deref()));
         }
         checks.finish()
@@ -119,12 +119,11 @@ impl MatchSheet {
     /// The sheet as printed on `printed_at` (the footer's date, in the academy's zone).
     pub fn document(&self, printed_at: Timestamp) -> PrintDocument {
         let t = |label| self.locale.text(label);
-        PrintDocument {
-            locale: self.locale,
-            orientation: Orientation::Landscape,
-            academy: self.academy.name.clone(),
-            title: t(Label::MatchSheetTitle).to_owned(),
-            blocks: vec![
+        PrintDocument::new(
+            self.locale,
+            &self.academy,
+            Label::MatchSheetTitle,
+            vec![
                 Block::Headline(format!(
                     "{} {} – {} {}",
                     self.team_name, self.score.team, self.score.opponent, self.opponent_name
@@ -134,10 +133,8 @@ impl MatchSheet {
                 Block::Table(self.box_score()),
                 Block::Note(t(Label::StarterNote).to_owned()),
             ],
-            footer: footer(self.locale, &self.academy, printed_at),
-            page_word: t(Label::Page).to_owned(),
-            of_word: t(Label::PageOf).to_owned(),
-        }
+            printed_at,
+        )
     }
 
     /// `hoops-<academy>-match-sheet-<team>-<opponent>-<yyyyMMdd>.pdf`, today in the academy's zone.
@@ -268,16 +265,11 @@ fn stat_row(style: RowStyle, number: String, name: String, s: &StatLine) -> Row 
     Row::new(style, cells)
 }
 
-/// "Printed on 2026-11-15 10:30 (Europe/Madrid)" in the document's language.
-pub(crate) fn footer(locale: Locale, academy: &Academy, printed_at: Timestamp) -> String {
-    let (date, time) = academy.date_and_time(printed_at);
-    format!("{} {date} {time} ({})", locale.text(Label::PrintedOn), academy.zone_id())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::document::Align;
+    use crate::document::Orientation;
     use jiff::tz::TimeZone;
 
     fn line(points: u32) -> StatLine {
@@ -378,7 +370,7 @@ mod tests {
     fn field_rules_name_every_offending_field() {
         let mut s = sheet();
         s.academy.name = String::new();
-        s.team_name = "x".repeat(MAX_NAME + 1);
+        s.team_name = "x".repeat(MAX_DISPLAY_NAME + 1);
         s.opponent_name = " ".into();
         s.venue = Some("a\nb".into());
         s.period_count = 9;
