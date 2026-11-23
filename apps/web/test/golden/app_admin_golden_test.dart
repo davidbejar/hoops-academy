@@ -5,7 +5,6 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../support/mock_backend.dart';
 import '../support/platform_seed.dart';
-import '../support/fake_platform.dart';
 import '../support/fake_repos.dart';
 import '../support/fixtures.dart';
 import '../support/harness.dart';
@@ -49,10 +48,14 @@ Future<Harness> _pumpApplicationAdmin(
 }) async {
   tester.platformDispatcher.platformBrightnessTestValue = brightness;
   addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-  final platform = FakePlatformRepository(
-    tenants: [tenantOf('t-a', 'Hangtuah'), tenantOf('t-b', 'Dewa United')],
-  );
-  platform.userList.addAll([
+  final backend = MockBackend()
+    ..seedTenants([tenantOf('t-a', 'Hangtuah'), tenantOf('t-b', 'Dewa United')])
+    ..seedAcademyRequests([
+      academyRequestOf('r-1', 'Escuela de Baloncesto Valle'),
+      academyRequestOf('r-2', 'Hoops Bali'),
+      academyRequestOf('r-3', 'Canasta Club'),
+    ]);
+  backend.seedLogins([
     platformUserOf(
       'u-1',
       'ana@example.org',
@@ -91,13 +94,7 @@ Future<Harness> _pumpApplicationAdmin(
   ]);
   return pumpAsSuperAdmin(
     tester,
-    platform: platform,
-    backend: MockBackend()
-      ..seedAcademyRequests([
-        academyRequestOf('r-1', 'Escuela de Baloncesto Valle'),
-        academyRequestOf('r-2', 'Hoops Bali'),
-        academyRequestOf('r-3', 'Canasta Club'),
-      ]),
+    backend: backend,
     size: size,
     location: location == '/app-admin' ? null : location,
   );
@@ -168,7 +165,6 @@ void main() {
           userWith([_hangtuah, _dewa, _baskonia], superAdmin: true),
         ),
         core: FakeCore(),
-        platform: FakePlatform(repo: FakePlatformRepository()),
         prefs: {
           'hoops.selectedTenantId': _hangtuah.tenantId,
           'hoops.locale': language,

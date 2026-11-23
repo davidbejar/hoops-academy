@@ -9,6 +9,7 @@ import 'package:hoops_app/core/session/capabilities.dart';
 import 'package:hoops_app/features/health/application/health_providers.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/features/platform/application/platform_providers.dart';
+import 'package:hoops_app/features/platform/data/platform_repository.dart';
 import 'package:hoops_app/features/roster/application/roster_providers.dart';
 import 'package:hoops_app/features/training/application/training_providers.dart';
 
@@ -16,7 +17,8 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 
 import '../support/athlete_scenarios.dart';
 import '../support/fake_athlete.dart';
-import '../support/fake_platform.dart';
+import '../support/mock_backend.dart';
+import '../support/platform_seed.dart';
 import '../support/fake_repos.dart';
 
 ProviderContainer _container(
@@ -358,18 +360,22 @@ void main() {
   });
 
   group('platform', () {
-    ProviderContainer platformContainer(FakePlatformRepository repo) {
+    ProviderContainer platformContainer(MockBackend backend) {
       final c = ProviderContainer(
         retry: (_, _) => null,
-        overrides: [platformRepositoryProvider.overrideWithValue(repo)],
+        overrides: [
+          platformRepositoryProvider.overrideWithValue(
+            ApiPlatformRepository(backend.coreApi()),
+          ),
+        ],
       );
       addTearDown(c.dispose);
       return c;
     }
 
     test('create refreshes the list; filters are passed through', () async {
-      final repo = FakePlatformRepository(tenants: [tenantOf('a', 'Alfa')]);
-      final c = platformContainer(repo);
+      final backend = MockBackend()..seedTenants([tenantOf('a', 'Alfa')]);
+      final c = platformContainer(backend);
       expect((await c.read(tenantsProvider.future)).length, 1);
       await c
           .read(tenantsProvider.notifier)
@@ -383,7 +389,10 @@ void main() {
             adminFamilyName: 'Y',
           );
       expect((await c.read(tenantsProvider.future)).length, 2);
-      expect(repo.created!.firstAdmin.locale, api.ApiLocale.es);
+      expect(
+        (backend.lastBody('/platform/tenants')['firstAdmin']! as Map)['locale'],
+        'es',
+      );
       c
           .read(tenantFilterProvider.notifier)
           .set(
@@ -393,20 +402,21 @@ void main() {
             ),
           );
       await c.read(tenantsProvider.future);
-      expect(
-        (repo.lastStatusFilter, repo.lastQuery),
-        (api.TenantStatus.SUSPENDED, 'be'),
-      );
+      final q = backend.lastQuery('/platform/tenants');
+      expect((q.text('status'), q.text('q')), ('SUSPENDED', 'be'));
     });
 
     test('detail keeps the tenant when usage fails; suspend/reactivate refresh both', () async {
-      final repo = FakePlatformRepository(tenants: [tenantOf('a', 'Alfa')])
-        ..usageFails = true;
-      final c = platformContainer(repo);
+      final backend = MockBackend()
+        ..seedTenants([tenantOf('a', 'Alfa')])
+        ..fail('/platform/tenants/a/usage');
+      final c = platformContainer(backend);
+      // Watched like the detail screen does: the provider is auto-dispose.
+      c.listen(tenantDetailProvider('a'), (_, _) {});
       final d = await c.read(tenantDetailProvider('a').future);
       expect(d.usage, isNull);
       expect(d.usageError, isNotNull);
-      repo.usageFails = false;
+      backend.heal();
       await c.read(tenantDetailProvider('a').notifier).suspend('Impago');
       final after = await c.read(tenantDetailProvider('a').future);
       expect(after.tenant.status, api.TenantStatus.SUSPENDED);

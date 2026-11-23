@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:built_collection/built_collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:material_ui/material_ui.dart';
@@ -9,30 +7,41 @@ import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
-import '../../support/fake_platform.dart';
 import '../../support/fake_repos.dart';
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
+import '../../support/mock_backend.dart';
+import '../../support/platform_seed.dart';
 import '../../support/pump_helpers.dart';
 
-FakePlatformRepository _repo() => FakePlatformRepository(
-  tenants: [
-    tenantOf('t-a', 'Club Norte'),
-    tenantOf('t-b', 'Academia Sur', status: api.TenantStatus.SUSPENDED),
-    tenantOf('t-c', 'Liceo Viejo', status: api.TenantStatus.WITHDRAWN),
-  ],
-);
+const _tenants = '/platform/tenants';
+const _norte = '/platform/tenants/t-a';
+const _admins = '/platform/tenants/t-a/admins';
+
+final _academies = [
+  tenantOf('t-a', 'Club Norte'),
+  tenantOf('t-b', 'Academia Sur', status: api.TenantStatus.SUSPENDED),
+  tenantOf('t-c', 'Liceo Viejo', status: api.TenantStatus.WITHDRAWN),
+];
+
+/// The platform with three academies: active, suspended and withdrawn.
+MockBackend _backend() => MockBackend()..seedTenants(_academies);
+
+/// The temporary password the mock answered the last POST to [path] with.
+String _passwordFrom(MockBackend backend, String path) =>
+    (backend.lastAnswer(path, method: 'POST')! as Map)['temporaryPassword']
+        as String;
 
 Future<Harness> _pumpPlatform(
   WidgetTester tester,
-  FakePlatformRepository repo, {
+  MockBackend backend, {
   String location = '/platform',
   bool settle = true,
   Size? size,
 }) async {
   return pumpAsSuperAdmin(
     tester,
-    platform: repo,
+    backend: backend,
     location: location,
     size: size ?? const Size(360, 1200),
     settle: settle,
@@ -69,7 +78,7 @@ void main() {
         ),
         prefs: {'hoops.selectedTenantId': membershipWithRoles({}).tenantId},
         core: athleteCore(),
-        platform: FakePlatform(repo: _repo()..hang = true),
+        backend: _backend()..hang(_tenants),
       );
       await h.pump(tester);
       await h.goAndPump(tester, '/platform');
@@ -77,24 +86,24 @@ void main() {
     });
 
     testWidgets('error with retry', (tester) async {
-      final repo = _repo()..failWith = StateError('x');
-      await _pumpPlatform(tester, repo);
+      final backend = _backend()..fail(_tenants);
+      await _pumpPlatform(tester, backend);
       expect(find.text('Reintentar'), findsOneWidget);
-      repo.failWith = null;
+      backend.heal();
       await tester.tap(find.text('Reintentar'));
       await tester.pumpAndSettle();
       expect(find.text('Club Norte'), findsOneWidget);
     });
 
     testWidgets('empty', (tester) async {
-      await _pumpPlatform(tester, FakePlatformRepository());
+      await _pumpPlatform(tester, MockBackend());
       expect(find.text('No hay academias con este filtro'), findsOneWidget);
     });
 
     testWidgets(
       'populated with a status chip (label, not colour alone) per tenant',
       (tester) async {
-        await _pumpPlatform(tester, _repo());
+        await _pumpPlatform(tester, _backend());
         expect(find.text('Club Norte'), findsOneWidget);
         expect(find.text('club-norte'), findsOneWidget);
         Finder chip(String id, String label) => find.descendant(
@@ -107,28 +116,26 @@ void main() {
       },
     );
 
-    testWidgets('status filter and search go to the repository', (
-      tester,
-    ) async {
-      final repo = _repo();
-      await _pumpPlatform(tester, repo);
+    testWidgets('status filter and search go to the server', (tester) async {
+      final backend = _backend();
+      await _pumpPlatform(tester, backend);
       await tapKey2(tester, 'status-SUSPENDED');
-      expect(repo.lastStatusFilter, api.TenantStatus.SUSPENDED);
+      expect(backend.lastQuery(_tenants).text('status'), 'SUSPENDED');
       expect(find.text('Academia Sur'), findsOneWidget);
       expect(find.text('Club Norte'), findsNothing);
       await tapKey2(tester, 'status-all');
       await tester.enterText(find.byKey(const Key('tenant-search')), 'liceo');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();
-      expect(repo.lastQuery, 'liceo');
+      expect(backend.lastQuery(_tenants).text('q'), 'liceo');
       expect(find.text('Liceo Viejo'), findsOneWidget);
     });
 
     testWidgets(
       'create: validates slug and e-mail, then sends the first admin',
       (tester) async {
-        final repo = _repo();
-        await _pumpPlatform(tester, repo);
+        final backend = _backend();
+        await _pumpPlatform(tester, backend);
         await tapKey2(tester, 'tenant-new');
         await tester.enterText(
           find.byKey(const Key('tenant-name')),
@@ -156,7 +163,7 @@ void main() {
           findsOneWidget,
         );
         expect(find.text('Introduce un correo válido'), findsOneWidget);
-        expect(repo.created, isNull);
+        expect(backend.requestsTo(_tenants, method: 'POST'), isEmpty);
         await tester.enterText(
           find.byKey(const Key('tenant-slug')),
           'nueva-academia',
@@ -169,20 +176,17 @@ void main() {
         await tester.tap(find.text('English').last);
         await tester.pumpAndSettle();
         await tapKey2(tester, 'form-submit');
-        final c = repo.created!;
+        final c = backend.lastBody(_tenants);
         expect(
-          (c.slug, c.name, c.timezone, c.defaultLocale),
-          (
-            'nueva-academia',
-            'Nueva Academia',
-            'Europe/Madrid',
-            api.ApiLocale.en,
-          ),
+          (c['slug'], c['name'], c['timezone'], c['defaultLocale']),
+          ('nueva-academia', 'Nueva Academia', 'Europe/Madrid', 'en'),
         );
+        final first = c['firstAdmin']! as Map;
         expect(
-          (c.firstAdmin.email, c.firstAdmin.givenName, c.firstAdmin.familyName),
+          (first['email'], first['givenName'], first['familyName']),
           ('ada@example.org', 'Ada', 'Lovelace'),
         );
+        final password = _passwordFrom(backend, _tenants);
         // The first administrator's login is new: its temporary password is shown once, for the creator to pass on.
         expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
         expect(
@@ -191,12 +195,12 @@ void main() {
                 find.byKey(const Key('temp-password-value')),
               )
               .data,
-          repo.newLoginPassword,
+          password,
         );
         expect(find.textContaining('ada@example.org'), findsOneWidget);
         await tapKey2(tester, 'temp-password-done');
         expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
-        expect(find.text(repo.newLoginPassword!), findsNothing);
+        expect(find.text(password), findsNothing);
         expect(find.text('Nueva Academia'), findsOneWidget);
       },
     );
@@ -204,8 +208,10 @@ void main() {
     testWidgets(
       'create: a first admin who already has a login gets no dialog, only the note to use their password',
       (tester) async {
-        final repo = _repo()..newLoginPassword = null;
-        await _pumpPlatform(tester, repo);
+        // Ada already signs in to another academy: her login is linked.
+        final backend = _backend()
+          ..seedLogins([platformUserOf('u-ada', 'ada@example.org')]);
+        await _pumpPlatform(tester, backend);
         await tapKey2(tester, 'tenant-new');
         await tester.enterText(
           find.byKey(const Key('tenant-name')),
@@ -237,9 +243,14 @@ void main() {
     testWidgets(
       'create: a failure keeps the form open and shows no password dialog',
       (tester) async {
-        final repo = _repo()
-          ..failWith = problem(502, 'IDENTITY_PROVIDER_UNAVAILABLE');
-        await _pumpPlatform(tester, repo);
+        final backend = _backend()
+          ..fail(
+            _tenants,
+            method: 'POST',
+            status: 502,
+            code: 'IDENTITY_PROVIDER_UNAVAILABLE',
+          );
+        await _pumpPlatform(tester, backend);
         await tapKey2(tester, 'tenant-new');
         await tester.enterText(
           find.byKey(const Key('tenant-name')),
@@ -272,15 +283,15 @@ void main() {
     testWidgets(
       'ACTIVE offers suspend and withdraw; suspend needs a reason and flips the chip',
       (tester) async {
-        final repo = _repo();
-        await _pumpPlatform(tester, repo, location: '/platform/t-a');
+        final backend = _backend();
+        await _pumpPlatform(tester, backend, location: '/platform/t-a');
         expect(find.byKey(const Key('tenant-reactivate')), findsNothing);
         await tapKey2(tester, 'tenant-suspend');
         await tapKey2(tester, 'dialog-confirm');
         expect(find.text('Campo obligatorio'), findsOneWidget);
         await tester.enterText(find.byKey(const Key('note-field')), 'Impago');
         await tapKey2(tester, 'dialog-confirm');
-        expect(repo.lastReason, 'Impago');
+        expect(backend.lastBody('$_norte/suspend')['reason'], 'Impago');
         expect(find.text('Suspendida'), findsOneWidget);
         expect(find.byKey(const Key('tenant-reactivate')), findsOneWidget);
         expect(find.byKey(const Key('tenant-suspend')), findsNothing);
@@ -288,27 +299,24 @@ void main() {
     );
 
     testWidgets('reactivate a suspended tenant', (tester) async {
-      final repo = _repo();
-      await _pumpPlatform(tester, repo, location: '/platform/t-b');
+      final backend = _backend();
+      await _pumpPlatform(tester, backend, location: '/platform/t-b');
       await tapKey2(tester, 'tenant-reactivate');
       await tapKey2(tester, 'dialog-confirm');
-      expect(
-        repo.list.firstWhere((t) => t.id == 't-b').status,
-        api.TenantStatus.ACTIVE,
-      );
+      expect(backend.tenantNow('t-b')['status'], 'ACTIVE');
       expect(find.text('Activa'), findsOneWidget);
     });
 
     testWidgets(
       'withdraw is terminal: no actions afterwards, and warns about retention',
       (tester) async {
-        final repo = _repo();
-        await _pumpPlatform(tester, repo, location: '/platform/t-a');
+        final backend = _backend();
+        await _pumpPlatform(tester, backend, location: '/platform/t-a');
         await tapKey2(tester, 'tenant-withdraw');
         expect(find.textContaining('plazo de conservación'), findsOneWidget);
         await tester.enterText(find.byKey(const Key('note-field')), 'Cierre');
         await tapKey2(tester, 'dialog-confirm');
-        expect(repo.list.first.status, api.TenantStatus.WITHDRAWN);
+        expect(backend.tenantNow('t-a')['status'], 'WITHDRAWN');
         expect(find.byKey(const Key('tenant-withdraw')), findsNothing);
         expect(find.byKey(const Key('tenant-suspend')), findsNothing);
       },
@@ -317,10 +325,10 @@ void main() {
     testWidgets(
       'usage dashboard: counters per service (known keys localised, unknown shown raw) and bars',
       (tester) async {
-        final repo = _repo()..usageResult = _usage();
+        final backend = _backend()..seedUsage('t-a', _usage());
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-a',
           size: const Size(360, 1800),
         );
@@ -351,27 +359,29 @@ void main() {
     testWidgets(
       'usage trend: a line chart of the chosen counter over the snapshots',
       (tester) async {
-        final repo = _repo()
-          ..usageResult = _usage()
-          ..history = [snap(1, 60), snap(2, 70), snap(3, 80)];
+        final backend = _backend()
+          ..seedUsage('t-a', _usage())
+          ..seedUsageHistory('t-a', [snap(1, 60), snap(2, 70), snap(3, 80)]);
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-a',
           size: const Size(360, 2400),
         );
         expect(find.byKey(const Key('usage-trend')), findsOneWidget);
         expect(find.byType(LineChart), findsOneWidget);
         expect(find.byKey(const Key('usage-trend-counter')), findsOneWidget);
-        expect(repo.calls, contains('usageHistory'));
+        expect(backend.requestsTo('$_norte/usage/history'), isNotEmpty);
       },
     );
 
     testWidgets('usage trend: empty history says so', (tester) async {
-      final repo = _repo()..usageResult = _usage();
+      final backend = _backend()
+        ..seedUsage('t-a', _usage())
+        ..seedUsageHistory('t-a', []);
       await _pumpPlatform(
         tester,
-        repo,
+        backend,
         location: '/platform/t-a',
         size: const Size(360, 2400),
       );
@@ -380,18 +390,19 @@ void main() {
     });
 
     testWidgets('usage trend: loading and error with retry', (tester) async {
-      final repo = _repo()
-        ..usageResult = _usage()
-        ..historyFails = true;
+      final backend = _backend()
+        ..seedUsage('t-a', _usage())
+        ..fail('$_norte/usage/history');
       await _pumpPlatform(
         tester,
-        repo,
+        backend,
         location: '/platform/t-a',
         size: const Size(360, 2400),
       );
       expect(find.byKey(const Key('usage-trend-error')), findsOneWidget);
-      repo.historyFails = false;
-      repo.history = [snap(1, 60)];
+      backend
+        ..heal()
+        ..seedUsageHistory('t-a', [snap(1, 60)]);
       await tester.tap(
         find.descendant(
           of: find.byKey(const Key('usage-trend-error')),
@@ -405,13 +416,14 @@ void main() {
     testWidgets('unavailableServices shows the notice naming the services', (
       tester,
     ) async {
-      final repo = _repo()
-        ..usageResult = _usage(
-          unavailable: [api.TenantUsageUnavailableServicesEnum.game],
+      final backend = _backend()
+        ..seedUsage(
+          't-a',
+          _usage(unavailable: [api.TenantUsageUnavailableServicesEnum.game]),
         );
       await _pumpPlatform(
         tester,
-        repo,
+        backend,
         location: '/platform/t-a',
         size: const Size(360, 1800),
       );
@@ -420,15 +432,15 @@ void main() {
     });
 
     testWidgets('a usage failure does not hide the tenant', (tester) async {
-      final repo = _repo()..usageFails = true;
-      await _pumpPlatform(tester, repo, location: '/platform/t-a');
+      final backend = _backend()..fail('$_norte/usage');
+      await _pumpPlatform(tester, backend, location: '/platform/t-a');
       expect(find.text('club-norte'), findsOneWidget);
       expect(find.byKey(const Key('usage-failed')), findsOneWidget);
     });
 
     testWidgets('tenant lookup error shows retry', (tester) async {
-      final repo = _repo()..failWith = StateError('x');
-      await _pumpPlatform(tester, repo, location: '/platform/t-a');
+      final backend = _backend()..fail(_norte);
+      await _pumpPlatform(tester, backend, location: '/platform/t-a');
       expect(find.text('Reintentar'), findsOneWidget);
     });
   });
@@ -439,13 +451,9 @@ void main() {
     const withdrawnNote =
         'La academia está retirada: sus administradores ya no se pueden consultar ni modificar.';
 
-    FakePlatformRepository repoWith(
-      List<api.TenantAdmin> admins, {
-      List<api.Tenant>? tenants,
-    }) => FakePlatformRepository(
-      tenants: tenants ?? _repo().list,
-      admins: {'t-a': admins},
-    );
+    /// The three academies, Club Norte (`t-a`) with [admins].
+    MockBackend repoWith(List<api.TenantAdmin> admins) =>
+        _backend()..seedAdmins('t-a', admins);
 
     final ana = adminOf(
       'p-ana',
@@ -509,10 +517,10 @@ void main() {
     testWidgets('loading shows a spinner inside the section only', (
       tester,
     ) async {
-      final repo = repoWith([ana])..adminsGate = Completer<void>();
+      final backend = repoWith([ana])..hang(_admins);
       await _pumpPlatform(
         tester,
-        repo,
+        backend,
         location: '/platform/t-a',
         settle: false,
       );
@@ -524,16 +532,16 @@ void main() {
     testWidgets('list error keeps the tenant visible and retries', (
       tester,
     ) async {
-      final repo = repoWith([ana])..adminsListFails = StateError('x');
+      final backend = repoWith([ana])..fail(_admins);
       await _pumpPlatform(
         tester,
-        repo,
+        backend,
         location: '/platform/t-a',
         size: const Size(360, 1800),
       );
       expect(find.byKey(const Key('admins-error')), findsOneWidget);
       expect(find.byKey(const Key('tenant-suspend')), findsOneWidget);
-      repo.adminsListFails = null;
+      backend.heal();
       await tapKey2(tester, 'admins-retry');
       expect(find.text('Ana Ruiz'), findsOneWidget);
       expect(find.byKey(const Key('admins-error')), findsNothing);
@@ -542,10 +550,10 @@ void main() {
     testWidgets(
       'add: explains promotion vs temporary password (no e-mail), validates, sends trimmed values with the academy locale',
       (tester) async {
-        final repo = repoWith([ana]);
+        final backend = repoWith([ana]);
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-a',
           size: const Size(360, 1800),
         );
@@ -558,7 +566,7 @@ void main() {
         await tapKey2(tester, 'form-submit');
         expect(find.text('Introduce un correo válido'), findsOneWidget);
         expect(find.text('Campo obligatorio'), findsNWidgets(2));
-        expect(repo.addedAdmin, isNull);
+        expect(backend.requestsTo(_admins, method: 'POST'), isEmpty);
         await tester.enterText(
           find.byKey(const Key('admin-email')),
           '  cris@example.org ',
@@ -566,11 +574,13 @@ void main() {
         await tester.enterText(find.byKey(const Key('admin-given')), ' Cris ');
         await tester.enterText(find.byKey(const Key('admin-family')), 'Mora');
         await tapKey2(tester, 'form-submit');
-        final r = repo.addedAdmin!;
+        final r = backend.lastBody(_admins);
         expect(
-          (r.email, r.givenName, r.familyName, r.locale),
-          ('cris@example.org', 'Cris', 'Mora', api.ApiLocale.es),
+          (r['email'], r['givenName'], r['familyName'], r['locale']),
+          ('cris@example.org', 'Cris', 'Mora', 'es'),
         );
+        final added = backend.lastAnswer(_admins, method: 'POST')! as Map;
+        final password = added['temporaryPassword'] as String;
         // New login: the temporary password is shown once; the list below never holds it.
         expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
         expect(
@@ -579,13 +589,13 @@ void main() {
                 find.byKey(const Key('temp-password-value')),
               )
               .data,
-          repo.newLoginPassword,
+          password,
         );
         expect(find.textContaining('cris@example.org'), findsWidgets);
         await tapKey2(tester, 'temp-password-done');
         expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
-        expect(find.text(repo.newLoginPassword!), findsNothing);
-        expect(find.byKey(const Key('admin-new-1')), findsOneWidget);
+        expect(find.text(password), findsNothing);
+        expect(find.byKey(Key('admin-${added['personId']}')), findsOneWidget);
         expect(find.textContaining('Invitación enviada'), findsNothing);
       },
     );
@@ -593,10 +603,12 @@ void main() {
     testWidgets(
       'add: an existing login (promotion) gets no dialog; the note says to use the current password',
       (tester) async {
-        final repo = repoWith([ana])..newLoginPassword = null;
+        // Cris already signs in to another academy: the login is linked.
+        final backend = repoWith([ana])
+          ..seedLogins([platformUserOf('u-cris', 'cris@example.org')]);
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-a',
           size: const Size(360, 1800),
         );
@@ -611,18 +623,21 @@ void main() {
         expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
         expect(find.textContaining('Administrador añadido'), findsOneWidget);
         expect(find.textContaining('contraseña actual'), findsOneWidget);
-        expect(find.byKey(const Key('admin-new-1')), findsOneWidget);
+        final added = backend.lastAnswer(_admins, method: 'POST')! as Map;
+        expect(find.byKey(Key('admin-${added['personId']}')), findsOneWidget);
       },
     );
 
     testWidgets(
       'add: a server conflict is explained by its code and keeps the dialog open',
       (tester) async {
-        final repo = repoWith([ana])
-          ..adminMutationFails = problem(409, 'EMAIL_TAKEN');
+        // A deactivated member of the academy has the e-mail (the mock
+        // keeps no deactivated members, so the 409 is injected).
+        final backend = repoWith([ana])
+          ..fail(_admins, method: 'POST', status: 409, code: 'EMAIL_TAKEN');
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-a',
           size: const Size(360, 1800),
         );
@@ -646,11 +661,16 @@ void main() {
     testWidgets('add: identity provider outage gets its own message', (
       tester,
     ) async {
-      final repo = repoWith([ana])
-        ..adminMutationFails = problem(502, 'IDENTITY_PROVIDER_UNAVAILABLE');
+      final backend = repoWith([ana])
+        ..fail(
+          _admins,
+          method: 'POST',
+          status: 502,
+          code: 'IDENTITY_PROVIDER_UNAVAILABLE',
+        );
       await _pumpPlatform(
         tester,
-        repo,
+        backend,
         location: '/platform/t-a',
         size: const Size(360, 1800),
       );
@@ -671,10 +691,10 @@ void main() {
     testWidgets(
       'edit: names only send no e-mail; the dialog warns that the e-mail is the login',
       (tester) async {
-        final repo = repoWith([ana, bea]);
+        final backend = repoWith([ana, bea]);
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-a',
           size: const Size(360, 1800),
         );
@@ -693,13 +713,9 @@ void main() {
         );
         await tester.enterText(find.byKey(const Key('admin-given')), 'Anita');
         await tapKey2(tester, 'form-submit');
-        expect(repo.updatedAdminId, 'p-ana');
+        final sent = backend.lastBody('$_admins/p-ana', method: 'PATCH');
         expect(
-          (
-            repo.updatedAdmin!.givenName,
-            repo.updatedAdmin!.familyName,
-            repo.updatedAdmin!.email,
-          ),
+          (sent['givenName'], sent['familyName'], sent['email']),
           ('Anita', null, null),
         );
         expect(find.text('Anita Ruiz'), findsOneWidget);
@@ -707,10 +723,10 @@ void main() {
     );
 
     testWidgets('edit: a changed e-mail is validated and sent', (tester) async {
-      final repo = repoWith([ana, bea]);
+      final backend = repoWith([ana, bea]);
       await _pumpPlatform(
         tester,
-        repo,
+        backend,
         location: '/platform/t-a',
         size: const Size(360, 1800),
       );
@@ -718,49 +734,60 @@ void main() {
       await tester.enterText(find.byKey(const Key('admin-email')), 'bad');
       await tapKey2(tester, 'form-submit');
       expect(find.text('Introduce un correo válido'), findsOneWidget);
-      expect(repo.updatedAdmin, isNull);
+      expect(backend.requestsTo(RegExp('/admins/'), method: 'PATCH'), isEmpty);
       await tester.enterText(
         find.byKey(const Key('admin-email')),
         'bea.soto@example.org',
       );
       await tapKey2(tester, 'form-submit');
-      expect(repo.updatedAdmin!.email, 'bea.soto@example.org');
+      expect(
+        backend.lastBody('$_admins/p-bea', method: 'PATCH')['email'],
+        'bea.soto@example.org',
+      );
       expect(find.text('bea.soto@example.org'), findsOneWidget);
     });
 
     testWidgets('edit without changes closes without calling the server', (
       tester,
     ) async {
-      final repo = repoWith([ana, bea]);
+      final backend = repoWith([ana, bea]);
       await _pumpPlatform(
         tester,
-        repo,
+        backend,
         location: '/platform/t-a',
         size: const Size(360, 1800),
       );
       await tapKey2(tester, 'admin-edit-p-ana');
       await tapKey2(tester, 'form-submit');
-      expect(repo.updatedAdmin, isNull);
+      expect(backend.requestsTo(RegExp('/admins/'), method: 'PATCH'), isEmpty);
       expect(find.byKey(const Key('admin-given')), findsNothing);
     });
 
     testWidgets(
       'remove asks for confirmation (other roles stay) and drops the row',
       (tester) async {
-        final repo = repoWith([ana, bea]);
+        final backend = repoWith([ana, bea]);
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-a',
           size: const Size(360, 1800),
         );
         await tapKey2(tester, 'admin-remove-p-ana');
         expect(find.textContaining('demás roles se mantienen'), findsOneWidget);
         await tapKey2(tester, 'dialog-cancel');
-        expect(repo.removedAdmins, isEmpty);
+        expect(
+          backend.requestsTo(RegExp('/admins/'), method: 'DELETE'),
+          isEmpty,
+        );
         await tapKey2(tester, 'admin-remove-p-ana');
         await tapKey2(tester, 'dialog-confirm');
-        expect(repo.removedAdmins, ['p-ana']);
+        expect(
+          backend
+              .requestsTo(RegExp('/admins/'), method: 'DELETE')
+              .map((r) => r.path),
+          ['$_admins/p-ana'],
+        );
         expect(find.text('Ana Ruiz'), findsNothing);
         expect(find.text('Administrador quitado'), findsOneWidget);
       },
@@ -769,10 +796,10 @@ void main() {
     testWidgets(
       'new temporary password is offered for pending administrators only',
       (tester) async {
-        final repo = repoWith([ana, bea]);
+        final backend = repoWith([ana, bea]);
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-a',
           size: const Size(360, 1800),
         );
@@ -786,7 +813,9 @@ void main() {
           findsOneWidget,
         );
         await tapKey2(tester, 'admin-issue-p-bea');
-        expect(repo.reissuedFor, ['p-bea']);
+        const issue = '$_admins/p-bea/temporary-password';
+        expect(backend.requestsTo(issue, method: 'POST'), hasLength(1));
+        final reissued = _passwordFrom(backend, issue);
         expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
         expect(
           tester
@@ -794,12 +823,12 @@ void main() {
                 find.byKey(const Key('temp-password-value')),
               )
               .data,
-          'Reissued-1',
+          reissued,
         );
         expect(find.textContaining('Bea Soto'), findsWidgets);
         expect(find.textContaining('bea@example.org'), findsWidgets);
         await tapKey2(tester, 'temp-password-done');
-        expect(find.text('Reissued-1'), findsNothing);
+        expect(find.text(reissued), findsNothing);
       },
     );
 
@@ -814,10 +843,10 @@ void main() {
           status: api.InvitationStatus.PENDING,
           temporaryPassword: api.TemporaryPasswordStatus.EXPIRED,
         );
-        final repo = repoWith([ana, bea, cy]);
+        final backend = repoWith([ana, bea, cy]);
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-a',
           size: const Size(360, 2400),
         );
@@ -843,39 +872,44 @@ void main() {
     testWidgets(
       'a second re-issue shows the new password, never the previous one',
       (tester) async {
-        final repo = repoWith([ana, bea]);
+        final backend = repoWith([ana, bea]);
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-a',
           size: const Size(360, 1800),
         );
+        const issue = '$_admins/p-bea/temporary-password';
         await tapKey2(tester, 'admin-issue-p-bea');
+        final first = _passwordFrom(backend, issue);
         await tapKey2(tester, 'temp-password-done');
         await tapKey2(tester, 'admin-issue-p-bea');
+        final second = _passwordFrom(backend, issue);
+        expect(second, isNot(first));
         expect(
           tester
               .widget<SelectableText>(
                 find.byKey(const Key('temp-password-value')),
               )
               .data,
-          'Reissued-2',
+          second,
         );
-        expect(find.text('Reissued-1'), findsNothing);
+        expect(find.text(first), findsNothing);
       },
     );
 
     testWidgets('re-issue: a stale state is reported by its code, no dialog', (
       tester,
     ) async {
-      final repo = repoWith([ana, bea])
-        ..adminMutationFails = problem(409, 'INVITATION_NOT_PENDING');
+      final backend = repoWith([ana, bea]);
       await _pumpPlatform(
         tester,
-        repo,
+        backend,
         location: '/platform/t-a',
         size: const Size(360, 1800),
       );
+      // Bea signed in meanwhile: her invitation is no longer pending.
+      backend.adminNow('t-a', 'p-bea')['invitationStatus'] = 'ACCEPTED';
       await tapKey2(tester, 'admin-issue-p-bea');
       expect(find.text('La invitación ya no está pendiente'), findsOneWidget);
       expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
@@ -884,11 +918,15 @@ void main() {
     testWidgets(
       're-issue: an identity provider outage is explained and shows no dialog',
       (tester) async {
-        final repo = repoWith([ana, bea])
-          ..adminMutationFails = problem(502, 'IDENTITY_PROVIDER_UNAVAILABLE');
+        final backend = repoWith([ana, bea])
+          ..fail(
+            '$_admins/p-bea/temporary-password',
+            status: 502,
+            code: 'IDENTITY_PROVIDER_UNAVAILABLE',
+          );
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-a',
           size: const Size(360, 1800),
         );
@@ -904,10 +942,10 @@ void main() {
     testWidgets(
       'the only administrator cannot be removed: action disabled and the row explains why',
       (tester) async {
-        final repo = repoWith([ana]);
+        final backend = repoWith([ana]);
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-a',
           size: const Size(360, 1800),
         );
@@ -925,7 +963,10 @@ void main() {
         );
         await tester.pumpAndSettle();
         expect(find.byKey(const Key('dialog-confirm')), findsNothing);
-        expect(repo.removedAdmins, isEmpty);
+        expect(
+          backend.requestsTo(RegExp('/admins/'), method: 'DELETE'),
+          isEmpty,
+        );
         // The other actions stay available.
         expect(
           tester
@@ -978,13 +1019,16 @@ void main() {
     testWidgets(
       'a server 409 LAST_ADMIN shows the same localised message, never the English detail',
       (tester) async {
-        final repo = repoWith([ana, bea])
-          ..adminMutationFails = problem(409, 'LAST_ADMIN');
+        final backend = repoWith([ana, bea]);
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-a',
           size: const Size(360, 1800),
+        );
+        // Another super admin removed Bea meanwhile: Ana is the last one.
+        backend.platform.admins['t-a']!.removeWhere(
+          (a) => a['personId'] == 'p-bea',
         );
         await tapKey2(tester, 'admin-remove-p-ana');
         await tapKey2(tester, 'dialog-confirm');
@@ -1013,7 +1057,7 @@ void main() {
         final h = Harness(
           me: FakeMeRepository(userWith(const [], superAdmin: true)),
           core: FakeCore(),
-          platform: FakePlatform(repo: repoWith([ana])),
+          backend: repoWith([ana]),
           prefs: {'hoops.locale': code},
         );
         await h.pump(tester, size: const Size(360, 1800));
@@ -1025,10 +1069,10 @@ void main() {
     testWidgets(
       'a withdrawn academy shows a note instead of the section, without calling the server',
       (tester) async {
-        final repo = _repo();
+        final backend = _backend();
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-c',
           size: const Size(360, 1800),
         );
@@ -1036,18 +1080,19 @@ void main() {
         expect(find.text(withdrawnNote), findsOneWidget);
         expect(find.byKey(const Key('admin-add')), findsNothing);
         expect(find.byKey(const Key('admins-error')), findsNothing);
-        expect(repo.calls, isNot(contains('admins')));
+        expect(backend.requestsTo('/platform/tenants/t-c/admins'), isEmpty);
       },
     );
 
     testWidgets(
       'a 409 TENANT_WITHDRAWN on the list (stale status) shows the note, not an error screen',
       (tester) async {
-        final repo = repoWith([ana])
-          ..adminsListFails = problem(409, 'TENANT_WITHDRAWN');
+        // Withdrawn after the page read the academy (stale status).
+        final backend = repoWith([ana])
+          ..fail(_admins, status: 409, code: 'TENANT_WITHDRAWN');
         await _pumpPlatform(
           tester,
-          repo,
+          backend,
           location: '/platform/t-a',
           size: const Size(360, 1800),
         );
@@ -1058,15 +1103,10 @@ void main() {
     );
 
     testWidgets('a suspended academy is still managed', (tester) async {
-      final repo = FakePlatformRepository(
-        tenants: _repo().list,
-        admins: {
-          't-b': [ana, bea],
-        },
-      );
+      final backend = _backend()..seedAdmins('t-b', [ana, bea]);
       await _pumpPlatform(
         tester,
-        repo,
+        backend,
         location: '/platform/t-b',
         size: const Size(360, 1800),
       );
@@ -1109,7 +1149,7 @@ void main() {
             ]),
           ),
           core: athleteCore(),
-          platform: FakePlatform(repo: _repo()),
+          backend: _backend(),
         );
         await h.pump(tester);
         await h.go(tester, '/platform');
@@ -1129,7 +1169,7 @@ void main() {
         ),
         prefs: {'hoops.selectedTenantId': membershipWithRoles({}).tenantId},
         core: athleteCore(),
-        platform: FakePlatform(repo: _repo()),
+        backend: _backend(),
       );
       await h.pump(tester);
       await h.go(tester, '/platform');
@@ -1141,24 +1181,23 @@ void main() {
       );
     });
 
-    testWidgets(
-      'the platform repository is never called for non super_admin users',
-      (tester) async {
-        final repo = _repo();
-        final h = Harness(
-          me: FakeMeRepository(
-            userWith([
-              membershipWithRoles({TenantRole.admin}),
-            ]),
-          ),
-          core: athleteCore(),
-          platform: FakePlatform(repo: repo),
-        );
-        await h.pump(tester);
-        await h.go(tester, '/platform/t-a');
-        expect(repo.calls, isEmpty);
-      },
-    );
+    testWidgets('the platform API is never called for non super_admin users', (
+      tester,
+    ) async {
+      final backend = _backend();
+      final h = Harness(
+        me: FakeMeRepository(
+          userWith([
+            membershipWithRoles({TenantRole.admin}),
+          ]),
+        ),
+        core: athleteCore(),
+        backend: backend,
+      );
+      await h.pump(tester);
+      await h.go(tester, '/platform/t-a');
+      expect(backend.requestsTo(RegExp('^/platform/'), method: null), isEmpty);
+    });
   });
 }
 

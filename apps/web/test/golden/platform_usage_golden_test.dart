@@ -2,10 +2,11 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 
-import '../support/fake_platform.dart';
 import '../support/fake_repos.dart';
 import '../support/fixtures.dart';
 import '../support/harness.dart';
+import '../support/mock_backend.dart';
+import '../support/platform_seed.dart';
 
 /// The platform console: the academy list and one academy's usage (counters per
 /// service with bars, trend chart). The usage screen is one of the four screens
@@ -44,25 +45,21 @@ void main() {
   }) async {
     tester.platformDispatcher.platformBrightnessTestValue = brightness;
     addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-    final repo =
-        FakePlatformRepository(
-            tenants: [
-              tenantOf('t-a', 'Academia Demo'),
-              tenantOf('t-b', 'Club Norte', status: api.TenantStatus.SUSPENDED),
-              tenantOf(
-                't-c',
-                'Escuela Sur',
-                status: api.TenantStatus.WITHDRAWN,
-              ),
-            ],
-            admins: {'t-a': <api.TenantAdmin>[]},
-          )
-          ..usageResult = usage
-          ..history = [for (var i = 0; i < 6; i++) snap(i + 1, 13 + i * 6)];
+    final backend = MockBackend()
+      ..seedTenants([
+        tenantOf('t-a', 'Academia Demo'),
+        tenantOf('t-b', 'Club Norte', status: api.TenantStatus.SUSPENDED),
+        tenantOf('t-c', 'Escuela Sur', status: api.TenantStatus.WITHDRAWN),
+      ])
+      ..seedAdmins('t-a', [])
+      ..seedUsage('t-a', usage)
+      ..seedUsageHistory('t-a', [
+        for (var i = 0; i < 6; i++) snap(i + 1, 13 + i * 6),
+      ]);
     final h = Harness(
       me: FakeMeRepository(userWith(const [], superAdmin: true)),
       core: FakeCore(),
-      platform: FakePlatform(repo: repo),
+      backend: backend,
     );
     await h.pump(tester, size: size);
     await h.go(tester, location);

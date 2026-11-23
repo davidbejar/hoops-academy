@@ -6,7 +6,7 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
 import '../../support/fake_athlete.dart';
-import '../../support/fake_platform.dart' show problem;
+import '../../support/problems.dart';
 import '../../support/pump_helpers.dart';
 
 final _jump = testType('ty-jump', 'VJ', 'Salto vertical', 'cm');

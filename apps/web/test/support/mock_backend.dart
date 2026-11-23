@@ -44,6 +44,19 @@ class MockBackend extends MockApiAdapter {
 
   MockAcademyApis get academyApis => academy(tenantAId)!;
 
+  /// A Dio on this backend that signs its requests (no interceptors), for
+  /// tests of providers without the app.
+  Dio dio() => Dio(
+    BaseOptions(
+      baseUrl: 'http://mock',
+      headers: {'Authorization': 'Bearer test'},
+    ),
+  )..httpClientAdapter = this;
+
+  /// The generated core client on [dio].
+  api.HoopsCoreApi coreApi() =>
+      api.HoopsCoreApi(dio: dio(), interceptors: const []);
+
   /// Points the app's one Dio at this backend.
   List<Override> get overrides => [apiAdapterProvider.overrideWithValue(this)];
 
@@ -60,9 +73,16 @@ class MockBackend extends MockApiAdapter {
     _Fault(path, method, once, problem: (status: status, code: code)),
   );
 
-  /// Never answers the matching requests (the loading state) until [heal].
-  void hang(Pattern path, {String? method}) =>
-      _faults.add(_Fault(path, method, false, hang: true));
+  /// Holds the matching requests (the loading state) until the returned
+  /// release is called; then they and later ones reach the mock.
+  void Function() hang(Pattern path, {String? method}) {
+    final fault = _Fault(path, method, false, gate: Completer<void>());
+    _faults.add(fault);
+    return () {
+      _faults.remove(fault);
+      if (!fault.gate!.isCompleted) fault.gate!.complete();
+    };
+  }
 
   /// The matching requests fail like a dropped connection until [heal].
   void networkDown(Pattern path, {String? method}) =>
@@ -91,8 +111,16 @@ class MockBackend extends MockApiAdapter {
     RequestOptions options,
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
-  ) async {
+  ) {
     requests.add(options);
+    return _answer(options, requestStream, cancelFuture);
+  }
+
+  Future<ResponseBody> _answer(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
     final fault = _faults
         .where(
           (f) =>
@@ -102,7 +130,10 @@ class MockBackend extends MockApiAdapter {
         .firstOrNull;
     if (fault != null) {
       if (fault.once) _faults.remove(fault);
-      if (fault.hang) await Completer<void>().future;
+      if (fault.gate != null) {
+        await fault.gate!.future;
+        return _answer(options, requestStream, cancelFuture);
+      }
       if (fault.network) {
         throw DioException.connectionError(
           requestOptions: options,
@@ -187,7 +218,7 @@ class _Fault {
     String? method,
     this.once, {
     this.problem,
-    this.hang = false,
+    this.gate,
     this.network = false,
   }) : method = method?.toUpperCase();
 
@@ -195,7 +226,7 @@ class _Fault {
   final String? method;
   final bool once;
   final ({int status, String? code})? problem;
-  final bool hang;
+  final Completer<void>? gate;
   final bool network;
 }
 

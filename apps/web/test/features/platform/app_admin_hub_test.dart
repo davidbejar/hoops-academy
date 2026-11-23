@@ -5,7 +5,6 @@ import 'package:hoops_app/app/shell.dart';
 import 'package:hoops_app/core/navigation/destinations.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
-import '../../support/fake_platform.dart';
 import '../../support/fake_repos.dart';
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
@@ -17,14 +16,12 @@ import '../../support/pump_helpers.dart';
 /// admin can do, like the academy admin hub of WP75.
 Future<Harness> _pump(
   WidgetTester tester, {
-  FakePlatformRepository? repo,
   MockBackend? backend,
   Size size = const Size(360, 780),
   String location = '/app-admin',
 }) async {
   return pumpAsSuperAdmin(
     tester,
-    platform: repo,
     backend: backend,
     size: size,
     location: location == '/app-admin' ? null : location,
@@ -79,12 +76,19 @@ void main() {
   testWidgets('billing is a placeholder and its screen calls nothing', (
     tester,
   ) async {
-    final repo = FakePlatformRepository();
-    await _pump(tester, repo: repo, location: '/app-admin/billing');
+    final backend = MockBackend();
+    await _pump(tester, backend: backend, location: '/app-admin/billing');
 
     expect(find.byKey(const Key('billing-soon')), findsOneWidget);
     expect(find.text('La facturación llega pronto'), findsOneWidget);
-    expect(repo.calls, isEmpty);
+    // Only the navigation's pending-requests badge reads the platform.
+    expect(
+      backend.requestsTo(
+        RegExp('^/platform/(tenants|users|audit-events)'),
+        method: null,
+      ),
+      isEmpty,
+    );
     // The back arrow returns to the hub.
     await tester.tap(find.byKey(const Key('back-button')));
     await tester.pumpAndSettle();

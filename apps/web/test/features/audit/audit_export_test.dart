@@ -9,7 +9,7 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/export_overrides.dart';
 import '../../support/fake_export.dart';
-import '../../support/fake_platform.dart';
+import '../../support/platform_seed.dart';
 import '../../support/fake_repos.dart';
 import '../../support/harness.dart';
 import '../../support/mock_backend.dart';
@@ -43,11 +43,9 @@ Future<Harness> _platform(
   FakeFileDownloader downloader,
   String location,
 ) async {
-  final club = tenantOf('t-a', 'Club Norte');
-  backend.platform.tenants.add(coreJson(club));
+  backend.seedTenants([tenantOf('t-a', 'Club Norte')]);
   return pumpAsSuperAdmin(
     tester,
-    platform: FakePlatformRepository(tenants: [club]),
     location: location,
     size: const Size(1024, 900),
     backend: backend,

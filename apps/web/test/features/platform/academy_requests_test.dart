@@ -2,7 +2,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 
-import '../../support/fake_platform.dart';
 import '../../support/fake_repos.dart';
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
@@ -44,16 +43,10 @@ Future<Harness> _pump(
   MockBackend backend, {
   bool superAdmin = true,
   String location = '/app-admin/requests',
-  FakePlatformRepository? platform,
 }) async {
   final h = Harness(
     me: FakeMeRepository(userWith(const [], superAdmin: superAdmin)),
     core: FakeCore(),
-    platform: FakePlatform(
-      repo:
-          platform ??
-          FakePlatformRepository(tenants: [tenantOf('t-a', 'Club Norte')]),
-    ),
     backend: backend,
   );
   await h.pump(tester, size: const Size(390, 1400));

@@ -52,6 +52,18 @@ class MockPlatformApi {
   @visibleForTesting
   List<Map<String, Object?>> get academyRequests => _requests;
 
+  /// Seeding for the tests: what `usage` answers per academy id (`TenantUsage` shape) instead of made-up figures.
+  @visibleForTesting
+  final Map<String, Map<String, Object?>> usageOf = {};
+
+  /// Seeding for the tests: what `usage/history` answers per academy id (`TenantUsageHistory` shape).
+  @visibleForTesting
+  final Map<String, Map<String, Object?>> historyOf = {};
+
+  /// Seeding for the tests: logins besides the administrators (`PlatformUser` shape, with their memberships).
+  @visibleForTesting
+  final List<Map<String, Object?>> logins = [];
+
   String _id(String prefix) => '$prefix-${_seq++}';
   String get _stamp => _now().toUtc().toIso8601String();
   String _password() => 'MockPass${(_seq++).toString().padLeft(4, '0')}xY';
@@ -431,7 +443,7 @@ class MockPlatformApi {
         membership(academyA, 'm-pat', 'Pat', 'Padre', ['PARENT']),
       );
     }
-    return byEmail.values.toList();
+    return [...byEmail.values, ...logins];
   }
 
   /// Whether [email] already signs in (an administrator or member somewhere): such a login is linked, not created,
@@ -546,8 +558,14 @@ class MockPlatformApi {
         'tenant.reactivated',
         b,
       ),
-      ('GET', ['usage']) => MockResult.json(200, _usage(tenant)),
-      ('GET', ['usage', 'history']) => MockResult.json(200, _history(tenant)),
+      ('GET', ['usage']) => MockResult.json(
+        200,
+        usageOf[tenant['id']] ?? _usage(tenant),
+      ),
+      ('GET', ['usage', 'history']) => MockResult.json(
+        200,
+        historyOf[tenant['id']] ?? _history(tenant),
+      ),
       (_, ['admins', ...]) => _adminRoute(
         tenant,
         method,
@@ -892,6 +910,14 @@ class MockPlatformApi {
   Map<String, Object?> _usage(Map<String, Object?> tenant) {
     final now = _now().toUtc();
     final id = '${tenant['id']}';
+    if (!demo) {
+      return {
+        'tenantId': id,
+        'collectedAt': now.toIso8601String(),
+        'services': <Object?>[],
+        'unavailableServices': <String>[],
+      };
+    }
     return {
       'tenantId': id,
       'collectedAt': now.toIso8601String(),
@@ -906,6 +932,10 @@ class MockPlatformApi {
   Map<String, Object?> _history(Map<String, Object?> tenant) {
     final now = _now().toUtc();
     final id = '${tenant['id']}';
+    if (!demo) {
+      final day = now.toIso8601String().substring(0, 10);
+      return {'tenantId': id, 'from': day, 'to': day, 'snapshots': <Object?>[]};
+    }
     // About four months, one snapshot every 3 to 4 weeks; the second one is partial (the game service was down).
     final daysAgo = [120, 91, 62, 35, 14, 0];
     String day(DateTime d) => d.toIso8601String().substring(0, 10);

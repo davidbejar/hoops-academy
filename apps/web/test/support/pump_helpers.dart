@@ -5,7 +5,6 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import 'fake_athlete.dart';
 import 'fake_game.dart';
-import 'fake_platform.dart';
 import 'fake_repos.dart';
 import 'fixtures.dart';
 import 'harness.dart';
@@ -25,7 +24,6 @@ Future<Harness> pumpAs(
   FakeTenantRepository? tenant,
   FakeGame? game,
   FakeAthlete? athlete,
-  FakePlatform? platform,
   bool superAdmin = false,
   String? ownPlayerId,
   String? timezone,
@@ -49,7 +47,6 @@ Future<Harness> pumpAs(
     core: core,
     game: game,
     athlete: athlete,
-    platform: platform,
     tenant: tenant,
     extraOverrides: overrides,
   );
@@ -64,7 +61,6 @@ Future<Harness> pumpAs(
 /// academy membership) and, with a [location], navigates there.
 Future<Harness> pumpAsSuperAdmin(
   WidgetTester tester, {
-  FakePlatformRepository? platform,
   String? location,
   Size size = const Size(360, 780),
   bool settle = true,
@@ -75,7 +71,6 @@ Future<Harness> pumpAsSuperAdmin(
     backend: backend,
     me: FakeMeRepository(userWith(const [], superAdmin: true)),
     core: FakeCore(),
-    platform: FakePlatform(repo: platform ?? FakePlatformRepository()),
     extraOverrides: overrides,
   );
   await h.pump(tester, size: size);

@@ -2,10 +2,11 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 
-import '../support/fake_platform.dart';
 import '../support/fake_repos.dart';
 import '../support/fixtures.dart';
 import '../support/harness.dart';
+import '../support/mock_backend.dart';
+import '../support/platform_seed.dart';
 
 /// Regenerate with `flutter test --update-goldens test/golden/platform_admins_golden_test.dart`.
 void main() {
@@ -35,12 +36,9 @@ void main() {
     final h = Harness(
       me: FakeMeRepository(userWith(const [], superAdmin: true)),
       core: FakeCore(),
-      platform: FakePlatform(
-        repo: FakePlatformRepository(
-          tenants: [tenantOf('t-a', 'Club Norte')],
-          admins: {'t-a': admins},
-        ),
-      ),
+      backend: MockBackend()
+        ..seedTenants([tenantOf('t-a', 'Club Norte')])
+        ..seedAdmins('t-a', admins),
     );
     await h.pump(tester, size: size);
     await h.go(tester, '/platform/t-a');

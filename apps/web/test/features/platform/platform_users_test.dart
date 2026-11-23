@@ -5,22 +5,24 @@ import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/features/platform/presentation/platform_users_screen.dart';
 
-import '../../support/fake_platform.dart';
+import 'package:hoops_app/core/mock/mock_query.dart';
+
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
+import '../../support/mock_backend.dart';
+import '../../support/platform_seed.dart';
 import '../../support/pump_helpers.dart';
 import '../../support/fake_repos.dart' show FakeCore;
 
 /// The Users area of the application admin (WP99): every login with its
 /// memberships per academy, search with debounce, paging.
-FakePlatformRepository _repo({int extra = 0}) {
-  final repo = FakePlatformRepository(
-    tenants: [
+MockBackend _repo({int extra = 0}) {
+  final backend = MockBackend()
+    ..seedTenants([
       tenantOf('t-a', 'Hangtuah'),
       tenantOf('t-b', 'Dewa United', status: api.TenantStatus.SUSPENDED),
-    ],
-  );
-  repo.userList.addAll([
+    ]);
+  backend.seedLogins([
     platformUserOf(
       'u-1',
       'ana@example.org',
@@ -53,12 +55,21 @@ FakePlatformRepository _repo({int extra = 0}) {
     ),
     for (var i = 0; i < extra; i++) platformUserOf('x-$i', 'extra$i@x.org'),
   ]);
-  return repo;
+  return backend;
 }
+
+/// The user-list requests the screen sent: search text and page.
+List<({String? query, int page})> _userRequests(MockBackend backend) => [
+  for (final r in backend.requestsTo('/platform/users'))
+    (
+      query: MockQuery(r.queryParameters).text('q'),
+      page: MockQuery(r.queryParameters).integer('page', 0),
+    ),
+];
 
 Future<Harness> _pump(
   WidgetTester tester,
-  FakePlatformRepository repo, {
+  MockBackend backend, {
   bool superAdmin = true,
   Size size = const Size(360, 1400),
 }) async {
@@ -74,7 +85,7 @@ Future<Harness> _pump(
       ),
     ),
     core: FakeCore(),
-    platform: FakePlatform(repo: repo),
+    backend: backend,
   );
   await h.pump(tester, size: size);
   await h.go(tester, '/app-admin/users');
@@ -130,18 +141,18 @@ void main() {
     testWidgets('waits for typing to pause, then asks for the query', (
       tester,
     ) async {
-      final repo = _repo();
-      await _pump(tester, repo);
-      expect(repo.userRequests.last.query, isNull);
-      final before = repo.userRequests.length;
+      final backend = _repo();
+      await _pump(tester, backend);
+      expect(_userRequests(backend).last.query, isNull);
+      final before = _userRequests(backend).length;
 
       await tester.enterText(find.byKey(const Key('users-search')), 'ana');
       await tester.pump(usersSearchDebounce - const Duration(milliseconds: 50));
-      expect(repo.userRequests.length, before, reason: 'still typing');
+      expect(_userRequests(backend).length, before, reason: 'still typing');
 
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
-      expect(repo.userRequests.last, (query: 'ana', page: 0));
+      expect(_userRequests(backend).last, (query: 'ana', page: 0));
       expect(find.byKey(const Key('user-u-1')), findsOneWidget);
       expect(find.byKey(const Key('user-u-2')), findsNothing);
     });
@@ -149,9 +160,9 @@ void main() {
     testWidgets('typing quickly sends one request for the last text', (
       tester,
     ) async {
-      final repo = _repo();
-      await _pump(tester, repo);
-      final before = repo.userRequests.length;
+      final backend = _repo();
+      await _pump(tester, backend);
+      final before = _userRequests(backend).length;
 
       for (final text in ['b', 'bu', 'bud', 'budi']) {
         await tester.enterText(find.byKey(const Key('users-search')), text);
@@ -160,21 +171,21 @@ void main() {
       await tester.pump(usersSearchDebounce);
       await tester.pumpAndSettle();
 
-      expect(repo.userRequests.length, before + 1);
-      expect(repo.userRequests.last.query, 'budi');
+      expect(_userRequests(backend).length, before + 1);
+      expect(_userRequests(backend).last.query, 'budi');
     });
 
     testWidgets('one character is not searched (the server wants two)', (
       tester,
     ) async {
-      final repo = _repo();
-      await _pump(tester, repo);
+      final backend = _repo();
+      await _pump(tester, backend);
 
       await tester.enterText(find.byKey(const Key('users-search')), 'a');
       await tester.pump(usersSearchDebounce);
       await tester.pumpAndSettle();
 
-      expect(repo.userRequests.every((r) => r.query == null), isTrue);
+      expect(_userRequests(backend).every((r) => r.query == null), isTrue);
       expect(find.text('Escribe al menos 2 caracteres'), findsOneWidget);
     });
 
@@ -189,16 +200,16 @@ void main() {
     });
 
     testWidgets('a new search starts again at the first page', (tester) async {
-      final repo = _repo(extra: 40);
-      await _pump(tester, repo);
+      final backend = _repo(extra: 40);
+      await _pump(tester, backend);
       await tapKey(tester, 'users-next');
-      expect(repo.userRequests.last.page, 1);
+      expect(_userRequests(backend).last.page, 1);
 
       await tester.enterText(find.byKey(const Key('users-search')), 'extra');
       await tester.pump(usersSearchDebounce);
       await tester.pumpAndSettle();
 
-      expect(repo.userRequests.last, (query: 'extra', page: 0));
+      expect(_userRequests(backend).last, (query: 'extra', page: 0));
     });
   });
 
@@ -209,8 +220,8 @@ void main() {
     });
 
     testWidgets('next and previous move through the pages', (tester) async {
-      final repo = _repo(extra: 40);
-      await _pump(tester, repo);
+      final backend = _repo(extra: 40);
+      await _pump(tester, backend);
 
       expect(find.text('Página 1 de 2'), findsOneWidget);
       expect(
@@ -221,18 +232,18 @@ void main() {
       );
       await tapKey(tester, 'users-next');
       expect(find.text('Página 2 de 2'), findsOneWidget);
-      expect(repo.userRequests.last.page, 1);
+      expect(_userRequests(backend).last.page, 1);
       await tapKey(tester, 'users-previous');
-      expect(repo.userRequests.last.page, 0);
+      expect(_userRequests(backend).last.page, 0);
     });
   });
 
   testWidgets('a failing list offers a retry', (tester) async {
-    final repo = _repo()..failWith = StateError('down');
-    await _pump(tester, repo);
+    final backend = _repo()..fail('/platform/users');
+    await _pump(tester, backend);
 
     expect(find.byKey(const Key('retry-button')), findsOneWidget);
-    repo.failWith = null;
+    backend.heal();
     await tapKey(tester, 'retry-button');
     expect(find.byKey(const Key('user-u-1')), findsOneWidget);
   });
@@ -240,10 +251,10 @@ void main() {
   testWidgets('only a super admin: a coach is sent to the own menu, no call', (
     tester,
   ) async {
-    final repo = _repo();
-    final h = await _pump(tester, repo, superAdmin: false);
+    final backend = _repo();
+    final h = await _pump(tester, backend, superAdmin: false);
 
     expect(h.container.read(routerProvider).state.uri.path, '/teams');
-    expect(repo.calls, isEmpty);
+    expect(backend.requestsTo(RegExp('^/platform/'), method: null), isEmpty);
   });
 }

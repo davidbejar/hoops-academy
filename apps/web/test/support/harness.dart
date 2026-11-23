@@ -30,7 +30,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_athlete.dart';
 import 'fake_game.dart';
-import 'fake_platform.dart';
 import 'fake_repos.dart';
 import 'mock_backend.dart';
 
@@ -120,13 +119,11 @@ class Harness {
     this.core,
     FakeGame? game,
     FakeAthlete? athlete,
-    FakePlatform? platform,
     MockBackend? backend,
     this.extraOverrides = const [],
   }) : backend = backend ?? _backendFor(me.user),
        game = game ?? FakeGame(),
        athlete = athlete ?? FakeAthlete(),
-       platform = platform ?? FakePlatform(),
        auth =
            auth ??
            MockAuthService(
@@ -165,9 +162,6 @@ class Harness {
 
   /// In-memory athlete-service side (training, plans, health, fitness).
   final FakeAthlete athlete;
-
-  /// In-memory platform console repository.
-  final FakePlatform platform;
 
   final List<Override> extraOverrides;
   final online = StreamController<bool>.broadcast();
@@ -233,7 +227,6 @@ class Harness {
         ],
         ...game.overrides,
         ...athlete.overrides,
-        ...platform.overrides,
         ...extraOverrides,
         // Deferred libraries load in real time; make them instant in tests.
         libraryLoaderProvider.overrideWithValue(

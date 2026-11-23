@@ -2,10 +2,11 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 
-import '../support/fake_platform.dart';
 import '../support/fake_repos.dart';
 import '../support/fixtures.dart';
 import '../support/harness.dart';
+import '../support/mock_backend.dart';
+import '../support/platform_seed.dart';
 
 /// Regenerate with `flutter test --update-goldens test/golden/temporary_password_golden_test.dart`.
 void main() {
@@ -30,16 +31,12 @@ void main() {
   }) async {
     tester.platformDispatcher.platformBrightnessTestValue = brightness;
     addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-    final repo = FakePlatformRepository(
-      tenants: [tenantOf('t-a', 'Club Norte')],
-      admins: {
-        't-a': [ana, bea],
-      },
-    )..reissuedPrefix = 'Demo-Temp-Pass-';
     final h = Harness(
       me: FakeMeRepository(userWith(const [], superAdmin: true)),
       core: FakeCore(),
-      platform: FakePlatform(repo: repo),
+      backend: MockBackend()
+        ..seedTenants([tenantOf('t-a', 'Club Norte')])
+        ..seedAdmins('t-a', [ana, bea]),
     );
     await h.pump(tester, size: size);
     await h.go(tester, '/platform/t-a');

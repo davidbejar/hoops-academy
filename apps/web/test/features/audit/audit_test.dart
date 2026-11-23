@@ -12,11 +12,11 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/l10n/gen/app_localizations.dart';
 
 import '../../support/audit_seed.dart';
-import '../../support/fake_platform.dart';
 import '../../support/fake_repos.dart';
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
 import '../../support/mock_backend.dart';
+import '../../support/platform_seed.dart';
 import '../../support/pump_helpers.dart';
 
 const _academyTrail = '/api/core/audit-events';
@@ -29,7 +29,7 @@ MockBackend _academyWith([List<AuditEntry> entries = const []]) =>
 /// The backend with Club Norte (`t-a`) and [entries] as the platform trail.
 MockBackend _platformWith([List<AuditEntry> entries = const []]) =>
     MockBackend()
-      ..platform.tenants.add(coreJson(tenantOf('t-a', 'Club Norte')))
+      ..seedTenants([tenantOf('t-a', 'Club Norte')])
       ..seedPlatformTrail(entries);
 
 List<AuditEntry> _trail() => [
@@ -87,9 +87,6 @@ Future<Harness> _pumpPlatform(
   final h = Harness(
     me: FakeMeRepository(userWith(const [], superAdmin: superAdmin)),
     core: FakeCore(),
-    platform: FakePlatform(
-      repo: FakePlatformRepository(tenants: [tenantOf('t-a', 'Club Norte')]),
-    ),
     backend: backend,
   );
   await h.pump(tester, size: const Size(1024, 900));
