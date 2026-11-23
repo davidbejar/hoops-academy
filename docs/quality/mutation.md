@@ -17,7 +17,7 @@ treatment with a Dart mutation tool ([Web rule code](#web-rule-code-dart-mutatio
 |---|---|---|---|---|---|
 | `common-quarkus` | `TenantId`, `TenantContext`, `AuthzContext`, `Problem`, `ProblemType`, `CoreRosterClient`, `RosterAuthzResolver`, `TenantHeaderPropagationFilter`, `ServiceTokenClientFilter`, `AuthzDenial`, `DenialKind`, `TokenFailureReason` (WP85) + `ExclusiveLocks`, `TenantScopedPaths`, `ProblemMapping` (WP88) + `UnsafeText`, `PageOffset` (WP84) + `replica.ReplicaRetention`, `replica.ParkedPosition` (moved from game and athlete), `contracts.ContractResources` (WP98) | their plain unit tests | 338 | 39 s³ | 99 |
 | `core-service` | `core.domain.*` + `LoginProvisioning`, `TemporaryPasswordGenerator`, `AuthzCache`, `AuditActorKind`, `AuditFilter`, `AuditAction`, the event classes `EventTopic`, `RosterPayloads`, `RosterEventAppender`, `EventEnvelopes`, `TenantEvents` (WP67), `KafkaEventBroker` (WP81) + `BackfillPlan`, `DecideAcademyRequest`, `ChangedFields`, `AuditEntry`, `PatchBody` (WP88) + the export renderers `adapters.in.export.*` and `ExportPages` (WP96) | `core.domain.*` tests + the tests of those classes | 926 | 108 s | 99 |
-| `game-service` | `game.domain.*` + `EventAuthorization`, `StatVisibility`, the replica rules `ReplicaAuthzResolver`, `ReplicaRosterPort`, `ReplicaPlayer`, `ReplicaTenant`, `ReplicaPerson` (WP68) + `EventAdmission`, `EventLedger`, `MatchEventDecoder`, `RosterEventDecoder` (WP88); `ReplicaRetention`, `ParkedPosition` moved to common-quarkus (WP98) | `game.domain.*` tests + the tests of those classes | 527 | 84 s³ | 99 |
+| `game-service` | `game.domain.*` + `EventAuthorization`, `StatVisibility`, the replica rules `ReplicaAuthzResolver`, `ReplicaRosterPort`, `ReplicaPlayer`, `ReplicaTenant`, `ReplicaPerson` (WP68) + `EventAdmission`, `EventLedger`, `MatchEventDecoder`, `RosterEventDecoder` (WP88) + `VoidMarks` (WP126); `ReplicaRetention`, `ParkedPosition` moved to common-quarkus (WP98) | `game.domain.*` tests + the tests of those classes | 527 | 84 s³ | 99 |
 | `athlete-service` | `athlete.domain.*` + the replica rules `ApplyRosterEvent`, `RosterChange`, `RosterTopic` and the adapters' parsers `CoreEventDecoder`, `AcceptLanguage`, `PatchBody`, `RosterSource` (WP88); `ReplicaRetention`, `ParkedPosition` moved to common-quarkus (WP98) | `athlete.domain.*` tests + `ApplyRosterEventRulesTest`, `CoreEventDecoderTest`, `AcceptLanguageTest`, `PatchBodyTest`, `RosterSourceTest` | 690 | 121 s³ | 100 |
 
 ¹ Wall clock of `just mutation <module>` including compilation, on the development Mac (Apple M1 Pro, 10 cores, shared
@@ -36,6 +36,9 @@ WP98 (2026-11-10): common-quarkus 337/338 (99.7 %; the one survivor is the liste
 mutant), game-service 525/527 (99.6 %), athlete-service 690/690 (100 %). The scopes moved with the code: `ReplicaRetention`
 and `ParkedPosition` (one copy, one rules test) are mutated in common-quarkus instead of in game and athlete, and the
 decoders' resource guards became common's `ContractResources`. core-service: see WP96 (not changed by WP98).
+
+WP126 (2026-11-23): game-service 572/574 (99.6 %; the scope grew by `VoidMarks`, the voided_by marks a re-projection
+changes, and `ReplicaRosterPort.team`), 117 s on a host shared with three other worktrees.
 
 ² WP92, 2026-11-10, host shared with four other worktrees.
 ³ WP98, 2026-11-10, host shared with other worktrees.

@@ -62,3 +62,62 @@ Not yours: GAME-05 and GAME-06 (WP130), GAME-07 (WP137), GAME-09, GAME-10, GAME-
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points, ID table (work-package skill). -->
+- **Built** (16 commits, `11f0841f`..`329d8fa5`, every behaviour change after its red test):
+  - Feed cursor (bug): `GetMatchEvents` returns `match.score().lastServerSeq()` (the summary, read with the match before
+    the page); `MatchEventRepository.lastServerSeq` is gone. A page is 3 statements. Red test `FeedCursorTest` (a
+    batch committed while the page is read was skipped by a contract-following client); `ConcurrentIngestTest` now
+    asserts the summary holds the highest sequence number.
+  - Parked events (bug, X-01 part): `V8__parked_event_unique_position.sql` merges rows parked twice (oldest stays,
+    inspected when any copy was; checked on a throwaway Postgres) and adds `unique (topic, kafka_partition,
+    kafka_offset)`; `JdbcParkedRecordRepository` inserts `on conflict do nothing`. The identity `id` stays (runbook and
+    retention use it). Red test `RosterReplicaSchemaTest.aReplayedRecordIsParkedOnce`.
+  - Ingest: `IngestEventBatch` keeps the stored list it read; `MatchReprojection.reproject(match, stored, appended)`
+    projects from it plus `EventLedger.accepted()`; new pure `VoidMarks` (PIT scope) writes only the `voided_by` marks
+    that changed, in one batch (none when unchanged; a target arriving after its VOID is still marked); `lockById` maps
+    with `MatchScore.NONE` (no score query). Pinned by `IngestBatchStatementsTest` (spies: one read, two queries for a
+    one-event batch, no update, no batch when nothing changed).
+  - `sync_receipt` and the `server_seq` unique key dropped (`V9__drop_sync_receipt.sql`); port method, adapter, call,
+    RLS fixture removed; `docs/domain/game-model.md` regenerated (`just diagrams`).
+  - `RosterPort.team(tenant, team)` → `TeamBrief`; replica: tenant check + `team_ref` by id; REST: mapped from the
+    cached roster answer. Used by `PastSeasons` and `GetMatchSheetPdf`. Parity in `RosterPortContractTest`; rules in
+    `ReplicaRosterPortTest`; new `PastSeasonsTest`.
+  - `RosterConsumerSwitchedOffTest` without its profile; `ChangeMatchStatus` replaces Start/Finish/CancelMatch;
+    `JdbcMatchEventRepository` / `JdbcProjectionRepository` (and the root `spotbugs-exclude.xml` entry for the SQL text
+    block, renamed with the class); game README rewritten where wrong.
+- **Verified**:
+  - `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0` (fresh, 2026-11-23): common-quarkus 346 + 38 (32 skipped),
+    contracts 403, **game-service 556 tests, 0 failures, coverage gates met, SpotBugs/PMD clean**; e2e green. The
+    reactor is red only on two tests outside this WP, code unchanged from `main`: athlete
+    `ScheduleApiTest.changingTheWeekdayMovesUntouchedSessionsButKeepsEditedOnes` (1003 tests, 1 failure; date-dependent:
+    it fails when run on a Monday, the schedule's weekday, also alone) and core
+    `TemporaryPasswordSweepTriggerTest.theRequestNeitherWaitsForTheSweepNorFailsBecauseOfIt` (1225 tests, 1 failure; a
+    timing bound under load, green when re-run alone).
+  - `just mutation game-service`: 572/574 (99.6 %), baseline 99, 117 s; recorded in `docs/quality/mutation.md`.
+  - `just isolation-check` in the worktree: 6 core tests + 4 finance Go tests passed. `just db-role-check`: 13 Java tests + 2 finance Go tests passed.
+  - `scripts/model-diagrams.sh` regenerated; only `game-model.md` changed.
+- **Decisions/ADRs**: no new ADR (decisions 104, 106, 109 cover the scope; ADR-0058 unused). Amendments: ADR-0030
+  (feed cursor read from the summary, three statements), ADR-0037 game section (`parked_event` unique position).
+- **Open points / follow-ups**:
+  - `game.yaml` (not mine): with the fix `lastServerSeq` may be lower than the page's last event when a batch commits
+    between the match read and the page; a client then re-fetches events it already has (harmless, ids are stable).
+    The contract text could say "at or below".
+  - GAME-04's optional secondary (feed rows mapped straight to wire JSON instead of decode/re-encode): not done.
+  - Docs outside this WP's write list that are now stale: `docs/PLAN.md:116` lists `sync_receipt` (historic plan).
+  - The athlete date-dependent test above belongs to WP127's module.
+  - Merge: `spotbugs-exclude.xml` (root) changed one class name; `docs/domain/game-model.md` regenerated; migrations
+    V8 and V9 are new in game.
+
+| ID | Done / Skipped | What changed or why not |
+|---|---|---|
+| GAME-01 | Done | One read per batch, re-projection from it, only changed `voided_by` marks, no score query under the lock |
+| GAME-02 | Done | `recordReceipt` port/adapter/call removed, table dropped (V9), RLS fixture and diagram updated |
+| GAME-03 | Done | `RosterPort.team` → `TeamBrief`; `PastSeasons` and `GetMatchSheetPdf` use it; parity in `RosterPortContractTest` |
+| GAME-04 | Done (bug) | `lastServerSeq` from the summary read before the page; closes the cursor race; 3 statements per page |
+| GAME-08 | Done | Profile removed; the class shares the main group's Quarkus boot |
+| GAME-13 | Done | `match_event_server_seq_key` dropped in V9 |
+| GAME-14 | Done | `ChangeMatchStatus` (start, finish, cancel); REST resource and contract unchanged |
+| GAME-15 | Done | `JdbcMatchEventRepository`, `JdbcProjectionRepository`; `JpaMatchRepository` keeps its name (it uses JPA) |
+| X-01 (part) | Done (bug) | V8 unique `(topic, kafka_partition, kafka_offset)` after merging duplicates, `on conflict do nothing`; the pipeline move is WP130 |
+| README | Done | No `change-me` defaults; replica, match sheet PDF, `hoops.pdf.*`, `ChangeMatchStatus`, WP126 behaviour |
+| GAME-05, GAME-06 | Skipped | WP130 |
+| GAME-07, GAME-09..12 | Skipped | WP137 (excluded by the brief) |
