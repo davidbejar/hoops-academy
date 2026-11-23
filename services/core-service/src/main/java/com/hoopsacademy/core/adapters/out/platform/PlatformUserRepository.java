@@ -3,6 +3,7 @@ package com.hoopsacademy.core.adapters.out.platform;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.adapters.out.persistence.LikePattern;
+import com.hoopsacademy.core.adapters.out.persistence.NativeValues;
 import com.hoopsacademy.core.application.port.PlatformUsers;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
@@ -13,8 +14,6 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
-import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -93,7 +92,7 @@ class PlatformUserRepository implements PlatformUsers {
             }
         }
         return logins.entrySet().stream().map(login -> new Login(new UserId(login.getKey()),
-                Optional.ofNullable((String) login.getValue()[1]), instant(login.getValue()[2]),
+                Optional.ofNullable((String) login.getValue()[1]), NativeValues.instant(login.getValue()[2]),
                 memberships.get(login.getKey()))).toList();
     }
 
@@ -103,14 +102,5 @@ class PlatformUserRepository implements PlatformUsers {
             Arrays.stream(names.split(",")).map(TenantRole::valueOf).forEach(roles::add);
         }
         return roles;
-    }
-
-    private static Instant instant(Object value) {
-        return switch (value) {
-            case Instant instant -> instant;
-            case OffsetDateTime offset -> offset.toInstant();
-            case java.sql.Timestamp timestamp -> timestamp.toInstant();
-            default -> throw new IllegalStateException("unexpected timestamp type " + value.getClass());
-        };
     }
 }

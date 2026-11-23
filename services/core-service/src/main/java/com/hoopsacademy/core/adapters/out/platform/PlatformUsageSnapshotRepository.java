@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hoopsacademy.common.tenancy.TenantId;
+import com.hoopsacademy.core.adapters.out.persistence.NativeValues;
 import com.hoopsacademy.core.application.port.UsageReport;
 import com.hoopsacademy.core.application.port.UsageSnapshotRepository;
 import com.hoopsacademy.core.application.usage.TenantUsage;
@@ -56,11 +57,8 @@ class PlatformUsageSnapshotRepository implements UsageSnapshotRepository {
                 .setParameter("from", from)
                 .setParameter("to", to)
                 .getResultList();
-        return rows.stream().map(row -> new DailySnapshot(toDate(row[0]), fromJson(tenant, (String) row[1]))).toList();
-    }
-
-    private static LocalDate toDate(Object value) {
-        return value instanceof java.sql.Date sql ? sql.toLocalDate() : (LocalDate) value;
+        return rows.stream()
+                .map(row -> new DailySnapshot(NativeValues.date(row[0]), fromJson(tenant, (String) row[1]))).toList();
     }
 
     /** The stored report is the contract TenantUsage JSON written by {@link #save}. */

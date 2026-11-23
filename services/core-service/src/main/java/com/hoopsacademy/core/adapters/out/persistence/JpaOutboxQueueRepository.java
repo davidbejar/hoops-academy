@@ -4,8 +4,6 @@ import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.application.port.OutboxQueue;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
-import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -47,7 +45,7 @@ class JpaOutboxQueueRepository implements OutboxQueue {
         List<Object[]> rows = em.createNativeQuery(LOCK_NEXT, Object[].class).setParameter("limit", limit)
                 .getResultList();
         return rows.stream().map(row -> new PendingEvent((UUID) row[0], (String) row[1], (String) row[2],
-                new TenantId((UUID) row[3]), (String) row[4], instant(row[5]), (String) row[6])).toList();
+                new TenantId((UUID) row[3]), (String) row[4], NativeValues.instant(row[5]), (String) row[6])).toList();
     }
 
     @Override
@@ -57,14 +55,5 @@ class JpaOutboxQueueRepository implements OutboxQueue {
         }
         em.createNativeQuery("update core.outbox set published_at = clock_timestamp() where id in (:ids)")
                 .setParameter("ids", eventIds).executeUpdate();
-    }
-
-    static Instant instant(Object value) {
-        return switch (value) {
-            case Instant instant -> instant;
-            case OffsetDateTime offset -> offset.toInstant();
-            case java.sql.Timestamp timestamp -> timestamp.toInstant();
-            default -> throw new IllegalStateException("Not a timestamp: " + value.getClass());
-        };
     }
 }

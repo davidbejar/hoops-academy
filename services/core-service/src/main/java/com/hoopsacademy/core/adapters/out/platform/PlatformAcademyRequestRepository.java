@@ -2,6 +2,7 @@ package com.hoopsacademy.core.adapters.out.platform;
 
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.tenancy.TenantId;
+import com.hoopsacademy.core.adapters.out.persistence.NativeValues;
 import com.hoopsacademy.core.application.port.AcademyRequestRepository;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
@@ -17,8 +18,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.Query;
-import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -168,17 +167,8 @@ class PlatformAcademyRequestRepository implements AcademyRequestRepository {
         Requester requester = Requester.of((String) row[2], (String) row[3], RequesterRole.valueOf((String) row[4]),
                 AppLocale.fromCode((String) row[6]));
         return new AcademyRequest(new AcademyRequestId((UUID) row[0]), AcademyRequestStatus.valueOf((String) row[1]),
-                requester, AcademyName.of((String) row[5]), instant(row[7]), instant(row[8]), (String) row[9],
-                (String) row[10], row[11] == null ? null : new TenantId((UUID) row[11]), instant(row[12]));
-    }
-
-    private static Instant instant(Object value) {
-        return switch (value) {
-            case null -> null;
-            case Instant instant -> instant;
-            case OffsetDateTime offset -> offset.toInstant();
-            case java.sql.Timestamp timestamp -> timestamp.toInstant();
-            default -> throw new IllegalStateException("Not a timestamp: " + value.getClass());
-        };
+                requester, AcademyName.of((String) row[5]), NativeValues.instant(row[7]), NativeValues.instant(row[8]),
+                (String) row[9], (String) row[10], row[11] == null ? null : new TenantId((UUID) row[11]),
+                NativeValues.instant(row[12]));
     }
 }

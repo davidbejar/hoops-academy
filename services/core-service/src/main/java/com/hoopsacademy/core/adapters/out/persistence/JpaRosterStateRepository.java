@@ -19,7 +19,6 @@ import com.hoopsacademy.core.domain.tenant.TenantStatus;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
-import java.sql.Date;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.EnumSet;
@@ -171,11 +170,6 @@ class JpaRosterStateRepository implements RosterStates {
     }
 
     private static Optional<LocalDate> date(Object value) {
-        return switch (value) {
-            case null -> Optional.empty();
-            case LocalDate local -> Optional.of(local);
-            case Date sql -> Optional.of(sql.toLocalDate());
-            default -> throw new IllegalStateException("Not a date: " + value.getClass());
-        };
+        return Optional.ofNullable(NativeValues.date(value));
     }
 }

@@ -5,7 +5,6 @@ import com.hoopsacademy.core.domain.identity.TemporaryPasswordStatus;
 import com.hoopsacademy.core.domain.identity.UserId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
-import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Collection;
@@ -96,21 +95,11 @@ class JpaTemporaryPasswordLoginRepository implements TemporaryPasswordLogins {
                 .setParameter("ids", logins.stream().map(UserId::value).distinct().toList())
                 .getResultList();
         rows.stream().map(Object[].class::cast).forEach(row -> statuses.put(new UserId((UUID) row[0]),
-                TemporaryPasswordStatus.of(instant(row[1]), instant(row[2]))));
+                TemporaryPasswordStatus.of(NativeValues.instant(row[1]), NativeValues.instant(row[2]))));
         return statuses;
     }
 
     private static OffsetDateTime utc(Instant at) {
         return OffsetDateTime.ofInstant(at, java.time.ZoneOffset.UTC);
-    }
-
-    private static Instant instant(Object value) {
-        return switch (value) {
-            case null -> null;
-            case Instant instant -> instant;
-            case OffsetDateTime offset -> offset.toInstant();
-            case Timestamp timestamp -> timestamp.toInstant();
-            default -> throw new IllegalStateException("Unexpected timestamp type " + value.getClass());
-        };
     }
 }

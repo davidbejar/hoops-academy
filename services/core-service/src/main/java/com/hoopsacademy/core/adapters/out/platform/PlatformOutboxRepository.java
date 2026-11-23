@@ -2,6 +2,7 @@ package com.hoopsacademy.core.adapters.out.platform;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hoopsacademy.common.tenancy.TenantId;
+import com.hoopsacademy.core.adapters.out.persistence.NativeValues;
 import com.hoopsacademy.core.adapters.out.persistence.OutboxRowRepository;
 import com.hoopsacademy.core.application.port.OutboxBacklog;
 import com.hoopsacademy.core.application.port.OutboxEvent;
@@ -9,8 +10,6 @@ import com.hoopsacademy.core.application.port.PlatformOutboxWriter;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
-import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,15 +42,6 @@ class PlatformOutboxRepository implements PlatformOutboxWriter, OutboxBacklog {
                  group by tenant_id
                  order by min(occurred_at)""", Object[].class).getResultList();
         return rows.stream().map(row -> new TenantBacklog(new TenantId((UUID) row[0]), ((Number) row[1]).longValue(),
-                instant(row[2]))).toList();
-    }
-
-    private static Instant instant(Object value) {
-        return switch (value) {
-            case Instant instant -> instant;
-            case OffsetDateTime offset -> offset.toInstant();
-            case java.sql.Timestamp timestamp -> timestamp.toInstant();
-            default -> throw new IllegalStateException("Not a timestamp: " + value.getClass());
-        };
+                NativeValues.instant(row[2]))).toList();
     }
 }

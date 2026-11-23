@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hoopsacademy.common.tenancy.TenantId;
+import com.hoopsacademy.core.adapters.out.persistence.NativeValues;
 import com.hoopsacademy.core.adapters.out.persistence.QueryConditions;
 import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditFilter;
@@ -13,8 +14,6 @@ import com.hoopsacademy.core.application.shared.PageRequest;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -69,22 +68,13 @@ public final class AuditEventQueryRepository {
     public static AuditRecord record(Object[] row, ObjectMapper json) {
         String action = (String) row[3];
         String targetType = (String) row[6];
-        return new AuditRecord((UUID) row[0], new TenantId((UUID) row[1]), instant(row[2]),
+        return new AuditRecord((UUID) row[0], new TenantId((UUID) row[1]), NativeValues.instant(row[2]),
                 AuditAction.fromWireName(action)
                         .orElseThrow(() -> new IllegalStateException("Unknown audit action " + action)),
                 (String) row[4], Optional.ofNullable((UUID) row[5]),
                 AuditTargetType.fromWireName(targetType)
                         .orElseThrow(() -> new IllegalStateException("Unknown audit target type " + targetType)),
                 (String) row[7], metadata(json, (String) row[8]));
-    }
-
-    private static Instant instant(Object value) {
-        return switch (value) {
-            case Instant instant -> instant;
-            case OffsetDateTime offset -> offset.toInstant();
-            case Timestamp timestamp -> timestamp.toInstant();
-            default -> throw new IllegalStateException("Unexpected timestamp type " + value.getClass());
-        };
     }
 
     private static Map<String, Object> metadata(ObjectMapper json, String text) {
