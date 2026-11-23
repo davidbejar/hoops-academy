@@ -5,16 +5,22 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RlsTestDatabase;
+import com.hoopsacademy.game.application.replica.ParkedRecord;
+import com.hoopsacademy.game.application.replica.ReplicateRoster;
 import com.hoopsacademy.game.support.CoreWireMockResource;
+import com.hoopsacademy.game.support.ReplicaDb;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
+import jakarta.inject.Inject;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -28,6 +34,9 @@ class RosterReplicaSchemaTest {
 
     private static final List<String> TENANT_TABLES = List.of("applied_event", "guardian_link_ref", "person_ref",
             "player_ref", "team_player_ref", "team_ref", "team_staff_ref", "tenant_ref");
+
+    @Inject
+    ReplicateRoster replicate;
 
     @Test
     void replicaTablesAreTenantTables() throws SQLException {
@@ -68,6 +77,23 @@ class RosterReplicaSchemaTest {
             }
             app.rollback();
         }
+    }
+
+    /**
+     * X-01 (WP126): a replay (reset offsets, events-backfill) parks the same record again; its position in the topic is
+     * unique, so the second park is a no-op, as in athlete.
+     */
+    @Test
+    void aReplayedRecordIsParkedOnce() {
+        long offset = Math.abs(UUID.randomUUID().getMostSignificantBits() % 1_000_000_000L);
+        ParkedRecord record = new ParkedRecord("core.team", 3, offset, "k", Optional.empty(), "schema violation");
+
+        replicate.park(record);
+        replicate.park(record);
+
+        assertThat(ReplicaDb.parked()).filteredOn(row -> "core.team".equals(row.get("topic"))
+                && Integer.valueOf(3).equals(row.get("kafka_partition")) && Long.valueOf(offset).equals(row.get("kafka_offset")))
+                .hasSize(1);
     }
 
     /** WP82: the global list of the replica's tenants is append-only for the app role. */
