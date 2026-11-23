@@ -1,4 +1,5 @@
 import '../../../core/api/athlete_api.dart' as ath;
+import '../../../core/api/fetch_all.dart';
 
 /// Injuries and body measurements.
 abstract class HealthRepository {
@@ -37,13 +38,17 @@ class ApiHealthRepository implements HealthRepository {
     String? playerId,
     String? teamId,
     ath.InjuryStatus? status,
-  }) async => (await _injuries.listInjuries(
-    xTenantId: _t,
-    playerId: playerId,
-    teamId: teamId,
-    status: status,
-    size: 100,
-  )).data!.items.toList();
+  }) => fetchAll((page, size) async {
+    final p = (await _injuries.listInjuries(
+      xTenantId: _t,
+      playerId: playerId,
+      teamId: teamId,
+      status: status,
+      page: page,
+      size: size,
+    )).data!;
+    return (items: p.items, totalPages: p.page.totalPages);
+  });
 
   @override
   Future<ath.Injury> createInjury(ath.CreateInjuryRequest request) async =>

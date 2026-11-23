@@ -1,5 +1,6 @@
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/clear_list.dart';
+import '../../../core/api/fetch_all.dart';
 
 /// Players (`/api/core/players*`).
 abstract class PlayersRepository {
@@ -34,13 +35,17 @@ class ApiPlayersRepository implements PlayersRepository {
     api.PlayerStatus? status,
     String? teamId,
     String? query,
-  }) async => (await _api.listPlayers(
-    xTenantId: _t,
-    status: status,
-    teamId: teamId,
-    q: (query == null || query.trim().isEmpty) ? null : query.trim(),
-    size: 100,
-  )).data!.items.toList();
+  }) => fetchAll((page, size) async {
+    final p = (await _api.listPlayers(
+      xTenantId: _t,
+      status: status,
+      teamId: teamId,
+      q: (query == null || query.trim().isEmpty) ? null : query.trim(),
+      page: page,
+      size: size,
+    )).data!;
+    return (items: p.items, totalPages: p.page.totalPages);
+  });
 
   @override
   Future<api.Player> get(String playerId) async =>

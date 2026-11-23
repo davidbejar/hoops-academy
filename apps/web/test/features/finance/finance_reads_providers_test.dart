@@ -167,8 +167,8 @@ void main() {
     });
 
     test("a player's dues", () async {
-      final page = await container.read(playerDuesProvider('p-ana').future);
-      expect(page.items, hasLength(3));
+      final dues = await container.read(playerDuesProvider('p-ana').future);
+      expect(dues, hasLength(3));
       expect(repo.last['playerDues'], 'p-ana');
     });
   });

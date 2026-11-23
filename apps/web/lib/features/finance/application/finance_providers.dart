@@ -76,10 +76,9 @@ class FeePlansNotifier extends AsyncNotifier<List<fin.FeePlan>> {
   @override
   Future<List<fin.FeePlan>> build() async {
     final archived = ref.watch(showArchivedPlansProvider);
-    final page = await ref
+    return ref
         .watch(financeRepositoryProvider)
         .feePlans(includeArchived: archived);
-    return page.items.toList();
   }
 
   FinanceRepository get _repo => ref.read(financeRepositoryProvider);
@@ -308,6 +307,6 @@ final teamDueStatusProvider = FutureProvider.family<fin.TeamDueStatus, String>(
 );
 
 /// A player's dues as the family sees them.
-final playerDuesProvider = FutureProvider.family<fin.PlayerDuePage, String>(
+final playerDuesProvider = FutureProvider.family<List<fin.PlayerDue>, String>(
   (ref, playerId) => ref.watch(financeRepositoryProvider).playerDues(playerId),
 );

@@ -103,12 +103,12 @@ void main() {
 
   group('fee plans', () {
     test('the active plans of the demo, by name', () async {
-      final page = await admin.feePlans();
-      final names = [for (final p in page.items) p.name];
+      final plans = await admin.feePlans();
+      final names = [for (final p in plans) p.name];
       expect(names, hasLength(2));
       expect(names, [...names]..sort());
-      expect(page.items.every((p) => !p.archived), isTrue);
-      final monthly = page.items.firstWhere(
+      expect(plans.every((p) => !p.archived), isTrue);
+      final monthly = plans.firstWhere(
         (p) => p.id == MockFinanceApi.monthlyPlanId,
       );
       expect(monthly.cadence, fin.FeeCadence.MONTHLY);
@@ -119,10 +119,10 @@ void main() {
     });
 
     test('archived plans only on request', () async {
-      final page = await admin.feePlans(includeArchived: true);
-      expect(page.items, hasLength(3));
+      final plans = await admin.feePlans(includeArchived: true);
+      expect(plans, hasLength(3));
       expect(
-        page.items.where((p) => p.archived).single.id,
+        plans.where((p) => p.archived).single.id,
         MockFinanceApi.archivedPlanId,
       );
     });
@@ -153,7 +153,7 @@ void main() {
       expect(plan.archived, isFalse);
       expect(plan.autoGenerate, isTrue);
       expect(plan.amountMinor, 3500);
-      final names = [for (final p in (await admin.feePlans()).items) p.name];
+      final names = [for (final p in await admin.feePlans()) p.name];
       expect(names, contains('Cuota Mini B'));
     });
 
@@ -277,7 +277,7 @@ void main() {
       );
       final plan = await admin.createFeePlan(request());
       await admin.deleteFeePlan(plan.id);
-      final ids = [for (final p in (await admin.feePlans()).items) p.id];
+      final ids = [for (final p in await admin.feePlans()) p.id];
       expect(ids, isNot(contains(plan.id)));
     });
   });

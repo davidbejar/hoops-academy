@@ -1,4 +1,5 @@
 import '../../../core/api/api.dart' as api;
+import '../../../core/api/fetch_all.dart';
 
 /// Eligibility cases (`/api/core/eligibility-cases`).
 abstract class CasesRepository {
@@ -19,13 +20,16 @@ class ApiCasesRepository implements CasesRepository {
   final String _t;
 
   @override
-  Future<List<api.EligibilityCase>> list({
-    api.EligibilityCaseStatus? status,
-  }) async => (await _api.listEligibilityCases(
-    xTenantId: _t,
-    status: status,
-    size: 100,
-  )).data!.items.toList();
+  Future<List<api.EligibilityCase>> list({api.EligibilityCaseStatus? status}) =>
+      fetchAll((page, size) async {
+        final p = (await _api.listEligibilityCases(
+          xTenantId: _t,
+          status: status,
+          page: page,
+          size: size,
+        )).data!;
+        return (items: p.items, totalPages: p.page.totalPages);
+      });
 
   @override
   Future<api.EligibilityCase> resolve(

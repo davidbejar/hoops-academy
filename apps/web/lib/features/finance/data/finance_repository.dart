@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 
+import '../../../core/api/fetch_all.dart';
 import '../domain/due_query.dart';
 import '../domain/expense_query.dart';
 
@@ -13,11 +14,8 @@ abstract class FinanceRepository {
   Future<fin.FinanceSettings> settings();
   Future<fin.FinanceSettings> chooseCurrency(String currency);
 
-  Future<fin.FeePlanPage> feePlans({
-    bool includeArchived = false,
-    int page = 0,
-    int size = 200,
-  });
+  /// Every fee plan (all pages, ADR-0061).
+  Future<List<fin.FeePlan>> feePlans({bool includeArchived = false});
   Future<fin.FeePlan> createFeePlan(fin.CreateFeePlanRequest request);
   Future<fin.FeePlan> updateFeePlan(
     String feePlanId,
@@ -70,12 +68,8 @@ abstract class FinanceRepository {
   Future<fin.TeamDueStatus> teamDueStatus(String teamId);
 
   /// A player's dues as the family sees them (ADMIN, a linked PARENT, the
-  /// PLAYER themself).
-  Future<fin.PlayerDuePage> playerDues(
-    String playerId, {
-    int page = 0,
-    int size = 50,
-  });
+  /// PLAYER themself); every page (ADR-0061).
+  Future<List<fin.PlayerDue>> playerDues(String playerId);
 
   // ----------------------------------------------------------------- exports
   /// The CSV of the dues the filters of [query] select (no paging), in
@@ -120,16 +114,16 @@ class ApiFinanceRepository implements FinanceRepository {
       )).data!;
 
   @override
-  Future<fin.FeePlanPage> feePlans({
-    bool includeArchived = false,
-    int page = 0,
-    int size = 200,
-  }) async => (await _plans.listFeePlans(
-    xTenantId: _tenant,
-    includeArchived: includeArchived,
-    page: page,
-    size: size,
-  )).data!;
+  Future<List<fin.FeePlan>> feePlans({bool includeArchived = false}) =>
+      fetchAll((page, size) async {
+        final p = (await _plans.listFeePlans(
+          xTenantId: _tenant,
+          includeArchived: includeArchived,
+          page: page,
+          size: size,
+        )).data!;
+        return (items: p.items, totalPages: p.page.totalPages);
+      });
 
   @override
   Future<fin.FeePlan> createFeePlan(fin.CreateFeePlanRequest request) async =>
@@ -292,16 +286,16 @@ class ApiFinanceRepository implements FinanceRepository {
       (await _dues.getTeamDueStatus(xTenantId: _tenant, teamId: teamId)).data!;
 
   @override
-  Future<fin.PlayerDuePage> playerDues(
-    String playerId, {
-    int page = 0,
-    int size = 50,
-  }) async => (await _dues.listPlayerDues(
-    xTenantId: _tenant,
-    playerId: playerId,
-    page: page,
-    size: size,
-  )).data!;
+  Future<List<fin.PlayerDue>> playerDues(String playerId) =>
+      fetchAll((page, size) async {
+        final p = (await _dues.listPlayerDues(
+          xTenantId: _tenant,
+          playerId: playerId,
+          page: page,
+          size: size,
+        )).data!;
+        return (items: p.items, totalPages: p.page.totalPages);
+      });
 
   @override
   Future<Uint8List> exportDues(

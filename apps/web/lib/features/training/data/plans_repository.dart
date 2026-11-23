@@ -1,4 +1,5 @@
 import '../../../core/api/athlete_api.dart' as ath;
+import '../../../core/api/fetch_all.dart';
 
 /// Training plans, assignments and completions.
 abstract class PlansRepository {
@@ -76,13 +77,17 @@ class ApiPlansRepository implements PlansRepository {
     required bool templates,
     String? query,
     String? language,
-  }) async => (await _plans.listTrainingPlans(
-    xTenantId: _t,
-    template: templates,
-    q: query,
-    size: 100,
-    acceptLanguage: language,
-  )).data!.items.toList();
+  }) => fetchAll((page, size) async {
+    final p = (await _plans.listTrainingPlans(
+      xTenantId: _t,
+      template: templates,
+      q: query,
+      page: page,
+      size: size,
+      acceptLanguage: language,
+    )).data!;
+    return (items: p.items, totalPages: p.page.totalPages);
+  });
 
   @override
   Future<ath.TrainingPlan> plan(String planId, {String? language}) async =>
@@ -182,12 +187,16 @@ class ApiPlansRepository implements PlansRepository {
   Future<List<ath.PlanAssignment>> assignments({
     String? teamId,
     String? playerId,
-  }) async => (await _assignments.listPlanAssignments(
-    xTenantId: _t,
-    teamId: teamId,
-    playerId: playerId,
-    size: 100,
-  )).data!.items.toList();
+  }) => fetchAll((page, size) async {
+    final p = (await _assignments.listPlanAssignments(
+      xTenantId: _t,
+      teamId: teamId,
+      playerId: playerId,
+      page: page,
+      size: size,
+    )).data!;
+    return (items: p.items, totalPages: p.page.totalPages);
+  });
 
   @override
   Future<ath.PlanAssignment> assign(
@@ -209,12 +218,16 @@ class ApiPlansRepository implements PlansRepository {
   Future<List<ath.PlanCompletion>> completions({
     String? assignmentId,
     String? playerId,
-  }) async => (await _completions.listPlanCompletions(
-    xTenantId: _t,
-    assignmentId: assignmentId,
-    playerId: playerId,
-    size: 100,
-  )).data!.items.toList();
+  }) => fetchAll((page, size) async {
+    final p = (await _completions.listPlanCompletions(
+      xTenantId: _t,
+      assignmentId: assignmentId,
+      playerId: playerId,
+      page: page,
+      size: size,
+    )).data!;
+    return (items: p.items, totalPages: p.page.totalPages);
+  });
 
   @override
   Future<ath.PlanCompletion> record(

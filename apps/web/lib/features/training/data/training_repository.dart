@@ -1,4 +1,5 @@
 import '../../../core/api/athlete_api.dart' as ath;
+import '../../../core/api/fetch_all.dart';
 
 /// Schedules, sessions, attendance and planned absences of athlete-service.
 /// Returns the generated models (WP12 decision).
@@ -72,13 +73,17 @@ class ApiTrainingRepository implements TrainingRepository {
     String? teamId,
     required ath.Date from,
     required ath.Date to,
-  }) async => (await _sessions.listTrainingSessions(
-    xTenantId: _t,
-    teamId: teamId,
-    from: from,
-    to: to,
-    size: 200,
-  )).data!.items.toList();
+  }) => fetchAll((page, size) async {
+    final p = (await _sessions.listTrainingSessions(
+      xTenantId: _t,
+      teamId: teamId,
+      from: from,
+      to: to,
+      page: page,
+      size: size,
+    )).data!;
+    return (items: p.items, totalPages: p.page.totalPages);
+  });
 
   @override
   Future<ath.TrainingSession> session(String sessionId) async =>
@@ -187,14 +192,18 @@ class ApiTrainingRepository implements TrainingRepository {
     String? teamId,
     ath.Date? from,
     ath.Date? to,
-  }) async => (await _absences.listPlannedAbsences(
-    xTenantId: _t,
-    playerId: playerId,
-    teamId: teamId,
-    from: from,
-    to: to,
-    size: 100,
-  )).data!.items.toList();
+  }) => fetchAll((page, size) async {
+    final p = (await _absences.listPlannedAbsences(
+      xTenantId: _t,
+      playerId: playerId,
+      teamId: teamId,
+      from: from,
+      to: to,
+      page: page,
+      size: size,
+    )).data!;
+    return (items: p.items, totalPages: p.page.totalPages);
+  });
 
   @override
   Future<ath.PlannedAbsence> createAbsence(

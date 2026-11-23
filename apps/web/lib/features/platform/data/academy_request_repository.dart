@@ -1,4 +1,5 @@
 import '../../../core/api/api.dart' as api;
+import '../../../core/api/fetch_all.dart';
 
 /// The super admin's academy requests (`/platform/academy-requests`, ADR-0044).
 abstract class AcademyRequestRepository {
@@ -21,12 +22,15 @@ class ApiAcademyRequestRepository implements AcademyRequestRepository {
   final api.AcademyRequestsApi _api;
 
   @override
-  Future<List<api.AcademyRequest>> list(
-    api.AcademyRequestStatus status,
-  ) async => (await _api.listAcademyRequests(
-    status: status,
-    size: 200,
-  )).data!.items.toList();
+  Future<List<api.AcademyRequest>> list(api.AcademyRequestStatus status) =>
+      fetchAll((page, size) async {
+        final p = (await _api.listAcademyRequests(
+          status: status,
+          page: page,
+          size: size,
+        )).data!;
+        return (items: p.items, totalPages: p.page.totalPages);
+      });
 
   @override
   Future<api.AcademyRequestAccepted> accept(

@@ -1,5 +1,6 @@
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/clear_list.dart';
+import '../../../core/api/fetch_all.dart';
 
 /// Members and guardian links (`/api/core/members`, `/guardian-links`).
 abstract class MembersRepository {
@@ -55,13 +56,17 @@ class ApiMembersRepository implements MembersRepository {
     String? query,
     api.TenantRole? role,
     bool? active,
-  }) async => (await _members.listMembers(
-    xTenantId: _t,
-    q: (query == null || query.trim().isEmpty) ? null : query.trim(),
-    role: role,
-    active: active,
-    size: 100,
-  )).data!.items.toList();
+  }) => fetchAll((page, size) async {
+    final p = (await _members.listMembers(
+      xTenantId: _t,
+      q: (query == null || query.trim().isEmpty) ? null : query.trim(),
+      role: role,
+      active: active,
+      page: page,
+      size: size,
+    )).data!;
+    return (items: p.items, totalPages: p.page.totalPages);
+  });
 
   @override
   Future<api.MemberWithPassword> invite(
@@ -131,12 +136,16 @@ class ApiMembersRepository implements MembersRepository {
   Future<List<api.GuardianLink>> guardianLinks({
     String? playerId,
     String? guardianPersonId,
-  }) async => (await _links.listGuardianLinks(
-    xTenantId: _t,
-    playerId: playerId,
-    guardianPersonId: guardianPersonId,
-    size: 100,
-  )).data!.items.toList();
+  }) => fetchAll((page, size) async {
+    final p = (await _links.listGuardianLinks(
+      xTenantId: _t,
+      playerId: playerId,
+      guardianPersonId: guardianPersonId,
+      page: page,
+      size: size,
+    )).data!;
+    return (items: p.items, totalPages: p.page.totalPages);
+  });
 
   @override
   Future<api.GuardianLink> addGuardianLink({

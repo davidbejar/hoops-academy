@@ -22,15 +22,15 @@ class FamilyDues extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
-    return FinanceBody<fin.PlayerDuePage>(
+    return FinanceBody<List<fin.PlayerDue>>(
       value: ref.watch(playerDuesProvider(playerId)),
       onRetry: () => ref.invalidate(playerDuesProvider(playerId)),
-      isEmpty: (page) => page.items.isEmpty,
+      isEmpty: (dues) => dues.isEmpty,
       emptyMessage: l.financeFamilyEmpty,
-      builder: (context, page) => Column(
+      builder: (context, dues) => Column(
         key: Key('family-dues-$playerId'),
         spacing: HoopsSpace.gap,
-        children: [for (final due in page.items) _FamilyDueRow(due: due)],
+        children: [for (final due in dues) _FamilyDueRow(due: due)],
       ),
     );
   }

@@ -329,13 +329,13 @@ void main() {
 
   group("the family's view", () {
     test('a parent reads the dues of a linked player, newest first', () async {
-      final page = await repoAs(['PARENT']).playerDues('p-ana');
-      expect(page.items, hasLength(3));
+      final dues = await repoAs(['PARENT']).playerDues('p-ana');
+      expect(dues, hasLength(3));
       expect(
-        [for (final d in page.items) d.period],
+        [for (final d in dues) d.period],
         ['2026-11', '2026-10', '2026-09'],
       );
-      final nov = page.items.first;
+      final nov = dues.first;
       expect(nov.feePlanName, 'Cuota mensual Mini A');
       expect(nov.currency, 'EUR');
       expect(
@@ -353,8 +353,8 @@ void main() {
         final waived = dues.firstWhere((d) => d.status == fin.DueStatus.WAIVED);
         final paid = dues.firstWhere((d) => d.status == fin.DueStatus.PAID);
         for (final (due, expectPaid) in [(paid, true), (waived, false)]) {
-          final page = await admin.playerDues(due.playerId);
-          final mine = page.items.firstWhere((d) => d.id == due.id);
+          final mine = (await admin.playerDues(due.playerId))
+              .firstWhere((d) => d.id == due.id);
           expect(mine.paidOn != null, expectPaid);
           expect(mine.paymentMethod != null, expectPaid);
           expect(mine.status, due.status);
@@ -363,8 +363,7 @@ void main() {
     );
 
     test('a player reads their own', () async {
-      final page = await repoAs(['PLAYER']).playerDues('p-leo');
-      expect(page.items, isNotEmpty);
+      expect(await repoAs(['PLAYER']).playerDues('p-leo'), isNotEmpty);
     });
 
     test('another player is 403, for a parent, a player and a coach', () async {
@@ -374,9 +373,7 @@ void main() {
     });
 
     test('a player without dues is an empty list', () async {
-      final page = await admin.playerDues('p-mia');
-      expect(page.items, isEmpty);
-      expect(page.page.totalElements, 0);
+      expect(await admin.playerDues('p-mia'), isEmpty);
     });
   });
 

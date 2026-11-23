@@ -1,4 +1,5 @@
 import '../../../core/api/athlete_api.dart' as ath;
+import '../../../core/api/fetch_all.dart';
 
 /// Physical test types, results and norms.
 abstract class FitnessRepository {
@@ -77,13 +78,17 @@ class ApiFitnessRepository implements FitnessRepository {
     String? playerId,
     String? teamId,
     String? testTypeId,
-  }) async => (await _api.listPhysicalTestResults(
-    xTenantId: _t,
-    playerId: playerId,
-    teamId: teamId,
-    testTypeId: testTypeId,
-    size: 200,
-  )).data!.items.toList();
+  }) => fetchAll((page, size) async {
+    final p = (await _api.listPhysicalTestResults(
+      xTenantId: _t,
+      playerId: playerId,
+      teamId: teamId,
+      testTypeId: testTypeId,
+      page: page,
+      size: size,
+    )).data!;
+    return (items: p.items, totalPages: p.page.totalPages);
+  });
 
   @override
   Future<ath.PhysicalTestResult> createResult(

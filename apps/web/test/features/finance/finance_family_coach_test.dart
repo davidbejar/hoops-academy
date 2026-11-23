@@ -213,9 +213,9 @@ void main() {
       );
       await tapKey(tester, 'hub-tab-dues');
       expect(repo.last['playerDues'], 'p-ana');
-      final page = (await tester.runAsync(() => repo.playerDues('p-ana')))!;
-      expect(page.items, hasLength(3));
-      for (final d in page.items) {
+      final dues = (await tester.runAsync(() => repo.playerDues('p-ana')))!;
+      expect(dues, hasLength(3));
+      for (final d in dues) {
         expect(find.byKey(Key('family-due-${d.id}')), findsOneWidget);
       }
       // Newest period first: November, then October, then September.
@@ -240,8 +240,8 @@ void main() {
         linked: {'p-ana'},
       );
       await tapKey(tester, 'hub-tab-dues');
-      final page = (await tester.runAsync(() => repo.playerDues('p-ana')))!;
-      final paid = page.items.firstWhere((d) => d.status == fin.DueStatus.PAID);
+      final dues = (await tester.runAsync(() => repo.playerDues('p-ana')))!;
+      final paid = dues.firstWhere((d) => d.status == fin.DueStatus.PAID);
       final row = find.byKey(Key('family-due-${paid.id}'));
       expect(
         find.descendant(of: row, matching: find.text('Pagada')),
@@ -251,7 +251,7 @@ void main() {
         find.descendant(of: row, matching: find.textContaining('Pagada el ')),
         findsOneWidget,
       );
-      final open = page.items.where((d) => d.status == fin.DueStatus.OPEN);
+      final open = dues.where((d) => d.status == fin.DueStatus.OPEN);
       for (final d in open) {
         final r = find.byKey(Key('family-due-${d.id}'));
         expect(

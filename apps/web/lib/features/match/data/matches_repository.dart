@@ -6,6 +6,7 @@ import '../../../core/api/clear_list.dart';
 import '../../../core/errors/app_error.dart';
 import '../../../core/export/server_file.dart';
 import '../domain/projector/projector.dart';
+import '../../../core/api/fetch_all.dart';
 
 /// One line of the roster the setup screen submits.
 class RosterInput {
@@ -72,12 +73,16 @@ class ApiMatchesRepository implements MatchesRepository {
 
   @override
   Future<List<gen.Match>> list({String? teamId, String? seasonId}) => _guard(
-    () async => (await _matches.listMatches(
-      xTenantId: _tenant,
-      teamId: teamId,
-      seasonId: seasonId,
-      size: 100,
-    )).data!.items.toList(),
+    () => fetchAll((page, size) async {
+      final p = (await _matches.listMatches(
+        xTenantId: _tenant,
+        teamId: teamId,
+        seasonId: seasonId,
+        page: page,
+        size: size,
+      )).data!;
+      return (items: p.items, totalPages: p.page.totalPages);
+    }),
   );
 
   @override

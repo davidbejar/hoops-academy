@@ -1,4 +1,5 @@
 import '../../../core/api/api.dart' as api;
+import '../../../core/api/fetch_all.dart';
 
 /// Approval requests (`/api/core/approval-requests`). The server scopes the
 /// list: ADMIN sees everything, COACH only their own requests.
@@ -22,12 +23,16 @@ class ApiApprovalsRepository implements ApprovalsRepository {
       api.ApprovalDecisionRequest((b) => b.note = note);
 
   @override
-  Future<List<api.ApprovalRequest>> list({api.ApprovalStatus? status}) async =>
-      (await _api.listApprovalRequests(
-        xTenantId: _t,
-        status: status,
-        size: 100,
-      )).data!.items.toList();
+  Future<List<api.ApprovalRequest>> list({api.ApprovalStatus? status}) =>
+      fetchAll((page, size) async {
+        final p = (await _api.listApprovalRequests(
+          xTenantId: _t,
+          status: status,
+          page: page,
+          size: size,
+        )).data!;
+        return (items: p.items, totalPages: p.page.totalPages);
+      });
 
   @override
   Future<api.ApprovalRequestWithPassword> approve(

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/clear_list.dart';
 import '../../../core/export/server_file.dart';
+import '../../../core/api/fetch_all.dart';
 
 /// Teams, staff and rosters (`/api/core/teams*`).
 abstract class TeamsRepository {
@@ -58,21 +59,29 @@ class ApiTeamsRepository implements TeamsRepository {
   final String _t;
 
   @override
-  Future<List<api.Team>> list({String? seasonId}) async =>
-      (await _api.listTeams(
-        xTenantId: _t,
-        seasonId: seasonId,
-        size: 100,
-      )).data!.items.toList();
+  Future<List<api.Team>> list({String? seasonId}) =>
+      fetchAll((page, size) async {
+        final p = (await _api.listTeams(
+          xTenantId: _t,
+          seasonId: seasonId,
+          page: page,
+          size: size,
+        )).data!;
+        return (items: p.items, totalPages: p.page.totalPages);
+      });
 
   @override
   Future<List<api.Team>> historicStaffTeams() async => [
-    for (final t in (await _api.listTeams(
-      xTenantId: _t,
-      staffedByMe: true,
-      includeEnded: true,
-      size: 100,
-    )).data!.items)
+    for (final t in await fetchAll((page, size) async {
+      final p = (await _api.listTeams(
+        xTenantId: _t,
+        staffedByMe: true,
+        includeEnded: true,
+        page: page,
+        size: size,
+      )).data!;
+      return (items: p.items, totalPages: p.page.totalPages);
+    }))
       if (t.seasonEnded) t,
   ];
 

@@ -110,17 +110,9 @@ class FakeFinanceRepository implements FinanceRepository {
       _call('chooseCurrency', () => _inner.chooseCurrency(currency), currency);
 
   @override
-  Future<fin.FeePlanPage> feePlans({
-    bool includeArchived = false,
-    int page = 0,
-    int size = 200,
-  }) => _call(
+  Future<List<fin.FeePlan>> feePlans({bool includeArchived = false}) => _call(
     'feePlans',
-    () => _inner.feePlans(
-      includeArchived: includeArchived,
-      page: page,
-      size: size,
-    ),
+    () => _inner.feePlans(includeArchived: includeArchived),
     includeArchived,
   );
 
@@ -239,15 +231,8 @@ class FakeFinanceRepository implements FinanceRepository {
   );
 
   @override
-  Future<fin.PlayerDuePage> playerDues(
-    String playerId, {
-    int page = 0,
-    int size = 50,
-  }) => _call(
-    'playerDues',
-    () => _inner.playerDues(playerId, page: page, size: size),
-    playerId,
-  );
+  Future<List<fin.PlayerDue>> playerDues(String playerId) =>
+      _call('playerDues', () => _inner.playerDues(playerId), playerId);
 
   @override
   Future<Uint8List> exportDues(DueQuery query, {required String language}) =>

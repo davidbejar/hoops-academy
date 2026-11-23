@@ -1,4 +1,5 @@
 import '../../../core/api/api.dart' as api;
+import '../../../core/api/fetch_all.dart';
 
 /// Users shown per page of the platform's user list.
 const platformUsersPageSize = 25;
@@ -52,14 +53,16 @@ class ApiPlatformRepository implements PlatformRepository {
   final api.PlatformApi _api;
 
   @override
-  Future<List<api.Tenant>> tenants({
-    api.TenantStatus? status,
-    String? query,
-  }) async => (await _api.listTenants(
-    status: status,
-    q: query,
-    size: 100,
-  )).data!.items.toList();
+  Future<List<api.Tenant>> tenants({api.TenantStatus? status, String? query}) =>
+      fetchAll((page, size) async {
+        final p = (await _api.listTenants(
+          status: status,
+          q: query,
+          page: page,
+          size: size,
+        )).data!;
+        return (items: p.items, totalPages: p.page.totalPages);
+      });
 
   @override
   Future<api.PlatformUserPage> users({
@@ -109,11 +112,15 @@ class ApiPlatformRepository implements PlatformRepository {
       (await _api.getTenantUsageHistory(tenantId: tenantId)).data!;
 
   @override
-  Future<List<api.TenantAdmin>> admins(String tenantId) async =>
-      (await _api.listTenantAdmins(
-        tenantId: tenantId,
-        size: 100,
-      )).data!.items.toList();
+  Future<List<api.TenantAdmin>> admins(String tenantId) =>
+      fetchAll((page, size) async {
+        final p = (await _api.listTenantAdmins(
+          tenantId: tenantId,
+          page: page,
+          size: size,
+        )).data!;
+        return (items: p.items, totalPages: p.page.totalPages);
+      });
 
   @override
   Future<api.TenantAdminWithPassword> addAdmin(
