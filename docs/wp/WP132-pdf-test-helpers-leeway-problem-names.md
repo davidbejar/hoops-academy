@@ -57,4 +57,40 @@ Not yours: PDF-12's claim that fmt runs after the tests is wrong: nothing to do 
   not |` with one row per finding ID of your scope. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points, ID table (work-package skill). -->
+
+- Built: the five test files that share the service set-up are one binary (`tests/api/main.rs`; `logs.rs` stays alone);
+  `pdf.yaml` / `common.yaml` are parsed and the schemas compiled once per binary; one privacy guard
+  (`assert_no_request_values`, leak list read from the fixtures), `with` / `without`, `post_json` / `post_raw` and the
+  path constants from `pdf_adapters::http` in `tests/common`; the "key the realm does not publish" case is a token
+  with a tampered signature (no second RSA key; 2 RSA generations per run instead of 5); `tower` is a
+  dev-dependency; `PrintDocument::new` frames both sheets (footer moved out of `match_sheet`); `match_sheet::MAX_NAME`
+  is `MAX_DISPLAY_NAME`; the denial resource string is built only on denial; token leeway 5 s -> 0 s; Problem slugs
+  `validation`, `unauthorized` (both 401s), `domain-rule-violation` (422), `upstream-unavailable` (503), codes kept;
+  a unit test reads `ProblemType.java`. Skill updated (test layout, helpers, `PrintDocument::new`, bootstrap note).
+- Verified: fresh `just test-rust`: rustfmt, clippy `-D warnings`, 105 tests (adapters unit 21, `api` 37, `logs` 1,
+  application 4, domain 42), coverage 95.72 % workspace / 99.80 % domain, `cargo deny` ok. `tests/api/render.rs`
+  green without re-recording. Red commits: 28014c94 (slug and leeway tests).
+- Decisions/ADRs: ADR-0064. Leeway 0 s: the Java services set no `quarkus.oidc.token.lifespan-grace`, Quarkus OIDC
+  then leaves jose4j's allowed clock skew at 0 (checked in `OidcProvider` / `lifespanGrace` javadoc of quarkus-oidc
+  3.40.1). `common.yaml` lists no slugs (only the example `domain-rule-violation`), so the guard reads
+  `libs/common-quarkus/.../ProblemType.java`, the vocabulary it points to.
+- Open points: `pdf.yaml` unchanged (it names no slug; version stays 1.0.0). core and game only map any pdf failure to
+  503 and never read `type`; their WireMock stubs may keep whatever slug, no change needed. If WP130 moves or renames
+  `ProblemType.java` the guard in `problem.rs` (path in `shared_vocabulary`) must follow. A clock more than 0 s behind
+  the realm now yields 401 `INVALID_TOKEN` at expiry. The Go finance-service still has 10 s (WP131's call).
+
+| ID | Done / Skipped | What changed or why not |
+|---|---|---|
+| PDF-01 | Skipped | An adapters-side generic handler needs a request trait plus a dispatching closure; not plainly simpler than the two 11-line functions. No domain `Sheet` trait (per the brief). |
+| PDF-02 | Done | Contract documents and validators cached per binary. |
+| PDF-03 | Done | `tower` and the duplicate `tracing-subscriber` line moved/removed; `layering.rs` needed no change. |
+| PDF-04 | Done | One leak guard (from the fixtures), pointer helpers, `post_raw`, constants from `pdf_adapters::http`; remaining hand-built `Bearer` strings gone except `realm.rs`'s header value. |
+| PDF-05 | Done | One `api` binary + `logs`; one RSA key per binary; foreign key replaced by a tampered signature. |
+| PDF-06 | Done | `PrintDocument::new`; `footer` deleted from `match_sheet`. |
+| PDF-07 | Skipped | `pdf.Containerfile` and `images.yml` are outside this WP's files (deploy / `.github`). |
+| PDF-08 | Skipped | Not measurable (256 KiB input), and renderer changes risk byte-level output changes for no gain; only the `authenticate` allocation from the observations was done. |
+| PDF-09 | Skipped | The adapters' Rust builders carry different sample values than the JSON fixtures and `render.rs` / `http.rs` assert on them; unifying changes the assertions for little gain. |
+| PDF-10 | Skipped | Verification: PARTLY, only worth it with a third sheet; a macro would hurt readability. |
+| PDF-11 | Done | `match_sheet::MAX_NAME` -> `MAX_DISPLAY_NAME` (contract test pins both). |
+| PDF-12 | Skipped | Verification: claim wrong (fmt and clippy already run before the tests); nothing to do. |
+| X-11 | Done (pdf part) | Leeway 0 s, Problem slugs aligned, guard test; the vocabulary file and the other languages are not this WP. |
