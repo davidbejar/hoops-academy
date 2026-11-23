@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"hoopsacademy.local/finance/internal/domain"
 )
@@ -76,5 +77,46 @@ func TestAFailingAcademyIsReportedAndTheOthersStillRun(t *testing.T) {
 	}
 	if _, _, err := NewDuesJob(finance, fakeTenants{err: errors.New("no tenants")}, fakeExclusive{}).Run(ctx); err == nil {
 		t.Error("a failing tenant list was swallowed")
+	}
+}
+
+// seasonsRoster is an ACTIVE academy whose seasons all start next year (no window has started); it counts the
+// season reads.
+type seasonsRoster struct {
+	RosterReads
+	reads map[domain.SeasonID]int
+}
+
+func (seasonsRoster) Academy(context.Context) (Academy, bool, error) {
+	return Academy{Active: true, Zone: time.UTC}, true, nil
+}
+
+func (s seasonsRoster) SeasonDates(_ context.Context, season domain.SeasonID) (domain.SeasonDates, bool, error) {
+	s.reads[season]++
+	return domain.SeasonDates{Start: now.AddDate(1, 0, 0), End: now.AddDate(2, 0, 0)}, true, nil
+}
+
+// FIN-04: plans of the same season read its dates once per academy and run.
+func TestTheJobReadsEachSeasonOnce(t *testing.T) {
+	f := newFixture()
+	withEuro(f)
+	other := domain.SeasonID(domain.UUID{0x0e})
+	for _, season := range []domain.SeasonID{domain.SeasonID(season), domain.SeasonID(season), other} {
+		command := teamPlan()
+		command.Input.Season, command.Input.AutoGenerate = season, true
+		if _, err := f.finance.CreateFeePlan(ctx, admin, command); err != nil {
+			t.Fatal(err)
+		}
+	}
+	roster := seasonsRoster{reads: map[domain.SeasonID]int{}}
+	f.finance.p.Roster = roster
+	job := NewDuesJob(f.finance, fakeTenants{tenants: []string{tenant.String()}}, fakeExclusive{})
+
+	if _, _, err := job.Run(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	if roster.reads[domain.SeasonID(season)] != 1 || roster.reads[other] != 1 {
+		t.Errorf("season reads %v, want one per season", roster.reads)
 	}
 }
