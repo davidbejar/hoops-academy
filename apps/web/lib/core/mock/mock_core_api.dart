@@ -1,12 +1,15 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import '../export/export_file_name.dart' show asciiSlug;
 import 'mock_authz.dart';
 import 'mock_query.dart';
 
-/// Which demo academy a [MockCoreApi] stands for: Academia Demo (full data) or Club Norte (one team, the user is a PARENT).
-enum MockAcademy { demo, norte }
+/// Which demo academy a [MockCoreApi] stands for: Academia Demo (full data), Club Norte (one team, the user is a
+/// PARENT) or an empty academy the widget tests seed (ADR-0070).
+enum MockAcademy { demo, norte, empty }
 
 /// Result of a mocked core-service call.
 class MockResult {
@@ -86,10 +89,10 @@ class MockCoreApi {
   Uint8List? _logo;
   int _logoVersion = 1;
   late final Map<String, Object?> _profile = {
-    'slug': academy == MockAcademy.demo ? 'demo' : 'norte',
-    'name': academy == MockAcademy.demo ? 'Academia Demo' : 'Club Norte',
+    'slug': academy == MockAcademy.norte ? 'norte' : 'demo',
+    'name': academy == MockAcademy.norte ? 'Club Norte' : 'Academia Demo',
     'timezone': 'Europe/Madrid',
-    'defaultLocale': academy == MockAcademy.demo ? 'es' : 'en',
+    'defaultLocale': academy == MockAcademy.norte ? 'en' : 'es',
     'contactEmail': null,
     'websiteUrl': null,
   };
@@ -127,11 +130,11 @@ class MockCoreApi {
   static const norteSelfPlayerId = 'p-nico';
 
   String get _selfPlayerId =>
-      academy == MockAcademy.demo ? demoSelfPlayerId : norteSelfPlayerId;
+      academy == MockAcademy.norte ? norteSelfPlayerId : demoSelfPlayerId;
 
   /// The team the demo user coaches, whose match and sessions the game and athlete mocks seed.
   String get homeTeamId =>
-      academy == MockAcademy.demo ? ownTeamId : norteTeamId;
+      academy == MockAcademy.norte ? norteTeamId : ownTeamId;
 
   /// The players of the academy's first team, in roster order (jersey, name).
   List<String> get homeRoster => rosterOf(homeTeamId).toList();
@@ -144,8 +147,18 @@ class MockCoreApi {
     'displayName': name,
   };
 
+  /// The academy's trail, newest first: the demo's from its first read on, nothing in an empty academy.
+  List<Map<String, Object?>>? _audit;
+
+  List<Map<String, Object?>> _trail(String tenantId) =>
+      _audit ??= academy == MockAcademy.empty ? [] : _demoAudit(tenantId);
+
+  /// Seeding for the tests (ADR-0070): the trail of an empty academy, newest first (`AuditEvent` shape).
+  @visibleForTesting
+  List<Map<String, Object?>> get auditEvents => _audit ??= [];
+
   /// A short demo trail (newest first) for the Activity screen (WP34).
-  List<Object?> _auditEvents(String tenantId) {
+  List<Map<String, Object?>> _demoAudit(String tenantId) {
     final now = DateTime.now().toUtc();
     Map<String, Object?> event(
       int minutesAgo,
@@ -200,6 +213,7 @@ class MockCoreApi {
   };
 
   void _seed() {
+    if (academy == MockAcademy.empty) return;
     _seasons.addAll([
       {
         'id': 'season-2025',
@@ -705,14 +719,16 @@ class MockCoreApi {
     return _csv('roster-$slug', [header, ...rows]);
   }
 
-  MockResult _exportAudit(String tenantId) {
+  MockResult _exportAudit(String tenantId, MockQuery q) {
+    final (matching, problem) = mockAuditMatching(_trail(tenantId), q);
+    if (problem != null) return problem;
     final header = switch (_lang) {
       'es' => ['Fecha', 'Acción', 'Autor', 'Objetivo'],
       'id' => ['Waktu', 'Tindakan', 'Pelaku', 'Sasaran'],
       _ => ['When', 'Action', 'Actor', 'Target'],
     };
     final rows = [
-      for (final e in _auditEvents(tenantId).cast<Map<String, Object?>>())
+      for (final e in matching)
         [
           e['at']! as String,
           e['action']! as String,
@@ -947,10 +963,15 @@ class MockCoreApi {
       case 'approval-requests':
         return _approvals_(method, id, sub, query, b);
       case 'audit-events:export':
-        if (id == null && is_('GET')) return _exportAudit(tenantId);
+        if (id == null && is_('GET')) {
+          return _exportAudit(tenantId, MockQuery(query));
+        }
       case 'audit-events':
-        if (id == null && is_('GET'))
-          return MockQuery(query).page(_auditEvents(tenantId));
+        if (id == null && is_('GET')) {
+          final q = MockQuery(query);
+          final (matching, problem) = mockAuditMatching(_trail(tenantId), q);
+          return problem ?? q.page(matching);
+        }
       case 'eligibility-cases':
         if (id == null && is_('GET')) {
           return MockQuery(query).page([

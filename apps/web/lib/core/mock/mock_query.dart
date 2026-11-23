@@ -100,3 +100,27 @@ MockResult? mockApplyUpdate(
   }
   return null;
 }
+
+/// The audit events of [events] a trail request selects (core `listAuditEvents` / `listPlatformAuditEvents`): `from`
+/// inclusive, `to` exclusive, any of the `action`s; `from` not before `to` is a 400 (returned instead).
+(List<Map<String, Object?>>, MockResult?) mockAuditMatching(
+  Iterable<Map<String, Object?>> events,
+  MockQuery q,
+) {
+  final from = q.instant('from');
+  final to = q.instant('to');
+  if (from != null && to != null && !from.isBefore(to)) {
+    return (const [], mockProblem(400, 'Bad Request'));
+  }
+  final actions = q.set('action');
+  return (
+    [
+      for (final e in events)
+        if ((actions.isEmpty || actions.contains(e['action'])) &&
+            (from == null || !DateTime.parse('${e['at']}').isBefore(from)) &&
+            (to == null || DateTime.parse('${e['at']}').isBefore(to)))
+          e,
+    ],
+    null,
+  );
+}

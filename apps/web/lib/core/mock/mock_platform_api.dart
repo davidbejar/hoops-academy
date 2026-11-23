@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import 'mock_core_api.dart';
 import 'mock_query.dart';
 
@@ -13,13 +15,17 @@ class MockPlatformApi {
     required this.tenantAId,
     required this.tenantBId,
     DateTime Function()? now,
+    this.demo = true,
   }) : _now = now ?? DateTime.now {
-    _seed();
+    if (demo) _seed();
   }
 
   final String tenantAId;
   final String tenantBId;
   final DateTime Function() _now;
+
+  /// The demo's academies, administrators, trail and requests (true), or nothing for the tests to seed (ADR-0070).
+  final bool demo;
 
   static const suspendedTenantId = '33333333-3333-4333-8333-333333333333';
   static const superAdminSubject = 'mock-super-admin';
@@ -29,6 +35,22 @@ class MockPlatformApi {
   final List<Map<String, Object?>> _audit = [];
   final List<Map<String, Object?>> _requests = [];
   var _seq = 100;
+
+  /// Seeding for the tests (ADR-0070): the academies (`Tenant` shape).
+  @visibleForTesting
+  List<Map<String, Object?>> get tenants => _tenants;
+
+  /// Seeding for the tests: the administrators by academy id (`TenantAdmin` shape).
+  @visibleForTesting
+  Map<String, List<Map<String, Object?>>> get admins => _admins;
+
+  /// Seeding for the tests: the trail of every academy, newest first (`PlatformAuditEvent` shape).
+  @visibleForTesting
+  List<Map<String, Object?>> get auditEvents => _audit;
+
+  /// Seeding for the tests: the academy requests, oldest first (`AcademyRequest` shape).
+  @visibleForTesting
+  List<Map<String, Object?>> get academyRequests => _requests;
 
   String _id(String prefix) => '$prefix-${_seq++}';
   String get _stamp => _now().toUtc().toIso8601String();
@@ -395,15 +417,20 @@ class MockPlatformApi {
         );
       }
     }
-    final demo = _find(tenantAId)!;
-    final norte = _find(tenantBId)!;
-    const coach = 'coach1@hoops-academy.com';
-    add(coach, membership(demo, 'a1', 'Casey', 'Coach', ['ADMIN', 'COACH']));
-    add(coach, membership(norte, 'a1', 'Casey', 'Coach', ['PARENT']));
-    add(
-      'pat@demo.example',
-      membership(demo, 'm-pat', 'Pat', 'Padre', ['PARENT']),
-    );
+    if (demo) {
+      final academyA = _find(tenantAId)!;
+      final norte = _find(tenantBId)!;
+      const coach = 'coach1@hoops-academy.com';
+      add(
+        coach,
+        membership(academyA, 'a1', 'Casey', 'Coach', ['ADMIN', 'COACH']),
+      );
+      add(coach, membership(norte, 'a1', 'Casey', 'Coach', ['PARENT']));
+      add(
+        'pat@demo.example',
+        membership(academyA, 'm-pat', 'Pat', 'Padre', ['PARENT']),
+      );
+    }
     return byEmail.values.toList();
   }
 
@@ -953,22 +980,9 @@ class MockPlatformApi {
     if (tenantId != null && _find(tenantId) == null) {
       return (const [], mockProblem(404, 'Not found'));
     }
-    final from = q.instant('from');
-    final to = q.instant('to');
-    if (from != null && to != null && !from.isBefore(to)) {
-      return (const [], mockProblem(400, 'Bad Request'));
-    }
-    final actions = q.set('action');
-    return (
-      [
-        for (final e in _audit)
-          if ((tenantId == null || e['tenantId'] == tenantId) &&
-              (actions.isEmpty || actions.contains(e['action'])) &&
-              (from == null || !DateTime.parse('${e['at']}').isBefore(from)) &&
-              (to == null || DateTime.parse('${e['at']}').isBefore(to)))
-            e,
-      ],
-      null,
-    );
+    return mockAuditMatching([
+      for (final e in _audit)
+        if (tenantId == null || e['tenantId'] == tenantId) e,
+    ], q);
   }
 }

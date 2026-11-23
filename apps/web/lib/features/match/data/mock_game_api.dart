@@ -16,13 +16,13 @@ class MockGameApi {
   /// The roster, the team and what the user may see come from [core] (WP47: one roster source per academy).
   MockGameApi({required this.core})
     : _teamId = core.homeTeamId,
-      liveId = core.academy == MockAcademy.demo ? liveMatchId : _norteLiveId,
-      scheduledId = core.academy == MockAcademy.demo
-          ? scheduledMatchId
-          : _norteScheduledId,
-      finishedId = core.academy == MockAcademy.demo
-          ? finishedMatchId
-          : _norteFinishedId {
+      liveId = core.academy == MockAcademy.norte ? _norteLiveId : liveMatchId,
+      scheduledId = core.academy == MockAcademy.norte
+          ? _norteScheduledId
+          : scheduledMatchId,
+      finishedId = core.academy == MockAcademy.norte
+          ? _norteFinishedId
+          : finishedMatchId {
     _seed();
   }
 
@@ -57,6 +57,7 @@ class MockGameApi {
   Set<String> get _own => {..._authz.linkedPlayerIds, ..._authz.selfPlayerIds};
 
   void _seed() {
+    if (core.academy == MockAcademy.empty) return;
     Map<String, Object?> match(
       String id,
       String opponent,

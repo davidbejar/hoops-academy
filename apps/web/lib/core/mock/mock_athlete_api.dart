@@ -67,6 +67,7 @@ class MockAthleteApi {
 
   // ------------------------------------------------------------------ seed
   void _seed() {
+    if (core.academy == MockAcademy.empty) return;
     _seedTraining();
     _seedExercises();
     _seedPlans();

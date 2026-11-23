@@ -10,6 +10,7 @@ import 'fake_platform.dart';
 import 'fake_repos.dart';
 import 'fixtures.dart';
 import 'harness.dart';
+import 'mock_backend.dart';
 
 /// Pumps the whole app as a user with [roles] and navigates to [location].
 Future<Harness> pumpAs(
@@ -29,9 +30,11 @@ Future<Harness> pumpAs(
   bool superAdmin = false,
   String? ownPlayerId,
   String? timezone,
+  MockBackend? backend,
   List<Override> overrides = const [],
 }) async {
   final h = Harness(
+    backend: backend,
     me: FakeMeRepository(
       userWith([
         membershipWithRoles(
@@ -67,9 +70,11 @@ Future<Harness> pumpAsSuperAdmin(
   String? location,
   Size size = const Size(360, 780),
   bool settle = true,
+  MockBackend? backend,
   List<Override> overrides = const [],
 }) async {
   final h = Harness(
+    backend: backend,
     me: FakeMeRepository(userWith(const [], superAdmin: true)),
     core: FakeCore(),
     platform: FakePlatform(repo: platform ?? FakePlatformRepository()),

@@ -7,6 +7,16 @@ import 'interceptors.dart';
 import 'mock_api_adapter.dart';
 import 'request_context.dart';
 
+/// What the one [Dio] sends its requests through: the demo mock in mock mode,
+/// otherwise null (the browser's network). The widget tests point it at a
+/// seeded mock (ADR-0070).
+final Provider<HttpClientAdapter?> apiAdapterProvider =
+    Provider<HttpClientAdapter?>(
+      (ref) => ref.watch(appConfigProvider).mockApi
+          ? ref.watch(mockApiAdapterProvider)
+          : null,
+    );
+
 /// The single configured [Dio]. Generated clients reuse it (their own default
 /// interceptors are disabled), so every call gets the same headers and error
 /// mapping.
@@ -22,9 +32,8 @@ final Provider<Dio> dioProvider = Provider<Dio>((ref) {
       headers: {'Accept': 'application/json, application/problem+json'},
     ),
   );
-  if (config.mockApi) {
-    dio.httpClientAdapter = ref.watch(mockApiAdapterProvider);
-  }
+  final adapter = ref.watch(apiAdapterProvider);
+  if (adapter != null) dio.httpClientAdapter = adapter;
   dio.interceptors.addAll(
     buildInterceptors(
       dio: dio,

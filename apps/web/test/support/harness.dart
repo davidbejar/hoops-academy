@@ -33,6 +33,7 @@ import 'fake_athlete.dart';
 import 'fake_game.dart';
 import 'fake_platform.dart';
 import 'fake_repos.dart';
+import 'mock_backend.dart';
 
 class FakeMeRepository implements MeRepository {
   FakeMeRepository(this.user, {this.error});
@@ -122,8 +123,10 @@ class Harness {
     FakeAthlete? athlete,
     FakePlatform? platform,
     FakeAcademyRequestRepository? academyRequests,
+    MockBackend? backend,
     this.extraOverrides = const [],
-  }) : academyRequests = academyRequests ?? FakeAcademyRequestRepository(),
+  }) : backend = backend ?? _backendFor(me.user),
+       academyRequests = academyRequests ?? FakeAcademyRequestRepository(),
        game = game ?? FakeGame(),
        athlete = athlete ?? FakeAthlete(),
        platform = platform ?? FakePlatform(),
@@ -138,6 +141,20 @@ class Harness {
        initialPrefs = prefs;
 
   final FakeMeRepository me;
+
+  /// The seeded demo mock every repository not faked below talks to (ADR-0070); by default an empty one with the
+  /// roles of the user's first academy.
+  final MockBackend backend;
+
+  static MockBackend _backendFor(CurrentUser user) {
+    final first = user.memberships.firstOrNull;
+    return MockBackend(
+      roles: first?.roles ?? const {TenantRole.admin},
+      superAdmin: user.superAdmin,
+      tenantAId: first?.tenantId ?? MockBackend.testTenantId,
+    );
+  }
+
   final AuthService auth;
   final FakeTenantRepository tenant;
   final Map<String, Object> initialPrefs;
@@ -208,6 +225,7 @@ class Harness {
         meRepositoryProvider.overrideWithValue(me),
         tenantRepositoryProvider.overrideWithValue(tenant),
         onlineProvider.overrideWith((ref) => online.stream),
+        ...backend.overrides,
         if (core != null) ...[
           academyRepositoryProvider.overrideWithValue(core!.academy),
           membersRepositoryProvider.overrideWithValue(core!.members),

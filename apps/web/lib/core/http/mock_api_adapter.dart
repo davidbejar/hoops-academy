@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../../features/finance/data/mock_finance_api.dart';
 import '../../features/match/data/mock_game_api.dart';
@@ -42,11 +43,17 @@ class MockApiAdapter implements HttpClientAdapter {
   /// [roles] are the demo user's roles in Academia Demo, [norteRoles] in Club Norte. Unset, both come from
   /// `HOOPS_MOCK_ROLES` when it is defined; without it Academia Demo is ADMIN + COACH and Club Norte PARENT.
   /// What the user changes is replayed from [store] (default: nothing survives the adapter).
+  ///
+  /// The widget tests (ADR-0070) build it with [demo] false: both academies and the platform start empty and each
+  /// test seeds what it needs; [tenantAId] is then the test academy's id, and [latency] zero.
   MockApiAdapter({
     List<String>? roles,
     List<String>? norteRoles,
     bool? superAdmin,
     MockStore? store,
+    this.demo = true,
+    this.tenantAId = mockTenantAId,
+    this.latency = const Duration(milliseconds: 150),
   }) : _roles = roles ?? _rolesFromEnvironment() ?? const ['ADMIN', 'COACH'],
        _norteRoles = norteRoles ?? _rolesFromEnvironment() ?? const ['PARENT'],
        _superAdmin = superAdmin ?? _superAdminFromEnvironment(),
@@ -54,10 +61,20 @@ class MockApiAdapter implements HttpClientAdapter {
     _build();
   }
 
+  /// The demo's data (true) or empty academies and an empty platform (false).
+  final bool demo;
+
+  /// Id of the first academy (Academia Demo); the second is always [mockTenantBId].
+  final String tenantAId;
+
+  /// How long every answer takes, so the demo shows its loading states.
+  final Duration latency;
+
   void _build() {
     _platform = MockPlatformApi(
-      tenantAId: mockTenantAId,
+      tenantAId: tenantAId,
       tenantBId: mockTenantBId,
+      demo: demo,
     );
     _platformLog = MockStateLog(_store, '${mockStorePrefix}v1.platform');
     _platformLog.replay(
@@ -69,16 +86,32 @@ class MockApiAdapter implements HttpClientAdapter {
       ),
     );
     _academies = {
-      mockTenantAId: _Academy(
-        MockCoreApi(initialLogo: _logoPng, roles: _roles),
-        MockStateLog(_store, _logKey(mockTenantAId, _roles)),
+      tenantAId: _Academy(
+        demo
+            ? MockCoreApi(initialLogo: _logoPng, roles: _roles)
+            : MockCoreApi(academy: MockAcademy.empty, roles: _roles),
+        MockStateLog(_store, _logKey(tenantAId, _roles)),
+        tenantAId,
       ),
       mockTenantBId: _Academy(
-        MockCoreApi(academy: MockAcademy.norte, roles: _norteRoles),
+        MockCoreApi(
+          academy: demo ? MockAcademy.norte : MockAcademy.empty,
+          roles: _norteRoles,
+        ),
         MockStateLog(_store, _logKey(mockTenantBId, _norteRoles)),
+        mockTenantBId,
       ),
     };
   }
+
+  /// The core mock of the academy [tenantId] (its athlete, game and finance mocks read the same roster), for the
+  /// tests to seed (ADR-0070). Null for an academy the mock does not serve.
+  @visibleForTesting
+  MockAcademyApis? academy(String tenantId) => _academies[tenantId];
+
+  /// The platform mock, for the tests to seed (ADR-0070).
+  @visibleForTesting
+  MockPlatformApi get platform => _platform;
 
   static String _logKey(String tenantId, List<String> roles) =>
       '${mockStorePrefix}v1.$tenantId.${roles.join(',')}';
@@ -120,7 +153,7 @@ class MockApiAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    await Future<void>.delayed(const Duration(milliseconds: 150));
+    if (latency > Duration.zero) await Future<void>.delayed(latency);
     final path = options.path;
     final method = options.method.toUpperCase();
 
@@ -262,11 +295,11 @@ class MockApiAdapter implements HttpClientAdapter {
     'userId': '00000000-0000-4000-8000-000000000001',
     'sub': 'mock-sub',
     'email': 'coach1@hoops-academy.com',
-    'displayName': _academies[mockTenantAId]!.core.selfName,
+    'displayName': _academies[tenantAId]!.core.selfName,
     'locale': _locale,
     'superAdmin': _superAdmin,
     'memberships': [
-      _membership(mockTenantAId, 'demo', 'Academia Demo', true, _roles),
+      _membership(tenantAId, 'demo', 'Academia Demo', true, _roles),
       _membership(mockTenantBId, 'norte', 'Club Norte', false, _norteRoles),
     ],
   };
@@ -323,21 +356,34 @@ class MockApiAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
+/// The four mocks of one academy.
+abstract interface class MockAcademyApis {
+  MockCoreApi get core;
+  MockAthleteApi get athlete;
+  MockGameApi get game;
+  MockFinanceApi get finance;
+}
+
 /// One demo academy: its core data and the athlete and game mocks reading the same roster. Every change that
 /// succeeded is appended to [log], which a new instance replays to get back to the same state.
-class _Academy {
-  _Academy(this.core, this.log)
+class _Academy implements MockAcademyApis {
+  _Academy(this.core, this.log, this.tenantId)
     : athlete = MockAthleteApi(core: core),
       game = MockGameApi(core: core),
       finance = MockFinanceApi(core: core) {
-    log.replay((e) => handleUnlogged(e));
+    log.replay((e) => handleUnlogged(e, tenantId: tenantId));
   }
 
+  @override
   final MockCoreApi core;
+  @override
   final MockAthleteApi athlete;
+  @override
   final MockGameApi game;
+  @override
   final MockFinanceApi finance;
   final MockStateLog log;
+  final String tenantId;
 
   MockResult? handle(String tenantId, MockRequest r) {
     final result = handleUnlogged(r, tenantId: tenantId);
@@ -353,7 +399,7 @@ class _Academy {
     return result;
   }
 
-  MockResult? handleUnlogged(MockRequest r, {String tenantId = mockTenantAId}) {
+  MockResult? handleUnlogged(MockRequest r, {required String tenantId}) {
     if (r.path.startsWith('/api/athlete/')) {
       return athlete.handle(
             method: r.method,
