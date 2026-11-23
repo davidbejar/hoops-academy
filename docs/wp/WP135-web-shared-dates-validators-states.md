@@ -57,4 +57,79 @@ Not yours: WEB-02 (WP138). `apps/web/lib/l10n/*.arb`: keys next to the related f
   not |` with one row per finding ID of your scope. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points, ID table (work-package skill). -->
+- **Built** (all under `apps/web`; ADR-0067)
+  - **Dates (WEB-04).** `core/time/dates.dart` (pure Dart): ISO, compact `yyyyMMdd`, `dd/MM`, `dd/MM/yyyy`, `dd/MM/yy`
+    (charts), `displayDate` / `displayDateTime` (locale `yMMMd`), `toApiDate` / `toAthDate` / `toFinDate`. The private
+    `padLeft` formatters, dead `formatAthDate` / `athDateText`, `two`, `DateField.format`, the `toAthDate` of
+    `training_providers.dart` (health imported training for it) and the seven `DateFormat.yMMMd` copies are gone.
+    What is on screen is unchanged: no golden moved.
+  - **Forms (WEB-07).** `core/ui/validators.dart` (kit export): `requiredValidator` (moved), `isValidEmail`,
+    `emailValidator`, `optionalEmailValidator`, `decimalValidator`, `optionalDecimalValidator({positive})`,
+    `parseDecimal`, `blankToNull`, `formatMeasure`. 5 email patterns, 8 decimal parses and 15 inline blank-to-null
+    copies replaced; `platform_validators.dart` deleted. **Bug fixed**: a measurement was written with 0, 1 or 2
+    decimals depending on the widget (growth chart table 37.55 -> "37.5", list "37.55", norm tile full precision); red
+    test in `charts_test.dart`, now one text (whole number without decimals, else at most two, no trailing zero).
+  - **Exports (WEB-06).** `ServerExportButton.csv` / `.pdf` (+ `BusyIconButton`, `showExportMessage` shared with
+    `ExportMenu`); one handling: `EXPORT_TOO_LARGE` shows the screen's message or the narrow-the-request text (the PDF
+    button used to show the generic text of its kind), 503 shows the try-later message. Tests: `server_export_button_test.dart`.
+  - **Errors (WEB-08).** One code table in `AppError.message` (26 codes + 501); `financeErrorText`, `adminErrorText`,
+    `academyRequestErrorText`, `exerciseErrorText`, `AppErrorText` and 20 `errorText:` arguments gone.
+    `memberErrorText` (own words for `EMAIL_TAKEN`, `INVITATION_NOT_PENDING`) moved to `member_error_text.dart`.
+    Tests: `error_messages_test.dart` (red first). One existing test used `EMAIL_TAKEN` as "an unworded 409": now an
+    unknown code.
+  - **States (WEB-05).** `AsyncSection` in `core/ui/async_body.dart` (compact spinner, mapped message + optional label
+    + retry, muted empty text, `hideWhen`, keys for tests); replaces `AsyncBodyInline` (was in `members_screen.dart`),
+    the admins section, the due status card, the usage trend and the guardians of a player (which gain a retry). The
+    assign-player dialog's failed search showed `errorUnknown`: now the mapped message (red test first).
+  - **Providers (WEB-09).** 16 per-id families made `autoDispose` (with the live match of WP129: `provider_lifetime_test.dart`).
+  - **Rest.** WEB-10: the teams selector stores null for the current season (red test). WEB-11: `Reloading` mixin
+    (`core/state/reloading.dart`) on 26 notifiers, 11 pure `_reload` helpers and ~25 invalidate+await pairs gone.
+    WEB-12: counts with `count(*)` / `selectOnly(distinct)` / `watchSingle` in `match_store.dart`. WEB-14:
+    `ResultDialog` is a `FormDialog` (+ `afterClose` shows the band). WEB-15: `mockProblem` / `mockApplyUpdate` in the
+    game and finance mocks. WEB-16: `tool/webdriver.py`. WEB-17: `pumpAsSuperAdmin`, `localizedApp`.
+  - Also: `test/core/mock_athlete_platform_api_test.dart` failed on `main` today (it looked 3 days back from the host's
+    local date while the mock reads "today" in the academy zone; WIB vs Madrid on a Tuesday): window is 7 days back now.
+- **Verified** (fresh, 2026-11-24): `flutter analyze` no issues; `just web-format-check` 522 files, 0 changed;
+  `flutter test` (the whole `just web-test`) **1921 passed, 0 failed** (WP129 baseline 1861). Red first, committed
+  before the change: `validators_test` + growth table (WEB-07), `error_messages_test` (WEB-08), `async_section_test`
+  (WEB-05), `server_export_button_test` (WEB-06), the failed player search (WEB-05), the teams selector (WEB-10).
+  Pure moves/deletions rely on the existing suites (dates, `Reloading`, match store counts, mocks, set-up helpers).
+  Python tools: `tool/offline_cold_start.sh` (builds the mock bundle, drives Chrome through `webdriver.py`) ended
+  `OK: offline cold start`, and `excel_on_demand_check.py` passed; `browser_login_check.py` needs the compose stack and
+  was only compiled (`py_compile`), it uses the same `WebDriver` class.
+- **Goldens re-recorded**: none. Every text is unchanged where a golden shows it (the three golden files that touch
+  the set-up helpers, `app_admin`, `platform_requests`, `growth_chart`, pass as recorded).
+- **Decisions/ADRs**: ADR-0067 (appended to `docs/adr/README.md`); `flutter-feature` skill got a "shared helpers" rule.
+- **Open points / not done**
+  - WEB-04 did not unify the display styles (ISO / `dd/MM/yyyy` / `yMMMd`): each kind of screen keeps its own, only
+    the code is shared; unifying changes visible text and goldens in three languages (owner's call).
+  - WEB-05: `FinanceBody` (page level, with `needs`) is left as it is: it already wraps `AsyncBody` and the 501 text
+    now comes from the central table.
+  - WEB-10: the two selectors are not merged: the teams dropdown is shown to every role, `SeasonBar` only to those
+    who can browse seasons; replacing it would hide the selector from coaches and parents.
+  - WEB-14: `AssignPlayerDialog` stays a two-step dialog (pick, check, assign, with "back"); `PickerDialog` is
+    single-step, so a conversion needs a kit extension (a stateful search header) first.
+  - WEB-15: the folder moves ("one `core/api/<svc>_api.dart` / `core/mock/mock_<svc>_api.dart` per service") not done:
+    about 60 imports, and WP138 works in the same files.
+  - WEB-09: only per-id detail families; the other 12 families (week sessions, assignments, audit page, ...) keep
+    their lifetime (filters or derived state).
+  - WEB-17: the helpers of `audit_test`, `academy_requests_test` and `platform_users_test` also pump non-super-admin
+    users and keep their own `Harness` set-up.
+  - The tenant-isolation commit hook failed once under load (Keycloak container, 379 s); retried when the machine was
+    quieter.
+
+| ID | Done / Skipped | What changed or why not |
+|---|---|---|
+| WEB-04 | Done | `core/time/dates.dart`; private formatters, dead helpers and per-client Date constructions gone; display styles kept (see open points) |
+| WEB-05 | Done | `AsyncSection` replaces `AsyncBodyInline` and four ad-hoc blocks; assign dialog's failed search mapped; `FinanceBody` kept |
+| WEB-06 | Done | `ServerExportButton.csv/.pdf`, `BusyIconButton`; one `EXPORT_TOO_LARGE` / 503 handling |
+| WEB-07 | Done | `core/ui/validators.dart`, `formatMeasure`; the 0/1/2-decimal disagreement fixed (red test first) |
+| WEB-08 | Done | one code table in `AppError.message`; five mappers and `AppErrorText` gone; members override two codes |
+| WEB-09 | Done (as corrected) | 16 per-id families `autoDispose`; `auditQueryProvider`, `playerNameProvider` untouched |
+| WEB-10 | Done (part) | teams selector stores null for the current season; not merged with `SeasonBar` (role visibility) |
+| WEB-11 | Done | `Reloading` mixin; pure `_reload` helpers gone, extras keep a short `_reload` |
+| WEB-12 | Done | `count(*)`, distinct `selectOnly`, `watchSingle` |
+| WEB-14 | Done (part) | `ResultDialog` -> `FormDialog` + `afterClose`; `AssignPlayerDialog` left (two-step) |
+| WEB-15 | Done (part) | `mockProblem` / `mockApplyUpdate` in the game and finance mocks; folder moves skipped |
+| WEB-16 | Done | `tool/webdriver.py`, three scripts import it |
+| WEB-17 | Done (part) | `pumpAsSuperAdmin`, `localizedApp`; three helpers with non-super-admin variants kept |
