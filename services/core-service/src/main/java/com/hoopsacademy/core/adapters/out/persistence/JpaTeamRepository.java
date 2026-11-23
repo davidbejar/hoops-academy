@@ -15,8 +15,8 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -107,15 +107,15 @@ class JpaTeamRepository implements TeamRepository {
     }
 
     @Override
-    public Set<TeamId> seasonNotEnded(Collection<TeamId> ids, LocalDate today) {
+    public Map<TeamId, LocalDate> seasonEnds(Collection<TeamId> ids) {
         if (ids.isEmpty()) {
-            return Set.of();
+            return Map.of();
         }
-        return em.createQuery("select t.id from TeamEntity t, SeasonEntity s where s.id = t.seasonId "
-                        + "and t.id in :ids and s.endDate >= :today", UUID.class)
+        return em.createQuery("select t.id, s.endDate from TeamEntity t, SeasonEntity s where s.id = t.seasonId "
+                        + "and t.id in :ids", Object[].class)
                 .setParameter("ids", ids.stream().map(TeamId::value).toList())
-                .setParameter("today", today)
-                .getResultStream().map(TeamId::new).collect(Collectors.toSet());
+                .getResultStream()
+                .collect(Collectors.toMap(row -> new TeamId((UUID) row[0]), row -> (LocalDate) row[1]));
     }
 
     @Override

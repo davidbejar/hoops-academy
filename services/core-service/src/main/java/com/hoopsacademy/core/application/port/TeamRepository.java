@@ -10,6 +10,7 @@ import com.hoopsacademy.core.domain.roster.TeamId;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -34,11 +35,8 @@ public interface TeamRepository {
 
     List<Team> inSeasons(Collection<SeasonId> seasons);
 
-    /**
-     * The ones of {@code ids} whose season has not ended on {@code today} (it ends today or later; the SQL form of
-     * {@code Season.hasEnded}). Unknown ids are dropped.
-     */
-    Set<TeamId> seasonNotEnded(Collection<TeamId> ids, LocalDate today);
+    /** The last day of the season of each of {@code ids}; unknown ids are absent (the membership rule, ADR-0066). */
+    Map<TeamId, LocalDate> seasonEnds(Collection<TeamId> ids);
 
     PageResult<Team> list(TeamFilter filter, PageRequest page);
 
