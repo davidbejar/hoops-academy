@@ -3,8 +3,6 @@ package com.hoopsacademy.game.adapters.out.persistence;
 import com.hoopsacademy.common.client.CoreMembership.TenantStatus;
 import com.hoopsacademy.common.replica.EventEnvelope;
 import com.hoopsacademy.common.tenancy.TenantId;
-import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.game.application.replica.ReplicaPerson;
 import com.hoopsacademy.game.application.replica.ReplicaPlayer;
 import com.hoopsacademy.game.application.replica.ReplicaTeam;
 import com.hoopsacademy.game.application.replica.ReplicaTenant;
@@ -40,12 +38,9 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -180,69 +175,10 @@ class JdbcRosterReplicaRepository extends JdbcRepository implements RosterReplic
                 JdbcRosterReplicaRepository::player);
     }
 
-    @Override
-    public Optional<ReplicaPerson> activePerson(String subject) {
-        return first(query("""
-                select id, roles from game.person_ref where subject = ? and active and not removed
-                 order by id limit 1""",
-                statement -> statement.setString(1, subject),
-                row -> new ReplicaPerson(uuid(row, "id"), roles(row.getArray("roles")))));
-    }
-
-    @Override
-    public Optional<PlayerId> playerOf(UUID personId) {
-        return first(query("select id from game.player_ref where person_id = ? and not removed order by id limit 1",
-                statement -> statement.setObject(1, personId), row -> PlayerId.of(uuid(row, "id"))));
-    }
-
-    @Override
-    public Set<PlayerId> linkedPlayers(UUID guardianPersonId) {
-        return new HashSet<>(query("""
-                select l.player_id from game.guardian_link_ref l
-                 where l.guardian_person_id = ? and not l.removed
-                   and not exists (select 1 from game.player_ref p
-                                    where p.tenant_id = l.tenant_id and p.id = l.player_id and p.removed)""",
-                statement -> statement.setObject(1, guardianPersonId), row -> PlayerId.of(uuid(row, "player_id"))));
-    }
-
-    @Override
-    public Set<TeamId> staffTeams(UUID personId) {
-        return new HashSet<>(query("select team_id from game.team_staff_ref where person_id = ? and not removed",
-                statement -> statement.setObject(1, personId), row -> TeamId.of(uuid(row, "team_id"))));
-    }
-
-    @Override
-    public Set<TeamId> openValidTeamsOf(Collection<PlayerId> players) {
-        return new HashSet<>(query("""
-                select team_id from game.team_player_ref
-                 where player_id = any (?) and left_on is null and invalid_reason is null and not removed""",
-                statement -> statement.setArray(1, uuids(statement, players.stream().map(PlayerId::value).toList())),
-                row -> TeamId.of(uuid(row, "team_id"))));
-    }
-
-    @Override
-    public Map<TeamId, LocalDate> seasonEnds(Collection<TeamId> teams) {
-        if (teams.isEmpty()) {
-            return Map.of();
-        }
-        return query("select id, season_end_date from game.team_ref where id = any (?) and not removed",
-                statement -> statement.setArray(1, uuids(statement, teams.stream().map(TeamId::value).toList())),
-                row -> Map.entry(TeamId.of(uuid(row, "id")), row.getObject("season_end_date", LocalDate.class)))
-                .stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
     private static ReplicaPlayer player(ResultSet row) throws SQLException {
         Date birthDate = row.getDate("birth_date");
         return new ReplicaPlayer(PlayerId.of(uuid(row, "id")), row.getString("display_name"),
                 Optional.ofNullable(birthDate).map(Date::toLocalDate), Optional.ofNullable(row.getString("gender")));
-    }
-
-    private static Set<TenantRole> roles(Array roles) throws SQLException {
-        Set<TenantRole> result = EnumSet.noneOf(TenantRole.class);
-        for (String role : (String[]) roles.getArray()) {
-            result.add(TenantRole.valueOf(role));
-        }
-        return result;
     }
 
     private static Array uuids(PreparedStatement statement, List<UUID> ids) throws SQLException {

@@ -64,7 +64,9 @@ tenant (known `eventId` skipped, older `occurredAt` never wins, removals soft), 
 records (`hoops.roster.replica.retention.*`). The envelope checks, the consumer loop (a database failure is retried
 `hoops.roster.replica.max-attempts` = 5 times, backoff from 0.5 s doubling, for apply and park), the meters and the
 bookkeeping stores are common-quarkus' (`com.hoopsacademy.common.replica`, WP130, ADR-0062), the same as athlete's; game
-keeps `RosterEventMapper` (payload to `RosterEvent`) and its replica tables. Operations: `docs/runbooks/events.md`.
+keeps `RosterEventMapper` (payload to `RosterEvent`) and its replica tables. The tenant filter's context in `replica`
+mode is common's `MembershipRule` (the rule of core's `/internal/authz`, WP134, ADR-0066) over `JdbcMembershipReads`.
+Operations: `docs/runbooks/events.md`.
 
 ## Match sheet PDF (WP117; ADR-0051, ADR-0052)
 `GetMatchSheetPdf` reads the caller's box score, the team's name (`RosterPort.team`) and the academy's name, and asks
