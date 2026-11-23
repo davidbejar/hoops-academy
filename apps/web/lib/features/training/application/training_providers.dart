@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/state/reloading.dart';
 import '../../../core/time/dates.dart';
 import '../../tenant/application/tenant_providers.dart';
 
@@ -70,7 +71,8 @@ final calendarTeamProvider = NotifierProvider<TeamFilter, String?>(
   TeamFilter.new,
 );
 
-class WeekSessionsNotifier extends AsyncNotifier<List<ath.TrainingSession>> {
+class WeekSessionsNotifier extends AsyncNotifier<List<ath.TrainingSession>>
+    with Reloading<List<ath.TrainingSession>> {
   @override
   Future<List<ath.TrainingSession>> build() async {
     final monday = ref.watch(weekStartProvider);
@@ -104,11 +106,6 @@ class WeekSessionsNotifier extends AsyncNotifier<List<ath.TrainingSession>> {
     }
     all.sort((a, b) => a.startsAt.compareTo(b.startsAt));
     return all;
-  }
-
-  Future<void> reload() async {
-    ref.invalidateSelf();
-    await future;
   }
 
   /// Creates an ad-hoc session and returns it (for a quick-add right after).
@@ -169,7 +166,8 @@ class SessionDetail {
   final List<api.TeamPlayer> roster;
 }
 
-class SessionDetailNotifier extends AsyncNotifier<SessionDetail> {
+class SessionDetailNotifier extends AsyncNotifier<SessionDetail>
+    with Reloading<SessionDetail> {
   SessionDetailNotifier(this.sessionId);
   final String sessionId;
 
@@ -193,8 +191,7 @@ class SessionDetailNotifier extends AsyncNotifier<SessionDetail> {
   }
 
   Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
+    await reload();
     ref.invalidate(weekSessionsProvider);
   }
 
@@ -256,14 +253,14 @@ final sessionDetailProvider =
 
 // ------------------------------------------------------------------ schedules
 
-class SchedulesNotifier extends AsyncNotifier<List<ath.TrainingSchedule>> {
+class SchedulesNotifier extends AsyncNotifier<List<ath.TrainingSchedule>>
+    with Reloading<List<ath.TrainingSchedule>> {
   @override
   Future<List<ath.TrainingSchedule>> build() =>
       ref.watch(trainingRepositoryProvider).schedules();
 
   Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
+    await reload();
     ref.invalidate(weekSessionsProvider);
   }
 
@@ -325,7 +322,8 @@ final schedulesProvider =
 
 // ------------------------------------------------------------------- absences
 
-class AbsencesNotifier extends AsyncNotifier<List<ath.PlannedAbsence>> {
+class AbsencesNotifier extends AsyncNotifier<List<ath.PlannedAbsence>>
+    with Reloading<List<ath.PlannedAbsence>> {
   @override
   Future<List<ath.PlannedAbsence>> build() async {
     final list = await ref.watch(trainingRepositoryProvider).absences();
@@ -350,8 +348,7 @@ class AbsencesNotifier extends AsyncNotifier<List<ath.PlannedAbsence>> {
               ..reason = reason,
           ),
         );
-    ref.invalidateSelf();
-    await future;
+    await reload();
     ref.invalidate(weekSessionsProvider);
   }
 
@@ -376,15 +373,13 @@ class AbsencesNotifier extends AsyncNotifier<List<ath.PlannedAbsence>> {
               }),
           ),
         );
-    ref.invalidateSelf();
-    await future;
+    await reload();
     ref.invalidate(weekSessionsProvider);
   }
 
   Future<void> delete(String id) async {
     await ref.read(trainingRepositoryProvider).deleteAbsence(id);
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 }
 
@@ -481,7 +476,8 @@ final planLibraryProvider =
       bool
     >(PlanLibraryNotifier.new);
 
-class PlanDetailNotifier extends AsyncNotifier<ath.TrainingPlan> {
+class PlanDetailNotifier extends AsyncNotifier<ath.TrainingPlan>
+    with Reloading<ath.TrainingPlan> {
   PlanDetailNotifier(this.planId);
   final String planId;
 
@@ -493,8 +489,7 @@ class PlanDetailNotifier extends AsyncNotifier<ath.TrainingPlan> {
       .plan(planId, language: ref.watch(uiLanguageProvider));
 
   Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
+    await reload();
     ref.invalidate(planLibraryProvider);
   }
 
@@ -583,7 +578,8 @@ class AssignmentsView {
 
 /// Family argument: the player whose assignments are wanted (null = all the
 /// caller can see, used by staff).
-class AssignmentsNotifier extends AsyncNotifier<AssignmentsView> {
+class AssignmentsNotifier extends AsyncNotifier<AssignmentsView>
+    with Reloading<AssignmentsView> {
   AssignmentsNotifier(this.playerId);
   final String? playerId;
 
@@ -600,11 +596,6 @@ class AssignmentsNotifier extends AsyncNotifier<AssignmentsView> {
       assignments: assignments,
       completions: r[1] as List<ath.PlanCompletion>,
     );
-  }
-
-  Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
   }
 
   Future<void> assign({
@@ -631,7 +622,7 @@ class AssignmentsNotifier extends AsyncNotifier<AssignmentsView> {
 
   Future<void> unassign(String assignmentId) async {
     await ref.read(plansRepositoryProvider).deleteAssignment(assignmentId);
-    await _reload();
+    await reload();
   }
 
   Future<void> record(

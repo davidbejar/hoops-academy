@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 
+import '../../../core/state/reloading.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/errors/app_error.dart';
 import '../../../core/l10n/locale_controller.dart';
@@ -72,7 +73,8 @@ final showArchivedPlansProvider = NotifierProvider<ShowArchivedPlans, bool>(
   ShowArchivedPlans.new,
 );
 
-class FeePlansNotifier extends AsyncNotifier<List<fin.FeePlan>> {
+class FeePlansNotifier extends AsyncNotifier<List<fin.FeePlan>>
+    with Reloading<List<fin.FeePlan>> {
   @override
   Future<List<fin.FeePlan>> build() async {
     final archived = ref.watch(showArchivedPlansProvider);
@@ -83,14 +85,9 @@ class FeePlansNotifier extends AsyncNotifier<List<fin.FeePlan>> {
 
   FinanceRepository get _repo => ref.read(financeRepositoryProvider);
 
-  Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
-  }
-
   Future<fin.FeePlan> create(fin.CreateFeePlanRequest request) async {
     final plan = await _repo.createFeePlan(request);
-    await _reload();
+    await reload();
     return plan;
   }
 
@@ -99,18 +96,18 @@ class FeePlansNotifier extends AsyncNotifier<List<fin.FeePlan>> {
     fin.UpdateFeePlanRequest request,
   ) async {
     final plan = await _repo.updateFeePlan(feePlanId, request);
-    await _reload();
+    await reload();
     return plan;
   }
 
   Future<void> setArchived(String feePlanId, bool archived) async {
     await _repo.setFeePlanArchived(feePlanId, archived: archived);
-    await _reload();
+    await reload();
   }
 
   Future<void> delete(String feePlanId) async {
     await _repo.deleteFeePlan(feePlanId);
-    await _reload();
+    await reload();
   }
 }
 
@@ -151,7 +148,8 @@ final dueQueryProvider = NotifierProvider<DueQueryNotifier, DueQuery>(
   DueQueryNotifier.new,
 );
 
-class DuesNotifier extends AsyncNotifier<fin.DuePage> {
+class DuesNotifier extends AsyncNotifier<fin.DuePage>
+    with Reloading<fin.DuePage> {
   @override
   Future<fin.DuePage> build() =>
       ref.watch(financeRepositoryProvider).dues(ref.watch(dueQueryProvider));
@@ -160,8 +158,7 @@ class DuesNotifier extends AsyncNotifier<fin.DuePage> {
 
   Future<void> _reload() async {
     ref.invalidate(dueDetailProvider);
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 
   /// What generating [period] of a plan would create; writes nothing.
@@ -251,7 +248,8 @@ final expenseQueryProvider =
       ExpenseQueryNotifier.new,
     );
 
-class ExpensesNotifier extends AsyncNotifier<fin.ExpensePage> {
+class ExpensesNotifier extends AsyncNotifier<fin.ExpensePage>
+    with Reloading<fin.ExpensePage> {
   @override
   Future<fin.ExpensePage> build() => ref
       .watch(financeRepositoryProvider)
@@ -262,8 +260,7 @@ class ExpensesNotifier extends AsyncNotifier<fin.ExpensePage> {
   /// An expense changes the balance of its season.
   Future<void> _reload() async {
     ref.invalidate(seasonBalanceProvider);
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 
   Future<fin.Expense> create(fin.CreateExpenseRequest request) async {

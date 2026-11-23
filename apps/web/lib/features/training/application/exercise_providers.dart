@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/state/reloading.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/athlete_api.dart' as ath;
 import '../data/exercises_repository.dart';
@@ -38,7 +39,8 @@ class ExerciseListing {
 
 /// The catalogue screen: the first page for the filter, further pages on
 /// request, and the commands on the academy's own exercises.
-class ExerciseCatalogueNotifier extends AsyncNotifier<ExerciseListing> {
+class ExerciseCatalogueNotifier extends AsyncNotifier<ExerciseListing>
+    with Reloading<ExerciseListing> {
   static const pageSize = 50;
   int _page = 0;
 
@@ -89,14 +91,9 @@ class ExerciseCatalogueNotifier extends AsyncNotifier<ExerciseListing> {
     state = AsyncData(next);
   }
 
-  Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
-  }
-
   Future<void> create(ath.ExerciseInput input) async {
     await _repo.create(input);
-    await _reload();
+    await reload();
   }
 
   Future<void> edit(
@@ -104,17 +101,17 @@ class ExerciseCatalogueNotifier extends AsyncNotifier<ExerciseListing> {
     ath.UpdateExerciseRequest request,
   ) async {
     await _repo.update(exerciseId, request);
-    await _reload();
+    await reload();
   }
 
   Future<void> archive(String exerciseId) async {
     await _repo.archive(exerciseId);
-    await _reload();
+    await reload();
   }
 
   Future<void> unarchive(String exerciseId) async {
     await _repo.unarchive(exerciseId);
-    await _reload();
+    await reload();
   }
 }
 

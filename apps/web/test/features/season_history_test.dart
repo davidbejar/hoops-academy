@@ -144,8 +144,8 @@ void main() {
       expect(e.message(_l), isNot(contains('English')));
     });
 
-    test('another 409 keeps the generic conflict text', () {
-      final e = AppError.fromDioException(_problem(409, 'EMAIL_TAKEN'));
+    test('a 409 with a code nobody words keeps the generic conflict text', () {
+      final e = AppError.fromDioException(_problem(409, 'SOMETHING_NEW'));
       expect(e.message(_l), _l.errorConflict);
     });
 

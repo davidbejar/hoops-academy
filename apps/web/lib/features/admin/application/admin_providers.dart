@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_selector/file_selector.dart';
 
+import '../../../core/state/reloading.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/clear_list.dart';
 import '../../me/application/me_providers.dart';
@@ -68,7 +69,8 @@ final logoPickerProvider = Provider<Future<PickedFile?> Function()>(
   },
 );
 
-class AcademyNotifier extends AsyncNotifier<AcademyData> {
+class AcademyNotifier extends AsyncNotifier<AcademyData>
+    with Reloading<AcademyData> {
   @override
   Future<AcademyData> build() async {
     final repo = ref.watch(academyRepositoryProvider);
@@ -143,8 +145,7 @@ class AcademyNotifier extends AsyncNotifier<AcademyData> {
     ref.invalidate(tenantLogoProvider);
     ref.invalidate(tenantProfileProvider);
     ref.invalidate(currentUserProvider); // membership.hasLogo
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 }
 
@@ -164,7 +165,8 @@ final memberQueryProvider = NotifierProvider<MemberQuery, String>(
   MemberQuery.new,
 );
 
-class MembersNotifier extends AsyncNotifier<List<api.Member>> {
+class MembersNotifier extends AsyncNotifier<List<api.Member>>
+    with Reloading<List<api.Member>> {
   @override
   Future<List<api.Member>> build() {
     final query = ref.watch(memberQueryProvider);
@@ -172,11 +174,6 @@ class MembersNotifier extends AsyncNotifier<List<api.Member>> {
   }
 
   MembersRepository get _repo => ref.read(membersRepositoryProvider);
-
-  Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
-  }
 
   /// Returns the member with the temporary password of a login this call created. The caller shows it once and drops
   /// it; the state only ever holds the password-free list.
@@ -196,25 +193,25 @@ class MembersNotifier extends AsyncNotifier<List<api.Member>> {
           ..sendInvitation = true,
       ),
     );
-    await _reload();
+    await reload();
     return invited;
   }
 
   /// New temporary password for a pending member (returned once, see [invite]).
   Future<api.MemberWithPassword> issueTemporaryPassword(String personId) async {
     final member = await _repo.issueTemporaryPassword(personId);
-    await _reload();
+    await reload();
     return member;
   }
 
   Future<void> replaceRoles(String personId, Set<api.TenantRole> roles) async {
     await _repo.replaceRoles(personId, roles);
-    await _reload();
+    await reload();
   }
 
   Future<void> deactivate(String personId) async {
     await _repo.deactivate(personId);
-    await _reload();
+    await reload();
   }
 
   /// Saves the personal data; a null optional value empties the field (see [MembersRepository.update]).
@@ -236,7 +233,7 @@ class MembersNotifier extends AsyncNotifier<List<api.Member>> {
       birthDate: birthDate,
       gender: gender,
     );
-    await _reload();
+    await reload();
   }
 }
 
@@ -246,7 +243,8 @@ final membersProvider =
     );
 
 /// Guardian links of one guardian (PARENT member), with add / remove.
-class GuardianLinksNotifier extends AsyncNotifier<List<api.GuardianLink>> {
+class GuardianLinksNotifier extends AsyncNotifier<List<api.GuardianLink>>
+    with Reloading<List<api.GuardianLink>> {
   GuardianLinksNotifier(this.guardianPersonId);
   final String guardianPersonId;
 
@@ -262,14 +260,12 @@ class GuardianLinksNotifier extends AsyncNotifier<List<api.GuardianLink>> {
           guardianPersonId: guardianPersonId,
           playerId: playerId,
         );
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 
   Future<void> remove(String linkId) async {
     await ref.read(membersRepositoryProvider).removeGuardianLink(linkId);
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 }
 
@@ -282,17 +278,13 @@ final guardianLinksProvider =
 
 // --------------------------------------------------------------------- seasons
 
-class SeasonsNotifier extends AsyncNotifier<List<api.Season>> {
+class SeasonsNotifier extends AsyncNotifier<List<api.Season>>
+    with Reloading<List<api.Season>> {
   @override
   Future<List<api.Season>> build() =>
       ref.watch(seasonsRepositoryProvider).list();
 
   SeasonsRepository get _repo => ref.read(seasonsRepositoryProvider);
-
-  Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
-  }
 
   Future<void> create({
     required String name,
@@ -306,7 +298,7 @@ class SeasonsNotifier extends AsyncNotifier<List<api.Season>> {
       endsOn: endsOn,
       referenceYear: referenceYear,
     );
-    await _reload();
+    await reload();
   }
 
   Future<void> edit(
@@ -323,7 +315,7 @@ class SeasonsNotifier extends AsyncNotifier<List<api.Season>> {
       endsOn: endsOn,
       referenceYear: referenceYear,
     );
-    await _reload();
+    await reload();
   }
 
   /// Runs the rollover and returns its result (orphans, opened cases).
@@ -337,7 +329,7 @@ class SeasonsNotifier extends AsyncNotifier<List<api.Season>> {
       cloneStaff: cloneStaff,
       clonePlayers: clonePlayers,
     );
-    await _reload();
+    await reload();
     return result;
   }
 }
@@ -349,7 +341,8 @@ final seasonsProvider =
 
 // ------------------------------------------------------------- age categories
 
-class AgeCategoriesNotifier extends AsyncNotifier<List<api.AgeCategory>> {
+class AgeCategoriesNotifier extends AsyncNotifier<List<api.AgeCategory>>
+    with Reloading<List<api.AgeCategory>> {
   @override
   Future<List<api.AgeCategory>> build() async {
     final list = await ref.watch(ageCategoriesRepositoryProvider).list();
@@ -358,11 +351,6 @@ class AgeCategoriesNotifier extends AsyncNotifier<List<api.AgeCategory>> {
 
   AgeCategoriesRepository get _repo =>
       ref.read(ageCategoriesRepositoryProvider);
-
-  Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
-  }
 
   Future<void> save({
     String? id,
@@ -382,12 +370,12 @@ class AgeCategoriesNotifier extends AsyncNotifier<List<api.AgeCategory>> {
         rank: rank,
       );
     }
-    await _reload();
+    await reload();
   }
 
   Future<void> remove(String id) async {
     await _repo.delete(id);
-    await _reload();
+    await reload();
   }
 }
 

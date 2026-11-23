@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/state/reloading.dart';
 import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/athlete_api.dart' as ath;
@@ -22,7 +23,8 @@ final fitnessRepositoryProvider = Provider<FitnessRepository>(
 
 // ------------------------------------------------------------------- injuries
 
-class InjuriesNotifier extends AsyncNotifier<List<ath.Injury>> {
+class InjuriesNotifier extends AsyncNotifier<List<ath.Injury>>
+    with Reloading<List<ath.Injury>> {
   InjuriesNotifier(this.playerId);
   final String playerId;
 
@@ -36,8 +38,7 @@ class InjuriesNotifier extends AsyncNotifier<List<ath.Injury>> {
   }
 
   Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
+    await reload();
     ref.invalidate(openInjuriesProvider);
   }
 
@@ -119,7 +120,8 @@ final openInjuriesProvider = FutureProvider<Map<String, ath.Injury>>((
 
 // --------------------------------------------------------------- measurements
 
-class MeasurementsNotifier extends AsyncNotifier<List<ath.BodyMeasurement>> {
+class MeasurementsNotifier extends AsyncNotifier<List<ath.BodyMeasurement>>
+    with Reloading<List<ath.BodyMeasurement>> {
   MeasurementsNotifier(this.playerId);
   final String playerId;
 
@@ -148,8 +150,7 @@ class MeasurementsNotifier extends AsyncNotifier<List<ath.BodyMeasurement>> {
               ..weightKg = weightKg,
           ),
         );
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 
   /// Saves the edit form: an empty height or weight is cleared (the server keeps at least one).
@@ -174,14 +175,12 @@ class MeasurementsNotifier extends AsyncNotifier<List<ath.BodyMeasurement>> {
               }),
           ),
         );
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 
   Future<void> delete(String id) async {
     await ref.read(healthRepositoryProvider).deleteMeasurement(id);
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 }
 
@@ -194,7 +193,8 @@ final measurementsProvider =
 
 // ---------------------------------------------------------------- fitness tests
 
-class TestTypesNotifier extends AsyncNotifier<List<ath.PhysicalTestType>> {
+class TestTypesNotifier extends AsyncNotifier<List<ath.PhysicalTestType>>
+    with Reloading<List<ath.PhysicalTestType>> {
   @override
   Future<List<ath.PhysicalTestType>> build() =>
       ref.watch(fitnessRepositoryProvider).types();
@@ -226,15 +226,13 @@ class TestTypesNotifier extends AsyncNotifier<List<ath.PhysicalTestType>> {
               }),
           ),
         );
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 
   /// Custom types without results only (409 `TEST_TYPE_HAS_RESULTS` otherwise); the academy's norms for it go too.
   Future<void> delete(String id) async {
     await ref.read(fitnessRepositoryProvider).deleteType(id);
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 
   Future<void> create({
@@ -256,8 +254,7 @@ class TestTypesNotifier extends AsyncNotifier<List<ath.PhysicalTestType>> {
               ..description = description,
           ),
         );
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 }
 
@@ -266,7 +263,8 @@ final testTypesProvider =
       TestTypesNotifier.new,
     );
 
-class TestResultsNotifier extends AsyncNotifier<List<ath.PhysicalTestResult>> {
+class TestResultsNotifier extends AsyncNotifier<List<ath.PhysicalTestResult>>
+    with Reloading<List<ath.PhysicalTestResult>> {
   TestResultsNotifier(this.playerId);
   final String playerId;
 
@@ -298,8 +296,7 @@ class TestResultsNotifier extends AsyncNotifier<List<ath.PhysicalTestResult>> {
               ..notes = notes,
           ),
         );
-    ref.invalidateSelf();
-    await future;
+    await reload();
     return r;
   }
 
@@ -324,14 +321,12 @@ class TestResultsNotifier extends AsyncNotifier<List<ath.PhysicalTestResult>> {
               }),
           ),
         );
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 
   Future<void> delete(String id) async {
     await ref.read(fitnessRepositoryProvider).deleteResult(id);
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 }
 
@@ -368,7 +363,8 @@ final normFilterProvider = NotifierProvider<NormFilterNotifier, NormFilter>(
   NormFilterNotifier.new,
 );
 
-class NormsNotifier extends AsyncNotifier<List<ath.PhysicalTestNorm>> {
+class NormsNotifier extends AsyncNotifier<List<ath.PhysicalTestNorm>>
+    with Reloading<List<ath.PhysicalTestNorm>> {
   @override
   Future<List<ath.PhysicalTestNorm>> build() {
     final f = ref.watch(normFilterProvider);
@@ -384,14 +380,12 @@ class NormsNotifier extends AsyncNotifier<List<ath.PhysicalTestNorm>> {
     } else {
       await repo.replaceNorm(normId, input);
     }
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 
   Future<void> delete(String id) async {
     await ref.read(fitnessRepositoryProvider).deleteNorm(id);
-    ref.invalidateSelf();
-    await future;
+    await reload();
   }
 }
 

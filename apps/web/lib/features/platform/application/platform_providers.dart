@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/state/reloading.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/errors/app_error.dart';
 import '../../../core/session/session.dart';
@@ -67,7 +68,8 @@ final platformUsersProvider = FutureProvider.autoDispose<api.PlatformUserPage>((
       .users(query: q.serverQuery, page: q.page);
 });
 
-class TenantsNotifier extends AsyncNotifier<List<api.Tenant>> {
+class TenantsNotifier extends AsyncNotifier<List<api.Tenant>>
+    with Reloading<List<api.Tenant>> {
   @override
   Future<List<api.Tenant>> build() {
     final f = ref.watch(tenantFilterProvider);
@@ -110,8 +112,7 @@ class TenantsNotifier extends AsyncNotifier<List<api.Tenant>> {
               ),
           ),
         );
-    ref.invalidateSelf();
-    await future;
+    await reload();
     return t;
   }
 }
@@ -135,7 +136,8 @@ class TenantDetail {
   final Object? usageError;
 }
 
-class TenantDetailNotifier extends AsyncNotifier<TenantDetail> {
+class TenantDetailNotifier extends AsyncNotifier<TenantDetail>
+    with Reloading<TenantDetail> {
   TenantDetailNotifier(this.tenantId);
   final String tenantId;
 
@@ -152,8 +154,7 @@ class TenantDetailNotifier extends AsyncNotifier<TenantDetail> {
   }
 
   Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
+    await reload();
     ref.invalidate(tenantsProvider);
   }
 
@@ -179,7 +180,8 @@ final tenantDetailProvider =
     );
 
 /// Administrators of one academy (ADR-0023). Every mutation reloads the list from the server.
-class TenantAdminsNotifier extends AsyncNotifier<List<api.TenantAdmin>> {
+class TenantAdminsNotifier extends AsyncNotifier<List<api.TenantAdmin>>
+    with Reloading<List<api.TenantAdmin>> {
   TenantAdminsNotifier(this.tenantId);
   final String tenantId;
 
@@ -188,11 +190,6 @@ class TenantAdminsNotifier extends AsyncNotifier<List<api.TenantAdmin>> {
   @override
   Future<List<api.TenantAdmin>> build() =>
       ref.watch(platformRepositoryProvider).admins(tenantId);
-
-  Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
-  }
 
   /// Returns the administrator with the temporary password of a login this call created (null: existing login). The
   /// caller shows it once and drops it; the state only ever holds the password-free list.
@@ -212,7 +209,7 @@ class TenantAdminsNotifier extends AsyncNotifier<List<api.TenantAdmin>> {
           ..locale = locale,
       ),
     );
-    await _reload();
+    await reload();
     return admin;
   }
 
@@ -233,12 +230,12 @@ class TenantAdminsNotifier extends AsyncNotifier<List<api.TenantAdmin>> {
           ..email = email,
       ),
     );
-    await _reload();
+    await reload();
   }
 
   Future<void> remove(String personId) async {
     await _repo.removeAdmin(tenantId, personId);
-    await _reload();
+    await reload();
   }
 
   /// New temporary password for a pending administrator (returned once, see [add]).
@@ -246,7 +243,7 @@ class TenantAdminsNotifier extends AsyncNotifier<List<api.TenantAdmin>> {
     String personId,
   ) async {
     final admin = await _repo.issueAdminTemporaryPassword(tenantId, personId);
-    await _reload();
+    await reload();
     return admin;
   }
 }

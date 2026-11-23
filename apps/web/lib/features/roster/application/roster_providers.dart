@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/state/reloading.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/clear_list.dart';
 import '../../admin/application/admin_providers.dart';
@@ -62,17 +63,13 @@ final activeSeasonProvider = FutureProvider<api.Season?>((ref) async {
   return seasons.last;
 });
 
-class TeamsNotifier extends AsyncNotifier<List<api.Team>> {
+class TeamsNotifier extends AsyncNotifier<List<api.Team>>
+    with Reloading<List<api.Team>> {
   @override
   Future<List<api.Team>> build() async {
     final season = await ref.watch(activeSeasonProvider.future);
     if (season == null) return const [];
     return ref.watch(teamsRepositoryProvider).list(seasonId: season.id);
-  }
-
-  Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
   }
 
   Future<void> create({
@@ -94,7 +91,7 @@ class TeamsNotifier extends AsyncNotifier<List<api.Team>> {
               ..genderPolicy = genderPolicy,
           ),
         );
-    await _reload();
+    await reload();
   }
 
   Future<void> edit(
@@ -119,7 +116,7 @@ class TeamsNotifier extends AsyncNotifier<List<api.Team>> {
               }),
           ),
         );
-    await _reload();
+    await reload();
   }
 }
 
@@ -138,7 +135,8 @@ class TeamDetail {
   final List<api.TeamStaffMember> staff;
 }
 
-class TeamDetailNotifier extends AsyncNotifier<TeamDetail> {
+class TeamDetailNotifier extends AsyncNotifier<TeamDetail>
+    with Reloading<TeamDetail> {
   TeamDetailNotifier(this.teamId);
   final String teamId;
 
@@ -160,8 +158,7 @@ class TeamDetailNotifier extends AsyncNotifier<TeamDetail> {
   }
 
   Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
+    await reload();
     ref.invalidate(teamsProvider); // player counts
   }
 
@@ -348,7 +345,8 @@ final playerDetailProvider =
 
 // ------------------------------------------------------------------- approvals
 
-class ApprovalsNotifier extends AsyncNotifier<List<api.ApprovalRequest>> {
+class ApprovalsNotifier extends AsyncNotifier<List<api.ApprovalRequest>>
+    with Reloading<List<api.ApprovalRequest>> {
   @override
   Future<List<api.ApprovalRequest>> build() =>
       ref.watch(approvalsRepositoryProvider).list();
@@ -356,8 +354,7 @@ class ApprovalsNotifier extends AsyncNotifier<List<api.ApprovalRequest>> {
   ApprovalsRepository get _repo => ref.read(approvalsRepositoryProvider);
 
   Future<void> _reload() async {
-    ref.invalidateSelf();
-    await future;
+    await reload();
     ref.invalidate(playersProvider);
   }
 
