@@ -458,7 +458,7 @@ compose, chart, properties and scripts and runs alone.
 | 1 | WP126 | Game: ingest reads the match once, `sync_receipt` dropped, feed cursor race, parked events unique | Opus · high | Running |
 | 1 | WP127 | Athlete: roster reads per request, tenant zone from the context, the 90 % domain gate, one test group | Opus · high | Running |
 | 1 | WP128 | Core: guardian-link N+1, outbox sends, one paged-query builder, dead code, test profiles and helpers | Opus · high | Running |
-| 1 | WP129 | Web: lists read every page (`fetchAll`, one `Pager`), live match stops polling, dead keys | Opus · high | Running |
+| 1 | WP129 | Web: lists read every page (`fetchAll`, one `Pager`), live match stops polling, dead keys | Opus · high | Done (ADR-0061, ADR-0040 amendment; `fetchAll` + one `Pager`; live match disposes; web 1861 tests) |
 | 2 | WP130 | Roster replica pipeline once in `common-quarkus` (decoder, consumer, history store) | Opus · high | After wave 1 |
 | 2 | WP131 | Finance: test support once, one Postgres per test run, `applied_event` retention, small clean-ups | Opus · medium | After wave 1 |
 | 2 | WP132 | pdf-service: test helpers and contract cache, `tower` to dev, token leeway and Problem names aligned | Sonnet · medium | After wave 1 |
