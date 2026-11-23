@@ -191,6 +191,35 @@ class ReplicaRosterRulesTest {
         assertThat(tenantScope.runAs(tenant, () -> replica.players(tenant, List.of(new PlayerId(p))))).isEmpty();
     }
 
+    /** teamsOf follows the roster's rules: open, valid assignments of complete players, known teams, ACTIVE tenant. */
+    @Test
+    void teamsOfFollowsTheRostersRules() {
+        UUID current = player("Cara Current", LocalDate.of(2013, 1, 1), "FEMALE");
+        UUID left = player("Lena Left", LocalDate.of(2013, 1, 1), "FEMALE");
+        UUID invalid = player("Ines Invalid", LocalDate.of(2013, 1, 1), "FEMALE");
+        UUID incomplete = player("Nora Nobirth", null, "FEMALE");
+        UUID removedTeam = UUID.randomUUID();
+        feed.apply(CoreEvents.team(tenant, removedTeam, "Gone", SEASON_END));
+        assign(current, LocalDate.of(2026, 9, 1), null, null);
+        assign(left, LocalDate.of(2026, 9, 1), LocalDate.of(2026, 10, 1), null);
+        assign(invalid, LocalDate.of(2026, 9, 1), null, "CATEGORY_TOO_LOW");
+        assign(incomplete, LocalDate.of(2026, 9, 1), null, null);
+        feed.apply(CoreEvents.teamPlayer(tenant, UUID.randomUUID(), removedTeam, current, null, LocalDate.of(2026, 9, 1),
+                null, null), CoreEvents.removed(tenant, "team", removedTeam));
+        List<TeamId> candidates = List.of(new TeamId(team), new TeamId(removedTeam));
+
+        assertThat(teamsOf(List.of(current), candidates)).containsExactly(new TeamId(team));
+        assertThat(teamsOf(List.of(left, invalid, incomplete), candidates)).isEmpty();
+
+        feed.apply(CoreEvents.tenant(tenant, "SUSPENDED", "Europe/Madrid"));
+        assertThat(teamsOf(List.of(current), candidates)).isEmpty();
+    }
+
+    private java.util.Set<TeamId> teamsOf(List<UUID> players, List<TeamId> candidates) {
+        return tenantScope.runAs(tenant,
+                () -> replica.teamsOf(tenant, players.stream().map(PlayerId::new).toList(), candidates));
+    }
+
     private TeamRoster roster() {
         return tenantScope.runAs(tenant, () -> replica.teamRoster(tenant, new TeamId(team)));
     }

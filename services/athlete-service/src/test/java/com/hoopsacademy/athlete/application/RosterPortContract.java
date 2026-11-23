@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -129,6 +130,28 @@ public abstract class RosterPortContract {
         assertThat(found).containsOnlyKeys(ana.id());
         assertThat(inTenant(tenant, () -> port().playerExists(tenant, stranger))).isFalse();
         assertThat(inTenant(tenant, () -> port().playerExists(tenant, ana.id()))).isTrue();
+    }
+
+    /** The teams among the candidates with one of the players on their roster; unknown candidates are left out. */
+    @Test
+    void teamsOfAreTheCandidatesWithOneOfThePlayersOnTheirRoster() {
+        KnownPlayer ana = KnownPlayer.random("Ana Alba");
+        KnownPlayer bea = KnownPlayer.random("Bea Baez");
+        KnownPlayer cid = KnownPlayer.random("Cid Cruz");
+        TeamId beas = new TeamId(UUID.randomUUID());
+        TeamId cids = new TeamId(UUID.randomUUID());
+        TeamId unknown = new TeamId(UUID.randomUUID());
+        core().team(tenant, team, "Ana's", List.of(ana), List.of());
+        core().team(tenant, beas, "Bea's", List.of(bea, cid), List.of());
+        core().team(tenant, cids, "Cid's", List.of(cid), List.of());
+        core().unknownTeam(tenant, unknown);
+
+        Set<TeamId> teams = inTenant(tenant,
+                () -> port().teamsOf(tenant, List.of(ana.id(), bea.id()), List.of(team, beas, cids, unknown)));
+
+        assertThat(teams).containsExactlyInAnyOrder(team, beas);
+        assertThat(inTenant(tenant, () -> port().teamsOf(tenant, List.of(cid.id()), List.of(team)))).isEmpty();
+        assertThat(inTenant(tenant, () -> port().teamsOf(tenant, List.of(), List.of(team, beas)))).isEmpty();
     }
 
     @Test
