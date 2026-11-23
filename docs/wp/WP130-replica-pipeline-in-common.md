@@ -59,4 +59,82 @@ Not yours: the authorisation rule (X-02) is WP134; test-support copies are WP137
   not |` with one row per finding ID of your scope. Final report to the orchestrator, at most 300 words.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points, ID table (work-package skill). -->
+- **Built** (commits `132897cd`..`465bd7de` plus this docs commit; every behaviour change after its red test):
+  - **Characterised first** (`132897cd`): `RosterEventConsumerPolicyTest` (game: `apply-attempts` linear pauses, a failed
+    park not retried, meters registered up front) and `CoreRosterConsumerPolicyTest` (athlete: `max-attempts` doubling
+    backoff, park retried, meters on first use); both removed with the two loops once the library's tests pinned the
+    chosen policy. The other differences were already pinned (decoder tests: reason caps; consumer and replay tests).
+  - **Library** (`com.hoopsacademy.common.replica`, red `5d0a0fd3`, green `bc2b5184`): `RosterTopic`, `EventEnvelope`,
+    `CoreEventDecoder<E>` + `EventMapper<E>` + `DecodedEvent` (schemas from the contracts jar, key, own tenant, event id,
+    bounded reason), `ReplicaConsumer<E>` + `ReplicaApplier` + `ReplicaOutcome` + `RetryPolicy` + `ReplicaRecord`,
+    `ReplicaMetrics`, `ParkedEvent(s)`, `ReplicaHousekeeping` (retention run under the lock, counted), `ReplicaSchema`,
+    `JdbcReplicaHistory`, `JdbcParkedEvents`. Unit tests in PIT scope (`CoreEventDecoderTest`, `ReplicaConsumerTest`,
+    `ReplicaPartsTest`, `ReplicaHousekeepingTest`); `JdbcReplicaStoresTest` on common's test migration V3 (the shared
+    table shape; `SampleRlsSchemaMetaTest` / `RlsSchemaInspectorTest` declare its two global tables). New compile
+    dependency `json-schema-validator` 2.0.8 (version as in game/athlete/contracts); `contracts` as a test dependency.
+  - **game** (red `511c3e0d`, green `59408d1d`; `483ea0e6` / `465bd7de` create the pipeline at startup when the consumer
+    is on, so the meters exist from the start): `RosterEventMapper` (payload only) replaces
+    `RosterEventDecoder`; `ReplicaPipelineProducer` (decoder + consumer, created at startup), `ReplicaBookkeepingProducer`
+    (stores on schema `game`), `RosterEventConsumer` and `ReplicaRetentionJob` are thin shims; `EventEnvelope`,
+    `ParkedRecord(s)`, `ReplicaMetrics`, `JdbcParkedRecordRepository`, `JdbcReplicaHistoryRepository` and
+    `ReplicateRoster.park` / `Outcome` are gone. `V10__parked_event_shared_shape.sql`: athlete's shape (primary key
+    on the position, column `partition`, identity `id` dropped). `hoops.roster.replica.max-attempts` /
+    `first-backoff` replace `apply-attempts` (env `GAME_ROSTER_REPLICA_MAX_ATTEMPTS`).
+  - **athlete** (red `26988ebd`, green `ba90adc5`): `CoreEventMapper` replaces `CoreEventDecoder`; same producers and
+    shims; `RosterTopic`, `DecodedEvent`, `ParkedEvent(s)`, `ParkedEventRepository`, `ReplicaHistoryRepository`,
+    `ApplyRosterEvent.Outcome` are gone. `parked_event` already had the shared shape (new guard test in
+    `ReplicaHousekeepingSchemaTest`).
+  - Lines (main Java, `git diff --numstat 498519fb`): game -549 / +200, athlete -498 / +198 (services -1,047 / +398,
+    net -649); common-quarkus +663 (about a third of it javadoc). Tests: services -182 / +273, common +809.
+  - Docs: runbook `events.md` has one section "Roster replicas: game and athlete" (settings, watch, parked records,
+    consumer stopped, housekeeping, replay, switching, what differs per service) instead of two; both service READMEs;
+    `docs/quality/pmd.md` names; model diagrams regenerated (`game-model.md`, `athlete-model.md`).
+- **Verified**: see "Verification" below.
+- **Decisions/ADRs**: ADR-0062 (amends ADR-0037, amendment section appended there), indexed in `docs/adr/README.md`.
+  Policy where the consumers differed: athlete's retries (5 tries, 0.5 s doubling) now also for game, and for the park
+  as well as the apply; athlete's reasons (5 errors, 500 characters, no record values: game quoted the key and the
+  unknown zone); game's meters (all seven topics registered at startup); athlete's `parked_event` shape; scheduler
+  identity = lock name `<service>.replica-retention`.
+- **Open points / follow-ups** (for the orchestrator's docs pass):
+  - Root files changed (not owned by any wave-2 WP): `spotbugs-exclude.xml` (+1 match for the two JDBC stores'
+    `SQL_INJECTION_JDBC`, ADR-0045 style; athlete `CoreEventDecoder` dropped from the `CT_CONSTRUCTOR_THROW` match),
+    `config/pmd/exclude-pmd.properties` (the two `CyclomaticComplexity` entries renamed to the mappers).
+  - `docs/quality/mutation.md` not edited (merge clash): common 414/415 (99.8 %), game 551/553 (99.6 %), athlete
+    644/644 (100 %) on 2026-11-24; its row texts still name `RosterEventDecoder` / `CoreEventDecoder`.
+  - `docs/domain/core-model.md` is stale on `main` (WP128's `EventBroker.sendAll`, `SeasonRepository.require`):
+    `scripts/model-diagrams.sh` regenerates it; left alone (core is not mine).
+  - `docs/architecture.md` / `docs/conformance.md` may mention the per-service replica classes; not edited per brief.
+  - Not done: the `RosterSource` switch and resolver (X-01 item 4; the brief's scope names decoder, loop and store),
+    the test-jar builders `CoreEvents` / `CoreTopics` / `ReplicaDb` (X-01 item 5, WP137), the authorisation rule
+    (X-02, WP134), an in-memory "seen tenants" set for the `replica_tenant` insert (GAME-06's refinement: documented
+    design, consumer path only, the verification calls it optional).
+  - Deploy note: game's V10 drops `parked_event.id`; operators' saved queries `where id in (...)` must use the position
+    (runbook updated). `GAME_ROSTER_REPLICA_MAX_ATTEMPTS` is new; nothing set `apply-attempts` outside the service.
+
+### Verification
+- `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0` (fresh, on `465bd7de`, 2026-11-24): BUILD SUCCESS, 708 s,
+  all coverage checks met, SpotBugs/PMD/CPD clean. Tests: contracts 346, common-quarkus 469, core 1257, game 556,
+  athlete 1025, e2e 38 (32 skipped); 0 failures, 0 errors. The run before it had one failure,
+  `RosterEventConsumerTest.theLagIsTheAgeOfTheLastEventWhenItWasProcessed` (lag 0, green alone): `@Startup` on the
+  pipeline producer registered the gauges in test applications with the consumer off; fixed in `465bd7de` (systematic
+  debugging: reproduced only in the full run, cause in the gauge bound to an earlier instance).
+- Red runs: game `RosterEventDecoderTest` 3 failures + `RosterReplicaSchemaTest.theParkingTableHasTheSharedShape`
+  before `59408d1d`; athlete `CoreRosterConsumerTest.everyTopicHasItsParkedCounterAndLagGaugeFromTheStart` failed on
+  the old loop (temporary worktree at `59408d1d` with the new test) before `ba90adc5`; the library tests did not compile
+  before `bc2b5184`.
+- `just mutation`: common-quarkus 414/415 (99.8 %, threshold 99; the survivor is the old `CoreRosterClient.zoneOf`),
+  game-service 551/553 (99.6 %, threshold 99; both survivors outside the replica), athlete-service 644/644 (100 %,
+  threshold 100). Two equivalent mutants in `ReplicaConsumer` were removed by a refactor (`9440dcae`).
+- `just isolation-check` (by hand, worktree): 6 tests + 4 finance Go tests passed. `just db-role-check`: 13 tests + 2
+  finance Go tests passed.
+- `scripts/model-diagrams.sh`: `game-model.md` and `athlete-model.md` regenerated; `just docs-build` (strict): no
+  issues.
+
+| ID | Done / Skipped | What changed or why not |
+|---|---|---|
+| X-01 | Done (partly) | Decoder envelope, consumer loop, meters, history and parking stores, retention run in common; one policy; `parked_event` one shape (game V10); one runbook procedure. Source switch and test builders not moved (see open points) |
+| LIB-01 | Done (as corrected) | Retention run (`ReplicaHousekeeping`) and `JdbcReplicaHistory(schema)` in common, envelope decoder with the topic list (`RosterTopic`); `@Scheduled` and the retention producer stay per service (WP98) |
+| GAME-05 | Done | game's loop, decoder envelope and meters replaced by common's; keys aligned to `max-attempts` / `first-backoff`; park retried |
+| GAME-06 | Done (as corrected) | Job is a shim around `ReplicaHousekeeping`, history store from common; per-tenant insert refinement skipped (optional per verification) |
+| ATH-02 | Done | athlete's decoder envelope and loop replaced by common's (`CoreEventMapper` keeps the type switch); meters now eager |
+| ATH-05 | Done (as corrected) | Job shim, history store from common; producer stays per service (core must not get the bean) |

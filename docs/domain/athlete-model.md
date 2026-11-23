@@ -960,10 +960,6 @@ classDiagram
 
 ```mermaid
 classDiagram
-    class ParkedEvents {
-        <<interface>>
-        +park(ParkedEvent) void
-    }
     class ReplicaMembershipReads {
         <<interface>>
         +tenant(TenantId) Optional~TenantState~
@@ -991,16 +987,6 @@ classDiagram
         +guardianLink(RosterEvent,GuardianLinkChanged) boolean
         +guardianLinkRemoved(RosterEvent,GuardianLinkRemoved) boolean
         and 1 more
-    }
-    class RosterTopic {
-        <<enumeration>>
-        PERSON
-        PLAYER
-        TEAM
-        TEAM_PLAYER
-        TEAM_STAFF
-        GUARDIAN_LINK
-        TENANT
     }
 ```
 

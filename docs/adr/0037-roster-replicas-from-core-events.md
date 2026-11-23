@@ -2,7 +2,8 @@
 
 - Status: Accepted (game: WP68; athlete: WP69, its section at the end); amended 2026-11-07 (WP81: shadow evidence and
   done items in "When rest flips"; WP82: every removal applied, replica housekeeping, at the end); amended 2026-11-10
-  (WP98: the flip, `replica` is the default, with a drift check; "Flip of 2026-11-10" at the end)
+  (WP98: the flip, `replica` is the default, with a drift check; "Flip of 2026-11-10" at the end); amended 2026-11-24
+  (WP130, ADR-0062: one pipeline in common-quarkus, one retry, reason and meter policy, one `parked_event` shape)
 - Date: 2026-11-06
 - Related: decision 48 of 2026-11-06, decision 66 of 2026-11-10 (the flip), ADR-0008 (v1 sync REST, v2 outbox + events; amended in WP67), ADR-0036 (Redpanda:
   topics, keys, compaction, ACLs), ADR-0006 / ADR-0011 (RLS, tenant binding per transaction), WP19 brief, WP67
@@ -230,3 +231,13 @@ Applies to game and athlete alike (game `V6__replica_housekeeping.sql`, athlete 
 - **Shared code.** `ReplicaRetention` (with `ReplicaHistory`, `ParkedPosition` and its rules test, in PIT scope) lives once
   in common-quarkus (`com.hoopsacademy.common.replica`, a plain class: core depends on the library and keeps no replica);
   game and athlete only produce it from their settings. The test broker `RosterBrokerResource` is in the common test-jar.
+
+## Amendment 2026-11-24 (decision 106, WP130): one pipeline, one policy
+ADR-0062 moves the envelope half of the decoders, the consumer loop, the meters, the bookkeeping stores and the
+retention run into `com.hoopsacademy.common.replica`; game and athlete keep their mappers, use cases, replica tables and
+a `@Scheduled` shim. Where the two had drifted, one policy now holds for both: `hoops.roster.replica.max-attempts` (5)
+with a backoff doubling from `first-backoff` (0.5 s) for apply and park (game's `apply-attempts`, 3 linear tries without
+retrying a park, is gone); parked reasons of at most five schema errors and 500 characters without any value of the
+record; the parked counter and the lag gauge of every topic registered from the start; `parked_event` with athlete's
+shape in both schemas (game V10: primary key on the position, column `partition`, no identity id). The sections above
+that name a service's own class or setting describe the state before WP130.

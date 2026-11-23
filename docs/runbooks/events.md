@@ -177,172 +177,125 @@ afterwards every topic's live keys equal the table rows (0 missing, 0 extra), bo
 parked 0, lag 0.87 to 0.99 s, group lag 0. Then `GAME_ROSTER_SOURCE=replica ATHLETE_ROSTER_SOURCE=replica just e2e`:
 JourneyTest 23/23 (27 with MailSinkTest), both services logged their replica source, parked still 0, group lag 0.
 
-## Game roster replica (WP68)
-game keeps a replica of the roster data it reads from core (`game.*_ref`, V4), fed by the `core.*` topics (ADR-0037).
-`hoops.roster.source` picks what `RosterPort` and the tenant filter read; the consumer feeds the replica in both modes.
+## Roster replicas: game and athlete (WP68, WP69; one pipeline since WP130)
+game and athlete each keep a replica of the roster data they read from core (`game.*_ref` V4, `athlete.*_ref` V6), fed
+by the seven `core.*` topics (ADR-0037). `hoops.roster.source` picks what `RosterPort` and the tenant filter read; the
+consumer feeds the replica in both modes, so it stays current while `rest` answers. Since WP130 (ADR-0062) both run
+the same code from common-quarkus (`com.hoopsacademy.common.replica`: envelope decoder, consumer loop, meters,
+bookkeeping stores, retention run) with one retry policy, one reason policy and one `parked_event` shape, so every
+procedure below is the same for both; `<service>` is `game` or `athlete`, `<port>` 8082 (game) or 8083 (athlete).
 
 | Setting | Default | What |
 |---|---|---|
-| `hoops.roster.source` (`GAME_ROSTER_SOURCE`) | `replica` (since WP98; `rest` before) | `replica` = the local replica, no call to core on the request path; `rest` = core `/internal` (cached 30 s), the fallback |
-| `hoops.roster.consumer.enabled` (`GAME_ROSTER_CONSUMER_ENABLED`) | `true` | `false` stops feeding the replica (escape hatch; only with `rest`: since WP117 game refuses to start with `replica` and the consumer off, as athlete does, log `hoops.roster.source=replica needs hoops.roster.consumer.enabled=true`); drives `mp.messaging.incoming.core-roster.enabled` (the name athlete uses since WP98) |
-| `hoops.roster.replica.apply-attempts` | `3` | attempts per event (1 s, 2 s between) before the consumer stops |
+| `hoops.roster.source` (`GAME_ROSTER_SOURCE`, `ATHLETE_ROSTER_SOURCE`) | `replica` (since WP98; `rest` before) | `replica` = the local replica, no call to core on the request path; needs the consumer on (the service refuses to start otherwise, log `hoops.roster.source=replica needs hoops.roster.consumer.enabled=true`); `rest` = core `/internal` (cached 30 s), the fallback |
+| `hoops.roster.consumer.enabled` (`GAME_ROSTER_CONSUMER_ENABLED`, `ATHLETE_ROSTER_CONSUMER_ENABLED`) | `true` | `false` stops feeding the replica (escape hatch, only with `rest`); drives `mp.messaging.incoming.core-roster.enabled` |
+| `hoops.roster.replica.max-attempts` (`GAME_ROSTER_REPLICA_MAX_ATTEMPTS`, `ATHLETE_ROSTER_REPLICA_MAX_ATTEMPTS`) | `5` | tries per record when its database work (apply or park) fails, then the channel fails; game had `apply-attempts` (3, linear, park not retried) before WP130 |
+| `hoops.roster.replica.first-backoff` | `PT0.5S` | pause after the first failed try, doubling after each further one (0.5 s, 1 s, 2 s, 4 s) |
+| `mp.messaging.incoming.core-roster.poll-timeout`, `.fetch.max.wait.ms` | `100` | ms; with the connector's 1 s default a burst was applied one topic per second (4 s of lag, WP98) |
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:19092` (prod profile) | compose host mode; dev mode and tests use Dev Services Redpanda |
-| `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` | `PLAINTEXT`, `game-service`, empty | chart: `SASL_PLAINTEXT` + the `hoops-redpanda-game-service` Secret (SCRAM-SHA-256) |
+| `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` | `PLAINTEXT`, `<service>-service`, empty | chart: `SASL_PLAINTEXT` + the `hoops-redpanda-<service>-service` Secret (SCRAM-SHA-256) |
 
-Consumer group `game-service.roster` (one channel `core-roster` over the seven topics), `auto.offset.reset=earliest`:
-a new group replays everything.
-
-Academy name (WP117, V7 `game.tenant_ref.name`): printed on the match sheet PDF and read from the replica in both
-sources (core's `/internal` API has none). A tenant whose last `tenant.changed` was applied before V7 has no name until
-core sends the next one (any academy edit), `just events-backfill force`, or a replay; until then the sheet prints
-"Hoops Academy". With `rest` and the consumer off the sheet always prints that fallback.
+One channel `core-roster` over the seven topics, consumer group `<service>-service.roster`, `auto.offset.reset=earliest`:
+a new group replays everything. `just e2e` runs both services on their replicas (the default); on core's API:
+`GAME_ROSTER_SOURCE=rest ATHLETE_ROSTER_SOURCE=rest just e2e` (or export them before `e2e/bin/services-up.sh`).
 
 Watch it:
 ```bash
-curl -s localhost:8082/q/metrics | grep '^hoops_roster_replica'   # events_total{topic,outcome}, parked_total{topic}, lag_seconds{topic}
-podman exec hoops-redpanda rpk group describe game-service.roster  # LAG per topic (0 = caught up)
-curl -s localhost:8082/q/health/live | jq '.checks[] | select(.name | test("Messaging"))'
+curl -s localhost:<port>/q/metrics | grep '^hoops_roster_replica'   # events_total{topic,outcome}, parked_total{topic}, lag_seconds{topic}
+curl -s localhost:<port>/q/metrics | grep '^kafka_consumer_fetch_manager_records_lag'   # offset lag per partition
+podman exec hoops-redpanda rpk group describe <service>-service.roster  # LAG per topic (0 = caught up)
+curl -s localhost:<port>/q/health/live | jq '.checks[] | select(.name | test("Messaging"))'
 ```
-`outcome` is `applied`, `duplicate` (a redelivered `eventId`, nothing changed), `stale` (older than the stored row,
-nothing changed) or `tombstone` (skipped; removals are soft, `removed = true`; since WP82 for every aggregate: a removed
-person, player, team, assignment or tenant keeps only its id and reads leave it out). `lag_seconds` is the age of the last
-event when it was processed: a few seconds normally (core's poll interval plus the fetch).
+`outcome` is `applied` (the replica now holds the event's state), `duplicate` (a redelivered `eventId`: a redelivery or
+a replay over a filled replica, nothing changed), `stale` (older than the stored row, nothing changed) or `tombstone`
+(the null record after a removal, skipped). Removals are soft for every aggregate since WP82: a removed person, player,
+team, assignment or tenant keeps only its id (`removed = true`) and reads leave it out. `lag_seconds` is the age of the
+topic's last event when it was processed: a few seconds normally (core's poll interval plus the fetch). Since WP130
+`parked_total` and `lag_seconds` exist for all seven topics from the start in both services (0 until something
+happens), so a panel or alert never sees "no data".
 
-- **Parked records** (`hoops_roster_replica_parked_total` > 0): records that broke their contract (JSON Schema, key
-  `<tenantId>:<aggregateId>`) are not applied and not retried. Read them as the schema owner (game_app may only insert):
+- **Parked records** (`hoops_roster_replica_parked_total` > 0): records that broke their contract (JSON Schema, a key
+  that is not `<tenantId>:<aggregateId>` of the envelope, a tenant event about another tenant, a value the service cannot
+  read such as an unknown time zone) are not applied and not retried. The reason holds the schema's error paths (at most
+  five, 500 characters), never a value of the record. Read them as the schema owner (the app role may only insert and
+  read the coordinates):
   ```sql
-  set role game_migrator;
-  select id, parked_at, inspected_at, topic, kafka_partition, kafka_offset, record_key, event_id, reason
-    from game.parked_event order by id desc limit 20;
+  set role <service>_migrator;
+  select topic, partition, kafka_offset, record_key, event_id, reason, parked_at, inspected_at
+    from <service>.parked_event order by parked_at desc limit 20;
   ```
-  then look at the record itself: `rpk topic consume <topic> -p <partition> -o <offset> -n 1`. The aggregate is
-  repaired by its next event or, once the producer is fixed, by a replay.
-- **Consumer stopped** (liveness and readiness DOWN, log `Applying event ... failed 3 times, stopping the consumer`):
-  usually the database. The orchestrator restarts the pod; it resumes from the committed offset, nothing is lost. On
-  compose restart game (`just services-down && just services-up`).
-- **Broker down**: nothing to do in game; the replica stays readable and goes stale (`lag_seconds` grows once events
-  flow again); the client reconnects.
+  then look at the record itself: `rpk topic consume <topic> -p <partition> -o <kafka_offset> -n 1`. The aggregate is
+  repaired by its next event (state transfer) or, once the producer is fixed, by a replay. A replay parks a record
+  again as a no-op (its position is the primary key).
+- **Consumer stopped** (liveness and readiness DOWN, the pod restarted, log `Giving up on core.<topic>-<p>@<offset>
+  after 5 attempts, stopping the consumer`): applying or parking a record failed `max-attempts` times, usually the
+  database. The pod resumes from the last committed offset, which is still before the record, so nothing is lost; if it
+  keeps failing at the same offset, fix the database cause. On compose restart the service (`just services-down &&
+  just services-up`).
+- **Broker down**: nothing to do; the replica stays readable and goes stale (readiness does not depend on the broker;
+  `records_lag` and `lag_seconds` grow once events flow again); the client reconnects.
 
 ### Housekeeping: what the retention job deletes (WP82)
-A daily job (`ReplicaRetentionJob`, one pod at a time: advisory lock `game.replica-retention`) deletes two kinds of
-bookkeeping rows, logs what it deleted (`Replica retention: deleted N applied event ids recorded before ... ; M parked
-records inspected before ...: [core.person-0@17, ...]`) and counts them in
-`hoops_roster_replica_pruned_total{table="applied_event"|"parked_event"}`.
+A daily job per service (`ReplicaRetentionJob`, one pod at a time: advisory lock `<service>.replica-retention`, which is
+also the scheduler identity since WP130) deletes two kinds of bookkeeping rows, logs what it deleted (`Replica
+retention: deleted N applied event ids recorded before ... ; M parked records inspected before ...: [core.person-0@17,
+...]`) and counts them in `hoops_roster_replica_pruned_total{table="applied_event"|"parked_event"}`.
 
 | Setting | Default | What |
 |---|---|---|
-| `hoops.roster.replica.retention.cron` | `0 40 3 * * ?` | when it runs (`off` disables it; tests run with `off`) |
-| `hoops.roster.replica.retention.applied-events` | `P7D` | `applied_event` rows older than this go; never below the topics' 7-day tombstone retention (game refuses to start) |
+| `hoops.roster.replica.retention.cron` | game `0 40 3 * * ?`, athlete `0 45 3 * * ?` | when it runs (`off` disables it; tests run with `off`) |
+| `hoops.roster.replica.retention.applied-events` | `P7D` | `applied_event` rows older than this go; never below the topics' 7-day tombstone retention (the service refuses to start) |
 | `hoops.roster.replica.retention.parked-events` | `P30D` | `parked_event` rows go this long after an operator marked them inspected |
 | `hoops.roster.replica.retention.batch-size` | `1000` | applied ids deleted per transaction and tenant (`for update skip locked`) |
 
 - **applied_event**: the event ids the consumer already applied (idempotency). A redelivery comes at most as long as
   the topics keep a record, so after 7 days an id is no longer needed; an older redelivery would still be harmless
-  (the row's `occurred_at` guard makes it `stale`). The tenants are listed in `game.replica_tenant` (global, ids only).
-- **parked_event**: never deleted before an operator looked at it. Inspect, then mark (as `game_migrator`):
+  (the row's `occurred_at` guard makes it `stale`). The tenants are listed in `<service>.replica_tenant` (global, ids
+  only).
+- **parked_event**: never deleted before an operator looked at it. Inspect, then mark (as `<service>_migrator`):
   ```sql
-  set role game_migrator;
-  select id, parked_at, topic, kafka_partition, kafka_offset, record_key, event_id, reason
-    from game.parked_event where inspected_at is null order by id;
-  -- after reading the record (rpk topic consume <topic> -p <partition> -o <offset> -n 1) and fixing the cause:
-  update game.parked_event set inspected_at = now() where id in (...);
+  set role <service>_migrator;
+  select topic, partition, kafka_offset, record_key, event_id, reason, parked_at
+    from <service>.parked_event where inspected_at is null order by parked_at;
+  -- after reading the record (rpk topic consume <topic> -p <partition> -o <kafka_offset> -n 1) and fixing the cause:
+  update <service>.parked_event set inspected_at = now()
+   where topic = '<topic>' and partition = <partition> and kafka_offset = <kafka_offset>;
   ```
   The row goes `parked-events` (30 days) after that. Uninspected rows stay; `hoops_roster_replica_parked_total` still
   counts them since the start of the pod.
 
-### Replay (rebuild the replica from the topics)
-Needed after a broker reset, a fix of parked records, or a game outage longer than the tombstone retention (7 days).
-The replica tables and `game.applied_event` must be emptied, otherwise every replayed event is a known duplicate.
+### Replay (rebuild a replica from the topics)
+Needed after a broker reset, a fix of parked records, or an outage of the service longer than the tombstone retention
+(7 days). The replica tables and `<service>.applied_event` must be emptied, otherwise every replayed event is a known
+duplicate. With `hoops.roster.source=replica` the service answers 404 for the tenants not yet replayed: switch it to
+`rest` for the replay or do it in a maintenance window.
 compose:
 ```bash
-just services-down            # or stop the game jar only; the group must have no members
-just events-replay game       # empties game.*_ref + game.applied_event (as game_migrator), rpk group seek --to start
-just services-up              # game replays and catches up (rpk group describe: LAG 0)
+just services-down            # or stop that service's jar only; the group must have no members
+just events-replay <service>  # empties <service>.*_ref + <service>.applied_event (as <service>_migrator), rpk group seek --to start
+just services-up              # the service replays and catches up (rpk group describe: LAG 0)
 ```
-kind: `kubectl -n hoops scale deploy/game-service --replicas=0`; empty the tables as `game_migrator`
-(`truncate game.tenant_ref, game.person_ref, game.player_ref, game.team_ref, game.team_player_ref, game.team_staff_ref,
-game.guardian_link_ref, game.applied_event`); `rpk_k group seek game-service.roster --to start`; scale back. With
-`hoops.roster.source=replica`, switch to `rest` for the duration (requests would otherwise see an empty replica).
+kind: `kubectl -n hoops scale deploy/<service>-service --replicas=0`; empty the tables as `<service>_migrator`
+(`truncate <service>.tenant_ref, <service>.person_ref, <service>.player_ref, <service>.team_ref,
+<service>.team_player_ref, <service>.team_staff_ref, <service>.guardian_link_ref, <service>.applied_event`);
+`rpk_k group seek <service>-service.roster --to start`; scale back. A replay without emptying is safe too (every event
+is a duplicate or stale) but does not remove entries whose removal was compacted away. `RosterReplayTest` (both
+services) proves that emptying, rewinding and restarting restore the same answers.
 
 ### Switching between `replica` and `rest`
 `replica` is the default since WP98. It needs core to have published every aggregate (a replica only knows aggregates
 that changed after core's publisher went live; data older than WP67 needs a core backfill), `parked_total` 0,
-`lag_seconds` in seconds, and on Kubernetes the chart wiring the Kafka client. Back to core's API: `GAME_ROSTER_SOURCE=rest`
-and a restart ("Rollback to rest" below).
+`lag_seconds` in seconds, and on Kubernetes the chart wiring the Kafka client. Back to core's API:
+`GAME_ROSTER_SOURCE=rest` / `ATHLETE_ROSTER_SOURCE=rest` and a restart ("Rollback to rest" below).
 
-## Athlete replica (WP69)
-athlete keeps a local copy of core's roster in `athlete.*_ref` (V6), fed by core's events (ADR-0037, athlete section).
-`hoops.roster.source` decides whether the use cases' `RosterPort` and the tenant filter's membership read it
-(`replica`, the default since WP98) or core's `/internal` API (`rest`, the fallback). The consumer runs in both modes,
-so the replica stays current while REST answers.
+### What differs per service
+- **game**: the academy name (WP117, V7 `game.tenant_ref.name`) is printed on the match sheet PDF and read from the
+  replica in both sources (core's `/internal` API has none). A tenant whose last `tenant.changed` was applied before V7
+  has no name until core sends the next one (any academy edit), `just events-backfill force`, or a replay; until then
+  the sheet prints "Hoops Academy". With `rest` and the consumer off the sheet always prints that fallback.
+- **athlete**: a tenant event also refreshes `athlete.tenant_registry` (the nightly materialisation knows the tenant and
+  its zone before anyone calls); a tenant removal leaves the registry alone.
 
-| Setting | Default | What |
-|---|---|---|
-| `hoops.roster.source` (`ATHLETE_ROSTER_SOURCE`) | `replica` (since WP98; `rest` before) | `replica` = RosterPort + membership from the replica; needs the consumer on (startup fails otherwise); `rest` = core's API, the fallback |
-| `hoops.roster.consumer.enabled` (`ATHLETE_ROSTER_CONSUMER_ENABLED`) | `true` | consumer of channel `core-roster` (all seven `core.*` topics), group `athlete-service.roster` |
-| `mp.messaging.incoming.core-roster.poll-timeout`, `.fetch.max.wait.ms` | `100` | ms; with the connector's 1 s default a burst was applied one topic per second (4 s of lag, WP98), as game's before WP68 |
-| `hoops.roster.replica.max-attempts` (`ATHLETE_ROSTER_REPLICA_MAX_ATTEMPTS`) | `5` | tries per record when the database fails (backoff 0.5 s, doubling); then the channel fails |
-| `KAFKA_BOOTSTRAP_SERVERS` | `localhost:19092` (prod profile) | compose host mode; dev mode and tests use Dev Services Redpanda |
-| `KAFKA_SECURITY_PROTOCOL`, `KAFKA_SASL_USERNAME`, `KAFKA_SASL_PASSWORD` | `PLAINTEXT`, `athlete-service`, empty | chart: `SASL_PLAINTEXT` + the `hoops-redpanda-athlete-service` Secret (SCRAM-SHA-256) |
-
-`just e2e` runs both services on their replicas (the default); on core's API: `GAME_ROSTER_SOURCE=rest
-ATHLETE_ROSTER_SOURCE=rest just e2e` (or export them before `e2e/bin/services-up.sh`).
-
-Watch it:
-```bash
-curl -s localhost:8083/q/metrics | grep '^hoops_roster_replica'   # events_total{topic,outcome}, parked_total{topic}, lag_seconds{topic}
-curl -s localhost:8083/q/metrics | grep '^kafka_consumer_fetch_manager_records_lag'   # offset lag per partition
-podman exec hoops-redpanda rpk group describe athlete-service.roster
-```
-- `outcome`: `applied` (the replica now holds the event's state), `duplicate` (eventId seen before: a redelivery or a
-  replay over a filled replica), `stale` (an older event of an aggregate the replica holds newer), `tombstone` (the null
-  record after a removal, skipped). Removals are soft for every aggregate since WP82: a removed person, player, team,
-  assignment or tenant keeps only its id (`removed = true`) and reads leave it out; a tenant removal leaves
-  `athlete.tenant_registry` alone. `lag_seconds` is how old the topic's last event was when athlete applied it.
-- **Parked records** (`parked_total` > 0): a record broke the contract (schema, envelope, or a key that is not
-  `<tenantId>:<aggregateId>` of its envelope). It is skipped, never applied. The app role may only insert into the
-  table; read it as `athlete_migrator`:
-  ```sql
-  select topic, partition, kafka_offset, record_key, event_id, reason, parked_at, inspected_at
-    from athlete.parked_event order by parked_at desc;
-  ```
-  then look at the record (`rpk topic consume <topic> -o <kafka_offset> -n 1`). The aggregate's next event repairs the
-  replica (state transfer); after a producer fix, replay.
-- **The consumer stopped** (liveness DOWN, pod restarted, a "Giving up on core.<topic>-0@<offset>" error in the log):
-  applying (or parking) a record failed `max-attempts` times (database). The pod resumes from the last committed offset; if it
-  keeps failing at the same offset, fix the database cause.
-- **Broker down**: athlete keeps serving from the replica (readiness does not depend on the broker); the replica only
-  gets older, `records_lag` grows once the broker is back and drains.
-
-### Athlete housekeeping (WP82)
-The same job as game's (`ReplicaRetentionJob`, advisory lock `athlete.replica-retention`, same log line and
-`hoops_roster_replica_pruned_total{table}`), with the same keys: `hoops.roster.replica.retention.cron` (default
-`0 45 3 * * ?`, `off` disables it), `.applied-events` (`P7D`, never below the 7-day tombstone retention: athlete refuses
-to start), `.parked-events` (`P30D` after the inspection) and `.batch-size` (`1000`). Tenants come from
-`athlete.replica_tenant`. Inspect and mark parked rows as `athlete_migrator`:
-```sql
-select topic, partition, kafka_offset, record_key, event_id, reason, parked_at
-  from athlete.parked_event where inspected_at is null order by parked_at;
-update athlete.parked_event set inspected_at = now() where topic = '<topic>' and partition = <p> and kafka_offset = <o>;
-```
-Uninspected rows are never deleted.
-
-### Replay the athlete replica
-Rebuilds the replica from the compacted topics, e.g. after the consumer was down longer than the 7 days tombstones are
-kept, or after a parked-record fix. With `source=replica` athlete answers 404 for the tenants not yet replayed, so
-switch to `rest` for the replay or do it in a maintenance window.
-```bash
-# 1. stop athlete (the group must have no members): just services-down / kubectl -n hoops scale deploy/athlete-service --replicas=0
-# 2. empty the replica as the schema owner (truncate is not subject to RLS; applied_event too, or every event is a duplicate)
-psql "postgresql://athlete_migrator@localhost:5432/hoops" -c 'truncate athlete.tenant_ref, athlete.person_ref,
-  athlete.player_ref, athlete.team_ref, athlete.team_player_ref, athlete.team_staff_ref, athlete.guardian_link_ref,
-  athlete.applied_event'
-# 3. move the group to the start of the seven topics
-podman exec hoops-redpanda rpk group seek athlete-service.roster --to start      # kind: rpk_k "group seek athlete-service.roster --to start"
-# 4. start athlete; the replica is complete when records_lag is 0 for every core.* partition
-```
-A replay without step 2 is safe too (every event is a duplicate or stale) but does not remove entries whose removal
-was compacted away. `RosterReplayTest` proves step 2 to 4 restore the same answers.
 ## Kubernetes (chart, WP71)
 Chart 0.7.0 wires the three services to the in-chart broker. One switch, set twice because a service subchart sees only
 its own values and `global`: `events.enabled` (broker, Job, NetworkPolicy, ESO logins) and its mirror
@@ -437,7 +390,7 @@ On drift:
 2. Parked records (`hoops_roster_replica_parked_total` > 0, the `parked_event` table): the event broke its contract;
    fix the producer, then replay.
 3. **missing** in both services for aggregates older than core's publisher: run the backfill (`just events-backfill`).
-4. Anything else: switch the service to `rest` (below), replay its replica ("Replay ..." sections), check again (exit 0),
+4. Anything else: switch the service to `rest` (below), replay its replica ("Replay (rebuild a replica from the topics)"), check again (exit 0),
    switch back to `replica`.
 
 ## Rollback to rest (WP98)

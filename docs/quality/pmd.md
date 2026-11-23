@@ -19,7 +19,7 @@ A rule reports when the value **reaches** its threshold: "method ≥ 15" means a
 
 | Rule | Fails at | Measured max on 2026-11-15 (main code, before → after WP113) |
 |---|---|---|
-| `CyclomaticComplexity`, method | ≥ 15 | 17 `MatchEventJson.decode`, 16 `RosterEventDecoder.event`, 16 `CoreEventDecoder.change` (accepted); then 14 `UpdateMatchRequest.clearedProperties` |
+| `CyclomaticComplexity`, method | ≥ 15 | 17 `MatchEventJson.decode`, 16 `RosterEventMapper.map`, 16 `CoreEventMapper.change` (accepted; the mappers replaced the decoders in WP130); then 14 `UpdateMatchRequest.clearedProperties` |
 | `CyclomaticComplexity`, class (sum of its methods) | ≥ 65 | 60 `Match`, 44 athlete `PatchBody`, 41 core `PatchBody` |
 | `CognitiveComplexity`, method | ≥ 15 | 18 `AssignmentJpaRepository.search` → refactored; then 14 `BandResolver.bandsAreOrdered` |
 | `NcssCount`, method (statements) | ≥ 30 | 27 `JpaMatchRepository.list`, 25 `JpaMatchRepository.save` |
@@ -38,7 +38,7 @@ the values read from the `target/pmd.xml` and `target/cpd.xml` of each module. R
 
 | File | Entry | Why |
 |---|---|---|
-| `exclude-pmd.properties` | `MatchEventJson`, `RosterEventDecoder`, `CoreEventDecoder` = `CyclomaticComplexity` | a flat exhaustive switch from wire type to event, one arm per type; cognitive complexity stays low; under mutation testing |
+| `exclude-pmd.properties` | `MatchEventJson`, `RosterEventMapper`, `CoreEventMapper` = `CyclomaticComplexity` | a flat exhaustive switch from wire type to event, one arm per type; cognitive complexity stays low; under mutation testing |
 | `exclude-pmd.properties` | `Match` = `ExcessiveParameterList` | `Match.restore` rehydrates the aggregate from its row, one parameter per column |
 | `exclude-pmd.properties` | `CreatePlayer` = `ExcessiveParameterList` | CDI constructor with 12 collaborators; may not take a 13th; splitting the use case is follow-up work |
 | `exclude-cpd.properties` | `ManageExercises`, `ManagePlans` | the edits of an exercise and of a plan item copy the same six patchable fields; two aggregates that only look alike |

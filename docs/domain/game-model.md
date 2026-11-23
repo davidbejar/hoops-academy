@@ -128,10 +128,9 @@ erDiagram
         uuid event_id "not null"
     }
     parked_event {
-        bigint id PK
-        text topic "not null"
-        integer kafka_partition "not null"
-        bigint kafka_offset "not null"
+        text topic PK
+        integer partition PK
+        bigint kafka_offset PK
         text record_key
         uuid event_id
         text reason "not null"
@@ -564,10 +563,6 @@ classDiagram
 
 ```mermaid
 classDiagram
-    class ParkedRecords {
-        <<interface>>
-        +park(ParkedRecord) void
-    }
     class RosterEvent {
         <<interface>>
         +envelope() EventEnvelope
