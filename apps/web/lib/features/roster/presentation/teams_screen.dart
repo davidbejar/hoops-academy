@@ -758,7 +758,9 @@ class _AssignPlayerDialogState extends ConsumerState<AssignPlayerDialog> {
                       future: _players,
                       builder: (context, snap) {
                         if (snap.hasError) {
-                          return Center(child: Text(l.errorUnknown));
+                          return Center(
+                            child: Text(AppError.of(snap.error!).message(l)),
+                          );
                         }
                         final all = snap.data;
                         if (all == null) {

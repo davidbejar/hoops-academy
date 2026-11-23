@@ -969,7 +969,8 @@ class _ResultEditDialogState extends ConsumerState<ResultEditDialog> {
   }
 }
 
-/// Results entry; after saving it shows the expected band right away.
+/// Results entry; after saving it shows the expected band right away, in a
+/// second small dialog once the form has closed.
 class ResultDialog extends ConsumerStatefulWidget {
   const ResultDialog({super.key, required this.playerId});
   final String playerId;
@@ -984,8 +985,9 @@ class _ResultDialogState extends ConsumerState<ResultDialog> {
   final _notes = TextEditingController();
   String? _typeId;
   DateTime _on = DateTime.now();
-  ath.PhysicalTestResult? _saved;
-  bool _busy = false;
+
+  /// Shown once the form has closed (see [FormDialog.afterClose]).
+  Future<void> Function()? _announce;
 
   @override
   void dispose() {
@@ -994,12 +996,11 @@ class _ResultDialogState extends ConsumerState<ResultDialog> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    if (!_form.currentState!.validate()) return;
-    setState(() => _busy = true);
-    ath.PhysicalTestResult? r;
+  Future<bool> _submit() async {
+    final nav = Navigator.of(context, rootNavigator: true).context;
+    ath.PhysicalTestResult? saved;
     final ok = await runAction(context, () async {
-      r = await ref
+      saved = await ref
           .read(testResultsProvider(widget.playerId).notifier)
           .add(
             testTypeId: _typeId!,
@@ -1008,115 +1009,106 @@ class _ResultDialogState extends ConsumerState<ResultDialog> {
             notes: blankToNull(_notes.text),
           );
     });
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      if (ok) _saved = r;
-    });
+    if (!ok) return false;
+    final result = saved!;
+    _announce = () => showDialog<void>(
+      context: nav,
+      builder: (_) => _ResultSavedDialog(result: result),
+    );
+    return true;
   }
 
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-    final saved = _saved;
-    if (saved != null) {
-      return AlertDialog(
-        title: Text(l.testAdd),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              saved.expectedBand == null
-                  ? l.testSavedNoBand
-                  : l.testSavedBand(saved.expectedBand!.label(l)),
-              key: const Key('result-band'),
-            ),
-            if (saved.referencePending)
-              Padding(
-                padding: const EdgeInsets.only(top: HoopsSpace.sm),
-                child: StatusChip(
-                  l.testReferencePending,
-                  tone: HoopsTone.warning,
-                  icon: Icons.hourglass_empty,
-                ),
-              ),
-          ],
-        ),
-        actions: [
-          FilledButton(
-            key: const Key('result-close'),
-            onPressed: () => Navigator.pop(context),
-            child: Text(l.close),
-          ),
-        ],
-      );
-    }
     final types =
         ref.watch(testTypesProvider).value ?? const <ath.PhysicalTestType>[];
+    return FormDialog(
+      title: l.testAdd,
+      formKey: _form,
+      onSubmit: _submit,
+      afterClose: () async => _announce?.call(),
+      children: [
+        DropdownButtonFormField<String>(
+          key: const Key('result-type'),
+          initialValue: _typeId,
+          isExpanded: true,
+          decoration: InputDecoration(labelText: l.testType),
+          items: [
+            for (final t in types)
+              DropdownMenuItem(
+                value: t.id,
+                child: Text('${t.name} (${t.unit})'),
+              ),
+          ],
+          validator: (v) => v == null ? l.fieldRequired : null,
+          onChanged: (v) => setState(() => _typeId = v),
+        ),
+        formGap,
+        TextFormField(
+          key: const Key('result-value'),
+          controller: _value,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: InputDecoration(labelText: l.testValue),
+          validator: (v) => decimalValidator(l, v),
+        ),
+        ScaleHint(code: types.where((t) => t.id == _typeId).firstOrNull?.code),
+        formGap,
+        DateField(
+          key: const Key('result-date'),
+          label: l.testMeasuredOn,
+          value: _on,
+          lastDate: DateTime.now(),
+          onChanged: (d) => setState(() => _on = d),
+        ),
+        formGap,
+        TextFormField(
+          key: const Key('result-notes'),
+          controller: _notes,
+          decoration: InputDecoration(labelText: l.testNotes),
+        ),
+      ],
+    );
+  }
+}
+
+/// What the saved result is measured against: its expected band, and the
+/// hint that the academy's reference values are still pending.
+class _ResultSavedDialog extends StatelessWidget {
+  const _ResultSavedDialog({required this.result});
+  final ath.PhysicalTestResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return AlertDialog(
       title: Text(l.testAdd),
-      scrollable: true,
-      content: Form(
-        key: _form,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<String>(
-              key: const Key('result-type'),
-              initialValue: _typeId,
-              isExpanded: true,
-              decoration: InputDecoration(labelText: l.testType),
-              items: [
-                for (final t in types)
-                  DropdownMenuItem(
-                    value: t.id,
-                    child: Text('${t.name} (${t.unit})'),
-                  ),
-              ],
-              validator: (v) => v == null ? l.fieldRequired : null,
-              onChanged: (v) => setState(() => _typeId = v),
-            ),
-            formGap,
-            TextFormField(
-              key: const Key('result-value'),
-              controller: _value,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            result.expectedBand == null
+                ? l.testSavedNoBand
+                : l.testSavedBand(result.expectedBand!.label(l)),
+            key: const Key('result-band'),
+          ),
+          if (result.referencePending)
+            Padding(
+              padding: const EdgeInsets.only(top: HoopsSpace.sm),
+              child: StatusChip(
+                l.testReferencePending,
+                tone: HoopsTone.warning,
+                icon: Icons.hourglass_empty,
               ),
-              decoration: InputDecoration(labelText: l.testValue),
-              validator: (v) => decimalValidator(l, v),
             ),
-            ScaleHint(
-              code: types.where((t) => t.id == _typeId).firstOrNull?.code,
-            ),
-            formGap,
-            DateField(
-              key: const Key('result-date'),
-              label: l.testMeasuredOn,
-              value: _on,
-              lastDate: DateTime.now(),
-              onChanged: (d) => setState(() => _on = d),
-            ),
-            formGap,
-            TextFormField(
-              key: const Key('result-notes'),
-              controller: _notes,
-              decoration: InputDecoration(labelText: l.testNotes),
-            ),
-          ],
-        ),
+        ],
       ),
       actions: [
-        TextButton(
-          key: const Key('form-cancel'),
-          onPressed: _busy ? null : () => Navigator.pop(context),
-          child: Text(l.cancel),
-        ),
         FilledButton(
-          key: const Key('form-submit'),
-          onPressed: _busy ? null : _submit,
-          child: Text(l.save),
+          key: const Key('result-close'),
+          onPressed: () => Navigator.pop(context),
+          child: Text(l.close),
         ),
       ],
     );
