@@ -544,6 +544,7 @@ classDiagram
     class RosterPort {
         <<interface>>
         +teamRoster(TenantId,TeamId) TeamRoster
+        +team(TenantId,TeamId) TeamBrief
         +players(TenantId,Collection~PlayerId~) List~PlayerBrief~
     }
     class SubmittedEvent {

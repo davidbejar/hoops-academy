@@ -4,6 +4,7 @@ import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.game.application.PlayerBrief;
 import com.hoopsacademy.game.application.RosterPort;
+import com.hoopsacademy.game.application.TeamBrief;
 import com.hoopsacademy.game.application.TeamRoster;
 import com.hoopsacademy.game.domain.PlayerId;
 import com.hoopsacademy.game.domain.TeamId;
@@ -32,14 +33,21 @@ public class ReplicaRosterPort implements RosterPort {
     @Override
     @Transactional
     public TeamRoster teamRoster(TenantId tenantId, TeamId teamId) {
-        requireActiveTenant(tenantId);
-        ReplicaTeam team = replica.team(teamId).orElseThrow(() -> new NotFoundException("Team not found"));
+        ReplicaTeam team = requireTeam(tenantId, teamId);
         List<TeamRoster.Player> players = replica.roster(teamId).stream()
                 .filter(line -> line.player().hasBirthDateAndGender())
                 .map(line -> new TeamRoster.Player(line.player().id(), line.player().displayName(),
                         line.jerseyNumber().orElse(null)))
                 .toList();
         return new TeamRoster(team.id(), team.seasonId(), team.name(), players, team.seasonEndDate());
+    }
+
+    /** The team row alone (GAME-03): the tenant check and one read by id, no roster. */
+    @Override
+    @Transactional
+    public TeamBrief team(TenantId tenantId, TeamId teamId) {
+        ReplicaTeam team = requireTeam(tenantId, teamId);
+        return new TeamBrief(team.id(), team.seasonId(), team.name(), team.seasonEndDate());
     }
 
     @Override
@@ -53,6 +61,11 @@ public class ReplicaRosterPort implements RosterPort {
                 .filter(ReplicaPlayer::hasBirthDateAndGender)
                 .map(player -> new PlayerBrief(player.id(), player.displayName()))
                 .toList();
+    }
+
+    private ReplicaTeam requireTeam(TenantId tenantId, TeamId teamId) {
+        requireActiveTenant(tenantId);
+        return replica.team(teamId).orElseThrow(() -> new NotFoundException("Team not found"));
     }
 
     private void requireActiveTenant(TenantId tenantId) {

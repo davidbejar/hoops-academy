@@ -35,7 +35,7 @@ public class GetMatchSheetPdf {
     public PdfFile handle(MatchId matchId, SheetLanguage language) {
         GetBoxScore.BoxScore box = boxScores.handle(matchId);
         TenantId tenant = caller.tenantId();
-        String teamName = roster.teamRoster(tenant, box.match().teamId()).teamName();
+        String teamName = roster.team(tenant, box.match().teamId()).teamName();
         MatchSheet.Academy academy = MatchSheets.academy(academies.find(tenant), caller.authz().timezone());
         return renderer.render(MatchSheets.of(box, language, academy, teamName));
     }

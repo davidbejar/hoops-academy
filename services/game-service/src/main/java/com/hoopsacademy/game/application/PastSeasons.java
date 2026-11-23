@@ -17,8 +17,8 @@ import java.util.Optional;
  * When the season of a match's team has ended (ADR-0042): the day after its last day, in the academy's time zone.
  * Current staff of the team need no lookup ({@code staffTeamIds} holds only teams of seasons that have not ended) and
  * neither do its former staff ({@code historicStaffTeamIds} holds only ended ones, though their closing instant needs
- * the date); anybody else asks {@link RosterPort} for the season end. A team core does not know, or an answer without
- * the date, counts as not ended.
+ * the date); anybody else asks {@link RosterPort} for the team's season end (the team alone, not its roster). A team
+ * core does not know, or an answer without the date, counts as not ended.
  */
 @ApplicationScoped
 public class PastSeasons {
@@ -53,7 +53,7 @@ public class PastSeasons {
 
     private Optional<LocalDate> seasonEnd(TeamId team) {
         try {
-            return Optional.ofNullable(roster.teamRoster(caller.tenantId(), team).seasonEndDate());
+            return Optional.ofNullable(roster.team(caller.tenantId(), team).seasonEndDate());
         } catch (NotFoundException unknownTeam) {
             return Optional.empty();
         }

@@ -5,6 +5,7 @@ import com.hoopsacademy.common.client.CoreRosterClient;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.game.application.PlayerBrief;
 import com.hoopsacademy.game.application.RosterPort;
+import com.hoopsacademy.game.application.TeamBrief;
 import com.hoopsacademy.game.application.TeamRoster;
 import com.hoopsacademy.game.domain.PlayerId;
 import com.hoopsacademy.game.domain.SeasonId;
@@ -38,6 +39,13 @@ public class RestRosterPort implements RosterPort {
                         .map(p -> new TeamRoster.Player(PlayerId.of(p.playerId()), p.displayName(), p.jerseyNumber()))
                         .toList(),
                 dto.seasonEndDate());
+    }
+
+    /** Core has no endpoint for the team alone: mapped from the (cached) roster answer. */
+    @Override
+    public TeamBrief team(TenantId tenantId, TeamId teamId) {
+        CoreInternalClient.TeamRosterDto dto = core.teamRoster(tenantId, teamId.value());
+        return new TeamBrief(TeamId.of(dto.teamId()), SeasonId.of(dto.seasonId()), dto.teamName(), dto.seasonEndDate());
     }
 
     @Override

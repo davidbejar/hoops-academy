@@ -72,7 +72,7 @@ class PastSeasonsTest {
     @Test
     void currentStaffNeedNoLookup() {
         callerIs(new AuthzContext("coach", UUID.randomUUID(), TENANT, Set.of(TenantRole.COACH), Set.of(TEAM.value()),
-                Set.of(), Optional.of(MADRID)));
+                Set.of(), Optional.empty(), Set.of(), Optional.of(MADRID)));
 
         assertThat(pastSeasons.closedSince(TEAM)).isEmpty();
         verifyNoInteractions(roster);
@@ -88,6 +88,7 @@ class PastSeasonsTest {
     }
 
     private static AuthzContext admin(Optional<ZoneId> zone) {
-        return new AuthzContext("admin", UUID.randomUUID(), TENANT, Set.of(TenantRole.ADMIN), Set.of(), Set.of(), zone);
+        return new AuthzContext("admin", UUID.randomUUID(), TENANT, Set.of(TenantRole.ADMIN), Set.of(), Set.of(),
+                Optional.empty(), Set.of(), zone);
     }
 }

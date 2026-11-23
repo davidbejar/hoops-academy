@@ -21,6 +21,13 @@ public interface RosterPort {
      */
     TeamRoster teamRoster(TenantId tenantId, TeamId teamId);
 
+    /**
+     * The team without its roster (its name and season end), for callers that need no players.
+     *
+     * @throws com.hoopsacademy.common.problem.NotFoundException when the team (or tenant) is unknown to core
+     */
+    TeamBrief team(TenantId tenantId, TeamId teamId);
+
     /** Minimal data of the given players; unknown ids are simply absent from the answer. */
     List<PlayerBrief> players(TenantId tenantId, Collection<PlayerId> ids);
 
