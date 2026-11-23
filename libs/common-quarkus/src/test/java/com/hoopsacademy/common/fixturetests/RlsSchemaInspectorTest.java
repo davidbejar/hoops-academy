@@ -9,6 +9,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -20,7 +21,8 @@ import org.junit.jupiter.api.Test;
 @WithTestResource(PostgresRlsResource.class)
 class RlsSchemaInspectorTest {
 
-    private static final Map<String, String> GLOBALS = Map.of("core.sample_colour", "catalogue");
+    private static final Map<String, String> GLOBALS = Map.of("core.sample_colour", "catalogue", "core.replica_tenant",
+            "replica bookkeeping", "core.parked_event", "replica bookkeeping");
     private static final Map<String, String> SHARED = Map.of("core.sample_template", "tenant_id");
 
     private Connection migrator;
@@ -95,7 +97,8 @@ class RlsSchemaInspectorTest {
 
     @Test
     void staleGlobalDeclarationIsDetected() throws SQLException {
-        var declared = Map.of("core.sample_colour", "catalogue", "core.gone", "removed long ago");
+        var declared = new HashMap<>(GLOBALS);
+        declared.put("core.gone", "removed long ago");
 
         assertThat(RlsSchemaInspector.violations(migrator, List.of("core"), declared, SHARED))
                 .containsExactly("core.gone: declared in globalTables() but is not a global table of the schema");

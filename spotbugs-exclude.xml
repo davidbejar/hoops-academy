@@ -23,6 +23,17 @@
     <Bug pattern="SQL_INJECTION_JDBC"/>
   </Match>
 
+  <!-- False positive (WP130): the shared replica bookkeeping stores build their SQL once, in the constructor, from
+       constant text and a ReplicaSchema, which admits only a plain lower-case identifier (^[a-z][a-z_]*$, the
+       service's own schema name from its code); every value is a bound `?` parameter. -->
+  <Match>
+    <Or>
+      <Class name="com.hoopsacademy.common.replica.JdbcParkedEvents"/>
+      <Class name="com.hoopsacademy.common.replica.JdbcReplicaHistory"/>
+    </Or>
+    <Bug pattern="SQL_INJECTION_JDBC"/>
+  </Match>
+
   <!-- False positive: Patch.absent() returns the shared ABSENT instance of an immutable class. -->
   <Match>
     <Class name="com.hoopsacademy.core.domain.shared.Patch"/>
