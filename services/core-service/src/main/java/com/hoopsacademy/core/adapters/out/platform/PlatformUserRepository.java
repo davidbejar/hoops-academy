@@ -2,6 +2,7 @@ package com.hoopsacademy.core.adapters.out.platform;
 
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
+import com.hoopsacademy.core.adapters.out.persistence.LikePattern;
 import com.hoopsacademy.core.application.port.PlatformUsers;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
@@ -20,7 +21,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -52,7 +52,7 @@ class PlatformUserRepository implements PlatformUsers {
     public PageResult<Login> list(Optional<String> query, PageRequest page) {
         em.createNativeQuery("select set_config('app.tenant_id', :nil, true)").setParameter("nil", NIL_TENANT)
                 .getSingleResult();
-        Optional<String> pattern = query.map(PlatformUserRepository::containsPattern);
+        Optional<String> pattern = query.map(LikePattern::contains);
         String where = pattern.isPresent() ? MATCHES : "";
         Query count = em.createNativeQuery("select count(*) from core.app_user u " + where);
         Query items = em.createNativeQuery("with page as (select u.id, u.email, u.created_at from core.app_user u "
@@ -75,12 +75,6 @@ class PlatformUserRepository implements PlatformUsers {
         });
         long total = ((Number) count.getSingleResult()).longValue();
         return new PageResult<>(logins(items.getResultList()), page, total);
-    }
-
-    /** {@code %text%} lower-cased, with LIKE's own characters taken literally. */
-    static String containsPattern(String text) {
-        return "%" + text.toLowerCase(Locale.ROOT).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-                + "%";
     }
 
     /** One row per (login, person); a login without persons has one row of nulls after its own columns. */

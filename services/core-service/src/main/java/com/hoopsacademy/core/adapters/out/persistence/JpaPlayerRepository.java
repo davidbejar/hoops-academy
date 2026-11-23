@@ -7,12 +7,11 @@ import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.membership.PlayerStatus;
 import com.hoopsacademy.core.domain.roster.JerseyNumber;
+import com.hoopsacademy.core.domain.roster.TeamId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
-import jakarta.persistence.TypedQuery;
-import java.util.ArrayList;
 import java.time.Clock;
 import java.util.Collection;
 import java.util.List;
@@ -109,40 +108,25 @@ class JpaPlayerRepository implements PlayerRepository {
         if (visibility.only().filter(Set::isEmpty).isPresent()) {
             return new PageResult<>(List.of(), page, 0);
         }
-        List<String> conditions = new ArrayList<>();
-        filter.status().ifPresent(s -> conditions.add("p.status = :status"));
-        filter.team().ifPresent(t -> conditions.add("""
-                exists (select 1 from TeamPlayerEntity a
-                         where a.playerId = p.id and a.teamId = :team and a.leftOn is null)"""));
-        filter.query().ifPresent(q -> conditions.add(
-                "lower(concat(pe.givenName, ' ', pe.familyName)) like :query escape '\\'"));
-        visibility.only().ifPresent(ids -> conditions.add("p.id in :only"));
+        PagedQuery query = PagedQuery.of(em, "from PlayerEntity p, PersonEntity pe", "p")
+                .where("pe.id = p.personId")
+                .whereIf(filter.status(), "p.status = :status", "status", PlayerStatus::name)
+                .whereIf(filter.team(), """
+                        exists (select 1 from TeamPlayerEntity a
+                                 where a.playerId = p.id and a.teamId = :team and a.leftOn is null)""",
+                        "team", TeamId::value)
+                .whereIf(filter.query(), "lower(concat(pe.givenName, ' ', pe.familyName)) like :query escape '\\'",
+                        "query", LikePattern::contains)
+                .whereIf(visibility.only(), "p.id in :only", "only",
+                        ids -> ids.stream().map(PlayerId::value).toList());
         if (visibility.hidePending()) {
-            conditions.add("""
+            query.where("""
                     (p.status not in ('PENDING_APPROVAL', 'REJECTED') or exists (select 1 from ApprovalRequestEntity r
-                       where r.playerId = p.id and r.action = 'ADD_PLAYER' and r.requestedByPersonId = :requester))""");
+                       where r.playerId = p.id and r.action = 'ADD_PLAYER' and r.requestedByPersonId = :requester))""",
+                    "requester", visibility.pendingRequester().map(PersonId::value).orElse(NO_ONE));
         }
-        String where = conditions.stream().map(c -> " and " + c).reduce("", String::concat);
-        String from = " from PlayerEntity p, PersonEntity pe where pe.id = p.personId" + where;
-        TypedQuery<Object[]> items = em.createQuery("select p, pe" + from
-                + " order by pe.familyName, pe.givenName, p.id", Object[].class);
-        TypedQuery<Long> total = em.createQuery("select count(p)" + from, Long.class);
-        for (TypedQuery<?> query : List.of(items, total)) {
-            filter.status().ifPresent(s -> query.setParameter("status", s.name()));
-            filter.team().ifPresent(t -> query.setParameter("team", t.value()));
-            filter.query().ifPresent(q -> query.setParameter("query", "%" + escapeLike(q.toLowerCase(java.util.Locale.ROOT)) + "%"));
-            visibility.only().ifPresent(ids -> query.setParameter("only", ids.stream().map(PlayerId::value).toList()));
-            if (visibility.hidePending()) {
-                query.setParameter("requester", visibility.pendingRequester().map(PersonId::value).orElse(NO_ONE));
-            }
-        }
-        List<PlayerRow> found = items.setFirstResult(page.offset()).setMaxResults(page.size()).getResultStream()
-                .map(row -> toRow((PlayerEntity) row[0], (PersonEntity) row[1])).toList();
-        return new PageResult<>(found, page, total.getSingleResult());
-    }
-
-    private static String escapeLike(String text) {
-        return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return query.orderBy("pe.familyName, pe.givenName, p.id")
+                .page(page, "select p, pe", Object[].class, row -> toRow((PlayerEntity) row[0], (PersonEntity) row[1]));
     }
 
     private static PlayerRow toRow(PlayerEntity player, PersonEntity person) {

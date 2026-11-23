@@ -11,10 +11,8 @@ import com.hoopsacademy.core.domain.roster.Team;
 import com.hoopsacademy.core.domain.roster.TeamId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -85,24 +83,13 @@ class JpaTeamRepository implements TeamRepository {
         if (filter.onlyTeams().filter(Collection::isEmpty).isPresent()) {
             return new PageResult<>(List.of(), page, 0);
         }
-        List<String> conditions = new ArrayList<>();
-        filter.season().ifPresent(s -> conditions.add("t.seasonId = :season"));
-        filter.category().ifPresent(c -> conditions.add("t.ageCategoryId = :category"));
-        filter.onlyTeams().ifPresent(ids -> conditions.add("t.id in :ids"));
-        String where = conditions.isEmpty() ? "" : " where " + String.join(" and ", conditions);
-        TypedQuery<TeamEntity> items = em.createQuery("select t from TeamEntity t" + where
-                + " order by (select s.startDate from SeasonEntity s where s.id = t.seasonId) desc,"
-                + " (select c.sortRank from AgeCategoryEntity c where c.id = t.ageCategoryId), t.name, t.id",
-                TeamEntity.class);
-        TypedQuery<Long> total = em.createQuery("select count(t) from TeamEntity t" + where, Long.class);
-        for (TypedQuery<?> query : List.of(items, total)) {
-            filter.season().ifPresent(s -> query.setParameter("season", s.value()));
-            filter.category().ifPresent(c -> query.setParameter("category", c.value()));
-            filter.onlyTeams().ifPresent(ids -> query.setParameter("ids", ids.stream().map(TeamId::value).toList()));
-        }
-        List<Team> found = items.setFirstResult(page.offset()).setMaxResults(page.size()).getResultStream()
-                .map(JpaTeamRepository::toDomain).toList();
-        return new PageResult<>(found, page, total.getSingleResult());
+        return PagedQuery.of(em, "from TeamEntity t", "t")
+                .whereIf(filter.season(), "t.seasonId = :season", "season", SeasonId::value)
+                .whereIf(filter.category(), "t.ageCategoryId = :category", "category", AgeCategoryId::value)
+                .whereIf(filter.onlyTeams(), "t.id in :ids", "ids", ids -> ids.stream().map(TeamId::value).toList())
+                .orderBy("(select s.startDate from SeasonEntity s where s.id = t.seasonId) desc,"
+                        + " (select c.sortRank from AgeCategoryEntity c where c.id = t.ageCategoryId), t.name, t.id")
+                .page(page, "select t", TeamEntity.class, JpaTeamRepository::toDomain);
     }
 
     @Override

@@ -14,8 +14,6 @@ import com.hoopsacademy.core.domain.roster.TeamId;
 import com.hoopsacademy.core.domain.roster.TeamPlayerId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -68,24 +66,15 @@ class JpaEligibilityCaseRepository implements EligibilityCaseRepository {
         if (filter.onlyTeams().filter(Collection::isEmpty).isPresent()) {
             return new PageResult<>(List.of(), page, 0);
         }
-        List<String> conditions = new ArrayList<>();
-        filter.status().ifPresent(s -> conditions.add("c.status = :status"));
-        filter.team().ifPresent(t -> conditions.add("a.teamId = :team"));
-        filter.player().ifPresent(p -> conditions.add("c.playerId = :player"));
-        filter.onlyTeams().ifPresent(ids -> conditions.add("a.teamId in :teams"));
-        String where = conditions.stream().map(condition -> " and " + condition).reduce("", String::concat);
-        TypedQuery<Object[]> items = em.createQuery("select c, a.teamId" + FROM + where
-                + " order by c.createdAt desc, c.id", Object[].class);
-        TypedQuery<Long> total = em.createQuery("select count(c)" + FROM + where, Long.class);
-        for (TypedQuery<?> query : List.of(items, total)) {
-            filter.status().ifPresent(s -> query.setParameter("status", s.name()));
-            filter.team().ifPresent(t -> query.setParameter("team", t.value()));
-            filter.player().ifPresent(p -> query.setParameter("player", p.value()));
-            filter.onlyTeams().ifPresent(ids -> query.setParameter("teams", ids.stream().map(TeamId::value).toList()));
-        }
-        List<CaseOfTeam> found = items.setFirstResult(page.offset()).setMaxResults(page.size()).getResultStream()
-                .map(JpaEligibilityCaseRepository::toView).toList();
-        return new PageResult<>(found, page, total.getSingleResult());
+        return PagedQuery.of(em, "from EligibilityCaseEntity c, TeamPlayerEntity a", "c")
+                .where("a.id = c.teamPlayerId")
+                .whereIf(filter.status(), "c.status = :status", "status", CaseStatus::name)
+                .whereIf(filter.team(), "a.teamId = :team", "team", TeamId::value)
+                .whereIf(filter.player(), "c.playerId = :player", "player", PlayerId::value)
+                .whereIf(filter.onlyTeams(), "a.teamId in :teams", "teams",
+                        ids -> ids.stream().map(TeamId::value).toList())
+                .orderBy("c.createdAt desc, c.id")
+                .page(page, "select c, a.teamId", Object[].class, JpaEligibilityCaseRepository::toView);
     }
 
     private static void copyResolution(EligibilityCase source, EligibilityCaseEntity row) {

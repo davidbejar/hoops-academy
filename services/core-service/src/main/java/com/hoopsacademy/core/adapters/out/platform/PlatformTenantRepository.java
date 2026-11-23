@@ -2,6 +2,8 @@ package com.hoopsacademy.core.adapters.out.platform;
 
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.tenancy.TenantId;
+import com.hoopsacademy.core.adapters.out.persistence.LikePattern;
+import com.hoopsacademy.core.adapters.out.persistence.PagedQuery;
 import com.hoopsacademy.core.application.port.TenantRepository;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
@@ -13,13 +15,8 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
-import jakarta.persistence.TypedQuery;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 
 @ApplicationScoped
@@ -64,28 +61,12 @@ class PlatformTenantRepository implements TenantRepository {
 
     @Override
     public PageResult<Tenant> list(Optional<TenantStatus> status, Optional<String> query, PageRequest page) {
-        List<String> conditions = new ArrayList<>();
-        Map<String, Object> parameters = new HashMap<>();
-        status.ifPresent(s -> {
-            conditions.add("t.status = :status");
-            parameters.put("status", s.name());
-        });
-        query.ifPresent(q -> {
-            conditions.add("(lower(t.name) like :q escape '\\' or t.slug like :q escape '\\')");
-            parameters.put("q", "%" + q.toLowerCase(Locale.ROOT).replace("\\", "\\\\").replace("%", "\\%")
-                    .replace("_", "\\_") + "%");
-        });
-        String where = conditions.isEmpty() ? "" : " where " + String.join(" and ", conditions);
-        TypedQuery<PlatformTenantEntity> items = em.createQuery(
-                "select t from PlatformTenantEntity t" + where + " order by t.createdAt desc, t.id",
-                PlatformTenantEntity.class);
-        TypedQuery<Long> total = em.createQuery("select count(t) from PlatformTenantEntity t" + where, Long.class);
-        parameters.forEach((name, value) -> {
-            items.setParameter(name, value);
-            total.setParameter(name, value);
-        });
-        return new PageResult<>(items.setFirstResult(page.offset()).setMaxResults(page.size()).getResultStream()
-                .map(PlatformTenantRepository::toDomain).toList(), page, total.getSingleResult());
+        return PagedQuery.of(em, "from PlatformTenantEntity t", "t")
+                .whereIf(status, "t.status = :status", "status", TenantStatus::name)
+                .whereIf(query, "(lower(t.name) like :q escape '\\' or t.slug like :q escape '\\')", "q",
+                        LikePattern::contains)
+                .orderBy("t.createdAt desc, t.id")
+                .page(page, "select t", PlatformTenantEntity.class, PlatformTenantRepository::toDomain);
     }
 
     @Override

@@ -14,12 +14,9 @@ import com.hoopsacademy.core.domain.membership.PersonalData;
 import com.hoopsacademy.core.domain.shared.AppLocale;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -133,40 +130,19 @@ class JpaPersonRepository implements PersonRepository {
 
     @Override
     public PageResult<Person> list(MemberFilter filter, PageRequest page) {
-        List<String> conditions = new ArrayList<>();
-        Map<String, Object> parameters = new HashMap<>();
-        // players awaiting approval or rejected are not members yet (WP5 follow-up); they live in /approval-requests
-        conditions.add("not exists (select 1 from PlayerEntity pl where pl.personId = p.id"
-                + " and pl.status in ('PENDING_APPROVAL', 'REJECTED'))");
-        filter.role().ifPresent(role -> {
-            conditions.add("exists (select 1 from MembershipRoleEntity r where r.personId = p.id and r.role = :role)");
-            parameters.put("role", role.name());
-        });
-        filter.active().ifPresent(active -> {
-            conditions.add("p.active = :active");
-            parameters.put("active", active);
-        });
-        filter.query().map(JpaPersonRepository::likePattern).ifPresent(pattern -> {
-            conditions.add("(lower(p.givenName) like :q escape '\\' or lower(p.familyName) like :q escape '\\'"
-                    + " or lower(p.email) like :q escape '\\')");
-            parameters.put("q", pattern);
-        });
-        String where = " where " + String.join(" and ", conditions);
-        TypedQuery<PersonEntity> items = em.createQuery(
-                "select p from PersonEntity p" + where + " order by lower(p.familyName), lower(p.givenName), p.id",
-                PersonEntity.class);
-        TypedQuery<Long> total = em.createQuery("select count(p) from PersonEntity p" + where, Long.class);
-        parameters.forEach((name, value) -> {
-            items.setParameter(name, value);
-            total.setParameter(name, value);
-        });
-        List<PersonEntity> rows = items.setFirstResult(page.offset()).setMaxResults(page.size()).getResultList();
-        return new PageResult<>(toDomain(rows), page, total.getSingleResult());
-    }
-
-    private static String likePattern(String query) {
-        String escaped = query.toLowerCase(Locale.ROOT).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-        return "%" + escaped + "%";
+        return PagedQuery.of(em, "from PersonEntity p", "p")
+                // players awaiting approval or rejected are not members yet (WP5 follow-up): see /approval-requests
+                .where("not exists (select 1 from PlayerEntity pl where pl.personId = p.id"
+                        + " and pl.status in ('PENDING_APPROVAL', 'REJECTED'))")
+                .whereIf(filter.role(),
+                        "exists (select 1 from MembershipRoleEntity r where r.personId = p.id and r.role = :role)",
+                        "role", TenantRole::name)
+                .whereIf(filter.active(), "p.active = :active", "active", active -> active)
+                .whereIf(filter.query(), "(lower(p.givenName) like :q escape '\\'"
+                        + " or lower(p.familyName) like :q escape '\\' or lower(p.email) like :q escape '\\')",
+                        "q", LikePattern::contains)
+                .orderBy("lower(p.familyName), lower(p.givenName), p.id")
+                .pageOfRows(page, "select p", PersonEntity.class, this::toDomain);
     }
 
     private List<Person> toDomain(List<PersonEntity> rows) {

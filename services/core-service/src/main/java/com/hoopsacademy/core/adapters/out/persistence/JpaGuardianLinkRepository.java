@@ -10,7 +10,6 @@ import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PlayerId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -65,18 +64,11 @@ class JpaGuardianLinkRepository implements GuardianLinkRepository {
 
     @Override
     public PageResult<GuardianLink> list(Optional<PlayerId> player, Optional<PersonId> guardian, PageRequest page) {
-        String where = " where (:player is null or g.playerId = :player)"
-                + " and (:guardian is null or g.guardianPersonId = :guardian)";
-        TypedQuery<GuardianLinkEntity> items = em.createQuery(
-                "select g from GuardianLinkEntity g" + where + " order by g.createdAt, g.id", GuardianLinkEntity.class);
-        TypedQuery<Long> total = em.createQuery("select count(g) from GuardianLinkEntity g" + where, Long.class);
-        UUID playerId = player.map(PlayerId::value).orElse(null);
-        UUID guardianId = guardian.map(PersonId::value).orElse(null);
-        for (TypedQuery<?> query : java.util.List.of(items, total)) {
-            query.setParameter("player", playerId).setParameter("guardian", guardianId);
-        }
-        return new PageResult<>(items.setFirstResult(page.offset()).setMaxResults(page.size()).getResultStream()
-                .map(JpaGuardianLinkRepository::toDomain).toList(), page, total.getSingleResult());
+        return PagedQuery.of(em, "from GuardianLinkEntity g", "g")
+                .whereIf(player, "g.playerId = :player", "player", PlayerId::value)
+                .whereIf(guardian, "g.guardianPersonId = :guardian", "guardian", PersonId::value)
+                .orderBy("g.createdAt, g.id")
+                .page(page, "select g", GuardianLinkEntity.class, JpaGuardianLinkRepository::toDomain);
     }
 
     @Override

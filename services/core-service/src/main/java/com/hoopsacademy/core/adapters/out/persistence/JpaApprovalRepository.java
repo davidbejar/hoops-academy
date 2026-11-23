@@ -19,8 +19,6 @@ import com.hoopsacademy.core.domain.roster.TeamId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.OptimisticLockException;
-import jakarta.persistence.TypedQuery;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -78,25 +76,13 @@ class JpaApprovalRepository implements ApprovalRepository {
 
     @Override
     public PageResult<ApprovalRequest> list(ApprovalFilter filter, PageRequest page) {
-        List<String> conditions = new ArrayList<>();
-        filter.status().ifPresent(s -> conditions.add("a.status = :status"));
-        filter.action().ifPresent(s -> conditions.add("a.action = :action"));
-        filter.player().ifPresent(s -> conditions.add("a.playerId = :player"));
-        filter.requestedBy().ifPresent(s -> conditions.add("a.requestedByPersonId = :requester"));
-        String where = conditions.isEmpty() ? "" : " where " + String.join(" and ", conditions);
-        TypedQuery<ApprovalRequestEntity> items = em.createQuery(
-                "select a from ApprovalRequestEntity a" + where + " order by a.createdAt desc, a.id",
-                ApprovalRequestEntity.class);
-        TypedQuery<Long> total = em.createQuery("select count(a) from ApprovalRequestEntity a" + where, Long.class);
-        for (TypedQuery<?> query : List.of(items, total)) {
-            filter.status().ifPresent(s -> query.setParameter("status", s.name()));
-            filter.action().ifPresent(s -> query.setParameter("action", s.name()));
-            filter.player().ifPresent(s -> query.setParameter("player", s.value()));
-            filter.requestedBy().ifPresent(s -> query.setParameter("requester", s.value()));
-        }
-        List<ApprovalRequest> found = items.setFirstResult(page.offset()).setMaxResults(page.size()).getResultStream()
-                .map(this::toDomain).toList();
-        return new PageResult<>(found, page, total.getSingleResult());
+        return PagedQuery.of(em, "from ApprovalRequestEntity a", "a")
+                .whereIf(filter.status(), "a.status = :status", "status", ApprovalStatus::name)
+                .whereIf(filter.action(), "a.action = :action", "action", ApprovalAction::name)
+                .whereIf(filter.player(), "a.playerId = :player", "player", PlayerId::value)
+                .whereIf(filter.requestedBy(), "a.requestedByPersonId = :requester", "requester", PersonId::value)
+                .orderBy("a.createdAt desc, a.id")
+                .page(page, "select a", ApprovalRequestEntity.class, this::toDomain);
     }
 
     @Override
