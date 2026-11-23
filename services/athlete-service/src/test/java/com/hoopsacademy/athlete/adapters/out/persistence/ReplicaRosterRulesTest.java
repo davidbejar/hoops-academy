@@ -10,6 +10,7 @@ import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.athlete.support.CoreEvents;
+import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.ReplicaFeed;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.Test;
  */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "athlete"))
+@WithTestResource(CoreMockResource.class)
 class ReplicaRosterRulesTest {
 
     static final LocalDate SEASON_END = LocalDate.now().plusMonths(6);

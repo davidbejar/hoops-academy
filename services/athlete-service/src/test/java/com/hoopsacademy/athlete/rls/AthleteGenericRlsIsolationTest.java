@@ -1,5 +1,6 @@
 package com.hoopsacademy.athlete.rls;
 
+import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.common.testing.ColumnFixture;
 import com.hoopsacademy.common.testing.GenericRlsIsolationTest;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
@@ -17,6 +18,7 @@ import java.util.UUID;
 /** Tenant A never sees, changes, deletes or inserts into tenant B's rows of any athlete table. */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "athlete"))
+@WithTestResource(CoreMockResource.class)
 class AthleteGenericRlsIsolationTest extends GenericRlsIsolationTest {
 
     @Override

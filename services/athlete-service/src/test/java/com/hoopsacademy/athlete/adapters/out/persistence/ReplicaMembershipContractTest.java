@@ -5,6 +5,7 @@ import com.hoopsacademy.athlete.application.MembershipContract;
 import com.hoopsacademy.athlete.application.replica.ApplyRosterEvent;
 import com.hoopsacademy.athlete.application.replica.ReplicaAuthzResolver;
 import com.hoopsacademy.athlete.support.CoreEvents;
+import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.ReplicaFeed;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.tenancy.AuthzContext;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 /** The membership contract on the replica resolver: core's events are the fixture. */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "athlete"))
+@WithTestResource(CoreMockResource.class)
 class ReplicaMembershipContractTest extends MembershipContract {
 
     @Inject ReplicaAuthzResolver replicaResolver;

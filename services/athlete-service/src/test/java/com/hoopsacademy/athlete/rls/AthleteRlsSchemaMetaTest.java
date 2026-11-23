@@ -1,5 +1,6 @@
 package com.hoopsacademy.athlete.rls;
 
+import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RlsSchemaMetaTest;
 import io.quarkus.test.common.ResourceArg;
@@ -15,6 +16,7 @@ import java.util.Map;
  */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "athlete"))
+@WithTestResource(CoreMockResource.class)
 class AthleteRlsSchemaMetaTest extends RlsSchemaMetaTest {
 
     private static final String OWNER = "owner_tenant_id";

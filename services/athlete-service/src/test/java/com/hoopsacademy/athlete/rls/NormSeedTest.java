@@ -8,6 +8,7 @@ import com.hoopsacademy.athlete.domain.NormBand;
 import com.hoopsacademy.athlete.domain.NormId;
 import com.hoopsacademy.athlete.domain.PhysicalTestNorm;
 import com.hoopsacademy.athlete.domain.TestTypeId;
+import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RlsTestDatabase;
 import io.quarkus.test.common.ResourceArg;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @Tag("rls")
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "athlete"))
+@WithTestResource(CoreMockResource.class)
 class NormSeedTest {
 
     private static final Map<String, Boolean> TYPES = Map.of("COOPER_12MIN", true, "SPRINT_20M", false, "VERTICAL_JUMP", true,

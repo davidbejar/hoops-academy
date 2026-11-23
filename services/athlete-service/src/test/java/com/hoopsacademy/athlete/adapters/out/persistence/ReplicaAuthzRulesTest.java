@@ -6,6 +6,7 @@ import com.hoopsacademy.athlete.adapters.in.messaging.CoreEventDecoder;
 import com.hoopsacademy.athlete.application.replica.ApplyRosterEvent;
 import com.hoopsacademy.athlete.application.replica.ReplicaAuthzResolver;
 import com.hoopsacademy.athlete.support.CoreEvents;
+import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.ReplicaFeed;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.tenancy.AuthzContext;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Test;
  */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "athlete"))
+@WithTestResource(CoreMockResource.class)
 class ReplicaAuthzRulesTest {
 
     static final LocalDate FUTURE = LocalDate.now().plusMonths(6);

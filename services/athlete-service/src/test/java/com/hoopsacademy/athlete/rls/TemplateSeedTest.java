@@ -3,6 +3,7 @@ package com.hoopsacademy.athlete.rls;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RlsTestDatabase;
 import io.quarkus.test.common.ResourceArg;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @Tag("rls")
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "athlete"))
+@WithTestResource(CoreMockResource.class)
 class TemplateSeedTest {
 
     private static final String SNAPSHOT = """

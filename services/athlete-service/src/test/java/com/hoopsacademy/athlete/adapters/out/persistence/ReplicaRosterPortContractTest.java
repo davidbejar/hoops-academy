@@ -7,6 +7,7 @@ import com.hoopsacademy.athlete.application.replica.ApplyRosterEvent;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.athlete.support.CoreEvents;
+import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.ReplicaFeed;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.tenancy.TenantId;
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 /** The {@link RosterPort} contract on the replica adapter: core's events (WP67 contracts) are the fixture. */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "athlete"))
+@WithTestResource(CoreMockResource.class)
 class ReplicaRosterPortContractTest extends RosterPortContract {
 
     @Inject ReplicaRosterRepository replica;

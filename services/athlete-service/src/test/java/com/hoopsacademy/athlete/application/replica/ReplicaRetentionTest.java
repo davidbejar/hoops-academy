@@ -7,6 +7,7 @@ import com.hoopsacademy.athlete.adapters.in.messaging.CoreEventDecoder;
 import com.hoopsacademy.athlete.application.replica.ApplyRosterEvent.Outcome;
 import com.hoopsacademy.athlete.support.CoreEvents;
 import com.hoopsacademy.athlete.support.CoreEvents.Record;
+import com.hoopsacademy.athlete.support.CoreMockResource;
 import com.hoopsacademy.athlete.support.ReplicaDb;
 import com.hoopsacademy.athlete.support.ReplicaFeed;
 import com.hoopsacademy.common.replica.ParkedPosition;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.Test;
  */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "athlete"))
+@WithTestResource(CoreMockResource.class)
 class ReplicaRetentionTest {
 
     private static final Instant NOW = Instant.now();
