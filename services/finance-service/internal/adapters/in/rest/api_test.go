@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -162,7 +163,7 @@ type call struct {
 }
 
 // do sends c, validates the answer against finance.yaml (and the request too when the service accepted it).
-func (a *api) do(t *testing.T, c call) answer {
+func (a *api) do(t testing.TB, c call) answer {
 	t.Helper()
 	var payload []byte
 	switch b := c.body.(type) {
@@ -211,6 +212,33 @@ func (a *api) do(t *testing.T, c call) answer {
 	}
 	return answer{status: response.StatusCode, header: response.Header, body: body}
 }
+
+// The contract guard of do has no exception: an answer finance.yaml does not declare (501 included, WP131 FIN-15)
+// fails the calling test.
+func TestEveryAnswerIsCheckedAgainstTheContract(t *testing.T) {
+	stub := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/problem+json")
+		w.WriteHeader(http.StatusNotImplemented)
+		_, _ = w.Write([]byte(`{"status":501}`))
+	}))
+	t.Cleanup(stub.Close)
+	a := &api{server: stub}
+	recorded := &recordingT{TB: t}
+
+	a.do(recorded, call{method: "GET", path: "/api/finance/settings", tenant: uuid()})
+
+	if len(recorded.errors) == 0 {
+		t.Error("a 501 answer passed the contract guard unchecked")
+	}
+}
+
+// recordingT records the errors of a check instead of failing the test.
+type recordingT struct {
+	testing.TB
+	errors []string
+}
+
+func (r *recordingT) Errorf(format string, args ...any) { r.errors = append(r.errors, fmt.Sprintf(format, args...)) }
 
 func expect(t *testing.T, got answer, status int) answer {
 	t.Helper()
