@@ -14,17 +14,10 @@
   <description>Training (schedules, sessions, attendance, planned absences, plans, exercises) and athlete health and fitness (injuries, measurements, physical tests)</description>
 
   <properties>
-    <!-- not managed by the parent / Quarkus BOM -->
-    <assertj.version>3.27.7</assertj.version>
-    <wiremock.version>3.13.2</wiremock.version>
-    <json-schema-validator.version>2.0.8</json-schema-validator.version>
     <!-- mutation testing (WP37, docs/quality/mutation.md): the rule code PIT mutates and the pure unit tests it may
          run; MutationScopeTest fails the default build if a container test ever falls under these test globs -->
     <pit.targetClasses>com.hoopsacademy.athlete.domain.*,com.hoopsacademy.athlete.application.replica.ApplyRosterEvent*,com.hoopsacademy.athlete.application.replica.RosterChange*,com.hoopsacademy.athlete.adapters.in.messaging.CoreEventMapper*,com.hoopsacademy.athlete.adapters.in.rest.AcceptLanguage*,com.hoopsacademy.athlete.adapters.in.rest.PatchBody*,com.hoopsacademy.athlete.adapters.config.RosterSource,com.hoopsacademy.athlete.adapters.config.RosterSource$*,com.hoopsacademy.athlete.adapters.config.RequestMemoRosterPort*</pit.targetClasses>
     <pit.targetTests>com.hoopsacademy.athlete.domain.*,com.hoopsacademy.athlete.application.replica.ApplyRosterEventRulesTest*,com.hoopsacademy.athlete.adapters.in.messaging.CoreEventMapperTest*,com.hoopsacademy.athlete.adapters.in.rest.AcceptLanguageTest*,com.hoopsacademy.athlete.adapters.in.rest.PatchBodyTest*,com.hoopsacademy.athlete.adapters.config.RosterSourceTest*,com.hoopsacademy.athlete.adapters.config.RequestMemoRosterPortTest*</pit.targetTests>
-    <!-- tests tagged "keycloak" need a Keycloak container: run with -Pkeycloak-it -->
-    <surefire.excludedGroups>keycloak</surefire.excludedGroups>
-    <surefire.groups></surefire.groups>
   </properties>
 
   <dependencies>
@@ -34,48 +27,11 @@
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-arc</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-rest-jackson</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-rest-client-jackson</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-hibernate-orm</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-jdbc-postgresql</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
       <artifactId>quarkus-flyway</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-flyway-postgresql</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-hibernate-validator</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-oidc</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-oidc-client</artifactId>
-    </dependency>
-    <!-- /q/health/live|ready|started for Kubernetes probes (datasource readiness + core reachability data) -->
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-smallrye-health</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -94,7 +50,6 @@
     <dependency>
       <groupId>com.networknt</groupId>
       <artifactId>json-schema-validator</artifactId>
-      <version>${json-schema-validator.version}</version>
     </dependency>
 
     <!-- ===== test ===== -->
@@ -157,13 +112,11 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>${assertj.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock-standalone</artifactId>
-      <version>${wiremock.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -179,44 +132,10 @@
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <groups>${surefire.groups}</groups>
-          <excludedGroups>${surefire.excludedGroups}</excludedGroups>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>prepare-agent</id>
-            <configuration>
-              <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
-              <append>true</append>
-            </configuration>
-          </execution>
-          <execution>
-            <id>check</id>
-            <configuration>
-              <rules combine.children="append">
-                <!-- CLAUDE.md DoD: >= 90 % lines in every domain package (the parent's BUNDLE rule keeps >= 80 % overall) -->
-                <rule>
-                  <element>PACKAGE</element>
-                  <includes>
-                    <include>com.hoopsacademy.athlete.domain*</include>
-                  </includes>
-                  <limits>
-                    <limit>
-                      <counter>LINE</counter>
-                      <value>COVEREDRATIO</value>
-                      <minimum>0.90</minimum>
-                    </limit>
-                  </limits>
-                </rule>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
@@ -235,15 +154,6 @@
              CoreEventMapper replaces CoreEventDecoder, RosterTopic moved to common); the score rounded down to a whole
              percent -->
         <pit.mutationThreshold>100</pit.mutationThreshold>
-      </properties>
-    </profile>
-    <!-- ./mvnw -pl services/athlete-service verify -Pkeycloak-it : runs ONLY the @Tag("keycloak") tests -->
-    <profile>
-      <id>keycloak-it</id>
-      <properties>
-        <surefire.groups>keycloak</surefire.groups>
-        <surefire.excludedGroups></surefire.excludedGroups>
-        <jacoco.skip>true</jacoco.skip>
       </properties>
     </profile>
   </profiles>

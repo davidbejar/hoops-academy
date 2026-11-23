@@ -14,17 +14,6 @@
   <description>Tenancy, identity &amp; membership, platform endpoints, tenant profile and logo, roster &amp; eligibility</description>
 
   <properties>
-    <!-- DoD: >= 80 % lines for the module, >= 90 % for the domain packages -->
-    <jacoco.line.minimum>0.80</jacoco.line.minimum>
-    <jacoco.domain.line.minimum>0.90</jacoco.domain.line.minimum>
-    <!-- not managed by the parent / Quarkus BOM -->
-    <assertj.version>3.27.7</assertj.version>
-    <wiremock.version>3.13.2</wiremock.version>
-    <!-- same line as libs/contracts and game-service (Jackson 2) -->
-    <json-schema-validator.version>2.0.8</json-schema-validator.version>
-    <!-- tests tagged "keycloak" need a Keycloak container: run with -Pkeycloak-it -->
-    <surefire.excludedGroups>keycloak</surefire.excludedGroups>
-    <surefire.groups></surefire.groups>
     <!-- mutation testing (WP37, docs/quality/mutation.md): the rule code PIT mutates and the pure unit tests it may
          run; MutationScopeTest fails the default build if a container test ever falls under these test globs -->
     <pit.targetClasses>com.hoopsacademy.core.domain.*,com.hoopsacademy.core.application.members.LoginProvisioning*,com.hoopsacademy.core.application.members.TemporaryPasswordGenerator*,com.hoopsacademy.core.application.authz.AuthzCache*,com.hoopsacademy.core.application.audit.AuditActorKind*,com.hoopsacademy.core.application.port.AuditFilter*,com.hoopsacademy.core.application.port.AuditAction*,com.hoopsacademy.core.application.events.EventTopic*,com.hoopsacademy.core.application.events.RosterPayloads*,com.hoopsacademy.core.application.events.RosterEventAppender*,com.hoopsacademy.core.application.events.EventEnvelopes*,com.hoopsacademy.core.application.events.TenantEvents*,com.hoopsacademy.core.adapters.out.events.KafkaEventBroker*,com.hoopsacademy.core.application.events.BackfillPlan*,com.hoopsacademy.core.application.signup.DecideAcademyRequest*,com.hoopsacademy.core.application.shared.ChangedFields*,com.hoopsacademy.core.application.audit.AuditEntry*,com.hoopsacademy.core.adapters.in.shared.PatchBody*,com.hoopsacademy.core.adapters.in.export.*,com.hoopsacademy.core.application.export.ExportPages*</pit.targetClasses>
@@ -39,39 +28,11 @@
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-rest-jackson</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-hibernate-orm</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-hibernate-validator</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-jdbc-postgresql</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
       <artifactId>quarkus-flyway</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-flyway-postgresql</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-oidc</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-oidc-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-rest-client-jackson</artifactId>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -84,14 +45,6 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-smallrye-openapi</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-smallrye-health</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
     </dependency>
     <!-- outbox publisher (WP67, ADR-0036): a plain Kafka producer to Redpanda that core can replace (WP81), with the
          kafka.* configuration and Dev Services Redpanda; version from the Quarkus BOM -->
@@ -122,7 +75,6 @@
     <dependency>
       <groupId>com.networknt</groupId>
       <artifactId>json-schema-validator</artifactId>
-      <version>${json-schema-validator.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -169,7 +121,6 @@
     <dependency>
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock-standalone</artifactId>
-      <version>${wiremock.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -190,7 +141,6 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>${assertj.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -206,44 +156,10 @@
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <groups>${surefire.groups}</groups>
-          <excludedGroups>${surefire.excludedGroups}</excludedGroups>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>prepare-agent</id>
-            <configuration>
-              <!-- classes loaded by Quarkus are instrumented by quarkus-jacoco into the same data file -->
-              <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
-              <append>true</append>
-            </configuration>
-          </execution>
-          <execution>
-            <id>check</id>
-            <configuration>
-              <rules combine.children="append">
-                <rule>
-                  <element>PACKAGE</element>
-                  <includes>
-                    <include>com.hoopsacademy.core.domain*</include>
-                  </includes>
-                  <limits>
-                    <limit>
-                      <counter>LINE</counter>
-                      <value>COVEREDRATIO</value>
-                      <minimum>${jacoco.domain.line.minimum}</minimum>
-                    </limit>
-                  </limits>
-                </rule>
-              </rules>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
@@ -262,15 +178,6 @@
         <pit.mutationThreshold>99</pit.mutationThreshold>
         <!-- equivalent: TemporaryPassword.hashCode only has to agree with equals; any constant (PIT's 0) does -->
         <pit.excludedMethods>hashCode</pit.excludedMethods>
-      </properties>
-    </profile>
-    <!-- ./mvnw -pl services/core-service verify -Pkeycloak-it : runs ONLY the @Tag("keycloak") tests -->
-    <profile>
-      <id>keycloak-it</id>
-      <properties>
-        <surefire.groups>keycloak</surefire.groups>
-        <surefire.excludedGroups></surefire.excludedGroups>
-        <jacoco.skip>true</jacoco.skip>
       </properties>
     </profile>
   </profiles>

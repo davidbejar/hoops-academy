@@ -18,7 +18,6 @@
     <!-- the journeys assume E2eEnv.enabled() and report as skipped without e2e.baseUrl; the support-class unit tests always run -->
     <e2e.skip>false</e2e.skip>
     <e2e.baseUrl></e2e.baseUrl>
-    <assertj.version>3.27.7</assertj.version>
   </properties>
 
   <dependencies>
@@ -47,7 +46,6 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>${assertj.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

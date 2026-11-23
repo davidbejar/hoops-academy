@@ -34,10 +34,14 @@
     <keycloak-admin-client.version>26.0.13</keycloak-admin-client.version>
     <testcontainers-keycloak.version>4.4.0</testcontainers-keycloak.version>
     <openapi-request-validator.version>3.0.0</openapi-request-validator.version>
+    <!-- not in the Quarkus BOM; managed here once for every module (WP137, LIB-10) -->
+    <assertj.version>3.27.7</assertj.version>
+    <wiremock.version>3.13.2</wiremock.version>
+    <!-- 2.0.x is the newest line on Jackson 2 (3.x moved to tools.jackson / Jackson 3) -->
+    <json-schema-validator.version>2.0.8</json-schema-validator.version>
 
     <compiler-plugin.version>3.16.0</compiler-plugin.version>
     <surefire-plugin.version>3.6.1</surefire-plugin.version>
-    <failsafe-plugin.version>3.6.1</failsafe-plugin.version>
     <jacoco.version>0.8.16</jacoco.version>
     <pitest.version>1.30.2</pitest.version>
     <pitest-junit5.version>1.2.3</pitest-junit5.version>
@@ -49,9 +53,13 @@
     <!-- SBOM (WP85, ADR-0043): CycloneDX of a service's runtime dependencies, `-Psbom` (the image build sets it) -->
     <cyclonedx-plugin.version>2.9.3</cyclonedx-plugin.version>
 
-    <!-- quality gates (overridable per module) -->
+    <!-- quality gates (overridable per module): >= 80 % lines per module, >= 90 % in every domain package (CLAUDE.md
+         DoD); only the services have a com.hoopsacademy.<service>.domain package -->
     <jacoco.line.minimum>0.80</jacoco.line.minimum>
-    <skipITs>false</skipITs>
+    <jacoco.domain.line.minimum>0.90</jacoco.domain.line.minimum>
+    <!-- tests tagged "keycloak" need a Keycloak container and run only with -Pkeycloak-it -->
+    <surefire.excludedGroups>keycloak</surefire.excludedGroups>
+    <surefire.groups></surefire.groups>
 
     <!-- mutation testing (WP37): a module's `mutation` profile sets pit.skip=false and its targets -->
     <pit.skip>true</pit.skip>
@@ -122,6 +130,23 @@
         <version>${openapi-request-validator.version}</version>
         <scope>test</scope>
       </dependency>
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>${assertj.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.wiremock</groupId>
+        <artifactId>wiremock-standalone</artifactId>
+        <version>${wiremock.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.networknt</groupId>
+        <artifactId>json-schema-validator</artifactId>
+        <version>${json-schema-validator.version}</version>
+      </dependency>
       <!-- internal modules -->
       <dependency>
         <groupId>com.hoopsacademy</groupId>
@@ -175,6 +200,8 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${surefire-plugin.version}</version>
           <configuration>
+            <groups>${surefire.groups}</groups>
+            <excludedGroups>${surefire.excludedGroups}</excludedGroups>
             <systemPropertyVariables>
               <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
               <maven.home>${maven.home}</maven.home>
@@ -184,25 +211,6 @@
           </configuration>
         </plugin>
         <plugin>
-          <artifactId>maven-failsafe-plugin</artifactId>
-          <version>${failsafe-plugin.version}</version>
-          <executions>
-            <execution>
-              <goals>
-                <goal>integration-test</goal>
-                <goal>verify</goal>
-              </goals>
-              <configuration>
-                <systemPropertyVariables>
-                  <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
-                  <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                  <maven.home>${maven.home}</maven.home>
-                </systemPropertyVariables>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
           <version>${jacoco.version}</version>
@@ -210,6 +218,11 @@
             <execution>
               <id>prepare-agent</id>
               <goals><goal>prepare-agent</goal></goals>
+              <configuration>
+                <!-- classes loaded by Quarkus are instrumented by quarkus-jacoco into the same data file -->
+                <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
+                <append>true</append>
+              </configuration>
             </execution>
             <execution>
               <id>report</id>
@@ -229,6 +242,19 @@
                         <counter>LINE</counter>
                         <value>COVEREDRATIO</value>
                         <minimum>${jacoco.line.minimum}</minimum>
+                      </limit>
+                    </limits>
+                  </rule>
+                  <rule>
+                    <element>PACKAGE</element>
+                    <includes>
+                      <include>com.hoopsacademy.*.domain*</include>
+                    </includes>
+                    <limits>
+                      <limit>
+                        <counter>LINE</counter>
+                        <value>COVEREDRATIO</value>
+                        <minimum>${jacoco.domain.line.minimum}</minimum>
                       </limit>
                     </limits>
                   </rule>
@@ -416,6 +442,15 @@
   </build>
 
   <profiles>
+    <!-- ./mvnw -pl services/<service> verify -Pkeycloak-it : runs ONLY the @Tag("keycloak") tests (no coverage gate) -->
+    <profile>
+      <id>keycloak-it</id>
+      <properties>
+        <surefire.groups>keycloak</surefire.groups>
+        <surefire.excludedGroups></surefire.excludedGroups>
+        <jacoco.skip>true</jacoco.skip>
+      </properties>
+    </profile>
     <!-- SBOM (WP85): target/bom.json (CycloneDX 1.6) per module at `package`; the image build of a service runs it -->
     <profile>
       <id>sbom</id>

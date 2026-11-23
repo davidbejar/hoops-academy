@@ -16,10 +16,6 @@
   <properties>
     <!-- WP2a acceptance: module coverage gate -->
     <jacoco.line.minimum>0.85</jacoco.line.minimum>
-    <!-- not managed by the parent / Quarkus BOM -->
-    <assertj.version>3.27.7</assertj.version>
-    <!-- the roster replica's CoreEventDecoder (WP130) validates every record against its topic's JSON Schema -->
-    <json-schema-validator.version>2.0.8</json-schema-validator.version>
     <!-- mutation testing (WP37, docs/quality/mutation.md): the rule code PIT mutates and the pure unit tests it may
          run; MutationScopeTest fails the default build if a container test ever falls under these test globs -->
     <pit.targetClasses>com.hoopsacademy.common.tenancy.TenantId*,com.hoopsacademy.common.tenancy.TenantContext*,com.hoopsacademy.common.tenancy.AuthzContext*,com.hoopsacademy.common.problem.Problem,com.hoopsacademy.common.problem.Problem$*,com.hoopsacademy.common.problem.ProblemType*,com.hoopsacademy.common.client.CoreRosterClient*,com.hoopsacademy.common.client.RosterAuthzResolver*,com.hoopsacademy.common.client.ServiceTokenClientFilter*,com.hoopsacademy.common.security.AuthzDenial,com.hoopsacademy.common.security.AuthzDenial$*,com.hoopsacademy.common.security.DenialKind*,com.hoopsacademy.common.security.TokenFailureReason*,com.hoopsacademy.common.tenancy.ExclusiveLocks*,com.hoopsacademy.common.tenancy.TenantScopedPaths*,com.hoopsacademy.common.problem.ProblemMapping*,com.hoopsacademy.common.problem.UnsafeText,com.hoopsacademy.common.paging.PageOffset*,com.hoopsacademy.common.replica.ReplicaRetention*,com.hoopsacademy.common.replica.ParkedPosition*,com.hoopsacademy.common.replica.CoreEventDecoder*,com.hoopsacademy.common.replica.DecodedEvent*,com.hoopsacademy.common.replica.EventEnvelope*,com.hoopsacademy.common.replica.RosterTopic*,com.hoopsacademy.common.replica.ReplicaConsumer*,com.hoopsacademy.common.replica.ReplicaMetrics*,com.hoopsacademy.common.replica.RetryPolicy*,com.hoopsacademy.common.replica.ReplicaOutcome*,com.hoopsacademy.common.replica.ReplicaHousekeeping*,com.hoopsacademy.common.replica.ReplicaSchema*,com.hoopsacademy.common.contracts.ContractResources*,com.hoopsacademy.common.authz.Member,com.hoopsacademy.common.authz.MembershipRule*,com.hoopsacademy.common.authz.MembershipReads*</pit.targetClasses>
@@ -67,10 +63,11 @@
     </dependency>
     <!-- roster replica pipeline (WP130, ADR-0062): CoreEventDecoder validates each record against the topic's schema,
          read at startup from the contracts jar the replica services depend on (a test dependency here) -->
+    <!-- the roster replica's CoreEventDecoder (WP130) validates every record against its topic's JSON Schema; version
+         managed by the parent -->
     <dependency>
       <groupId>com.networknt</groupId>
       <artifactId>json-schema-validator</artifactId>
-      <version>${json-schema-validator.version}</version>
     </dependency>
 
     <!-- readiness: CoreReachabilityCheck (game, athlete); every service also gets /q/health/live|ready -->
@@ -161,7 +158,6 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>${assertj.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -174,16 +170,6 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>prepare-agent</id>
-            <configuration>
-              <!-- classes loaded by Quarkus are instrumented by quarkus-jacoco into the same data file -->
-              <exclClassLoaders>*QuarkusClassLoader</exclClassLoaders>
-              <append>true</append>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
