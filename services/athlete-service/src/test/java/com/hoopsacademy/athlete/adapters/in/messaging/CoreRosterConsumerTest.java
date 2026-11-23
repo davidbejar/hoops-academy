@@ -11,10 +11,11 @@ import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.athlete.support.CoreEvents;
 import com.hoopsacademy.athlete.support.CoreTopics;
-import com.hoopsacademy.common.testing.PostgresRlsResource;
-import com.hoopsacademy.common.testing.RlsTestDatabase;
+import com.hoopsacademy.common.replica.RosterTopic;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantScope;
+import com.hoopsacademy.common.testing.PostgresRlsResource;
+import com.hoopsacademy.common.testing.RlsTestDatabase;
 import io.quarkus.test.common.ResourceArg;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -188,6 +189,22 @@ class CoreRosterConsumerTest {
 
         assertThat(metrics()).containsPattern(Pattern.compile("hoops_roster_replica_lag_seconds\\{[^}]*topic=\"core.team\""));
         assertThat(metrics()).as("the Kafka client's offset lag (runbook)").contains("kafka_consumer_fetch_manager_records_lag");
+    }
+
+    /**
+     * ADR-0062 (WP130): one meter policy with game: every topic's parked counter and lag gauge exist from the start, so
+     * an alert or a panel sees "parked = 0" rather than no data.
+     */
+    @Test
+    void everyTopicHasItsParkedCounterAndLagGaugeFromTheStart() {
+        String metrics = metrics();
+
+        for (String topic : RosterTopic.topicNames()) {
+            assertThat(metrics).as(topic).containsPattern(Pattern.compile(
+                    "hoops_roster_replica_parked_total\\{[^}]*topic=\"" + Pattern.quote(topic) + "\""));
+            assertThat(metrics).as(topic).containsPattern(Pattern.compile(
+                    "hoops_roster_replica_lag_seconds\\{[^}]*topic=\"" + Pattern.quote(topic) + "\""));
+        }
     }
 
     private void awaitTeam(CoreEvents.Record teamEvent) {
