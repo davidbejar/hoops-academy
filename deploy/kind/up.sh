@@ -21,7 +21,7 @@ NS="${HOOPS_NAMESPACE:-hoops}"
 # docs/adr/0031-gateway-api.md (amendment WP100).
 ENVOY_GATEWAY_VERSION="v1.10.0"
 GATEWAY_API_VERSION="v1.6.1"
-CNPG_VERSION="1.30.1"
+CNPG_VERSION="1.30.2"
 CNPG_BRANCH="release-${CNPG_VERSION%.*}"
 # External Secrets Operator (--eso): API external-secrets.io/v1. The chart tests validate the ExternalSecrets against this
 # version's CRD (deploy/helm/tests/schemas, regenerate with update-eso.sh when bumping).
@@ -29,12 +29,12 @@ ESO_VERSION="v2.15.0"
 # Stakater Reloader (WP87, ADR-0012 amendment): rolls every Deployment/StatefulSet annotated with
 # secret.reloader.stakater.com/auto (the chart with global.reloader.enabled, on in values-kind.yaml; envoy-ratelimit through
 # EG_VALUES) when a Secret it reads changes, whether ESO refreshed it or secrets.sh re-applied it. Pinned by chart version +
-# digest and image digest (v1.4.24). Least privilege: namespaced Roles in $NS and envoy-gateway-system only (no
+# digest and image digest (v1.4.25). Least privilege: namespaced Roles in $NS and envoy-gateway-system only (no
 # ClusterRole), Secrets only (ConfigMap changes already roll through the chart's checksum annotations), no Jobs/CronJobs,
 # reload strategy `annotations` (a pod-template annotation, not an injected env var).
-RELOADER_CHART_VERSION="2.2.20"
-RELOADER_CHART_DIGEST="sha256:065ab124e7e704a43465fad9b71363563157312e8ee410db30c4da83c5ac131b"
-RELOADER_IMAGE_DIGEST="sha256:3ab43d3eb96c59798644bf826b0444a846c0197d22ab4b6c101c4da3e1d6ef23"
+RELOADER_CHART_VERSION="2.2.21"
+RELOADER_CHART_DIGEST="sha256:d8daf25bbedcc180fa4bb35297709f9539c0e231f1d7815080541810deadaa98"
+RELOADER_IMAGE_DIGEST="sha256:db8b1818f5da373ab85c05b30220fcae80a9ac0532052e6d68a6a5999111f18f"
 # Global rate limiting (WP40, ADR-0033): Envoy Gateway deploys its rate limit service (Deployment envoy-ratelimit) with
 # a Redis backend; values-kind.yaml deploys that Redis in namespace $NS (rateLimit.redis.enabled). failClosed=false:
 # when the rate limit service or Redis does not answer within the timeout, requests pass (fail open). Other clusters

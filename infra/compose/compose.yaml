@@ -97,7 +97,7 @@ services:
   # (libs/common-quarkus); deploy/helm/tests/run.sh fails when they differ. Topics: `just events-topics` (run by `just up`).
   # Kafka API: localhost:19092 for the services in quarkus:dev on the host, redpanda:9092 inside the compose network.
   redpanda:
-    image: docker.io/redpandadata/redpanda:v26.2.7@sha256:43545ee03966431f5451e0b3c1e651b39fbe3eb383360220311021f50133b649
+    image: docker.io/redpandadata/redpanda:v26.3.1@sha256:260532f70fd840bf2159106bd4ef900f199c1f5ca2a23cb362642320513b90f5
     container_name: hoops-redpanda
     command:
       - redpanda
@@ -232,7 +232,7 @@ services:
 
   lgtm:
     profiles: [observability]
-    image: docker.io/grafana/otel-lgtm:0.41.0@sha256:2e3290657f2f2a256c7a9175f097424a3ac5b54840741ace433e108e109348b6
+    image: docker.io/grafana/otel-lgtm:0.41.1@sha256:1b852b77d7bcadb7699bfe7c78a51d059dff85168de674728cf7abf4474645e5
     container_name: hoops-lgtm
     user: "10001:10001"
     environment:
