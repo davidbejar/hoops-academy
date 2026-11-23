@@ -22,8 +22,8 @@ import 'match_labels.dart';
 const _averageTileMinWidth = 140.0;
 
 /// `GET /players/{id}/season-stats?seasonId=` for (player, season).
-final seasonStatsProvider =
-    FutureProvider.family<gen.PlayerSeasonStats, (String, String)>(
+final seasonStatsProvider = FutureProvider.autoDispose
+    .family<gen.PlayerSeasonStats, (String, String)>(
       (ref, key) =>
           ref.watch(matchesRepositoryProvider).seasonStats(key.$1, key.$2),
     );

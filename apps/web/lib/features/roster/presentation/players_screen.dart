@@ -254,8 +254,8 @@ class PlayerTile extends StatelessWidget {
 
 // ----------------------------------------------------------------- detail
 
-final _guardiansOfPlayerProvider =
-    FutureProvider.family<List<api.GuardianLink>, String>(
+final _guardiansOfPlayerProvider = FutureProvider.autoDispose
+    .family<List<api.GuardianLink>, String>(
       (ref, playerId) => ref
           .watch(membersRepositoryProvider)
           .guardianLinks(playerId: playerId),

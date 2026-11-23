@@ -222,9 +222,10 @@ final duesProvider = AsyncNotifierProvider<DuesNotifier, fin.DuePage>(
 );
 
 /// One due with every payment it has had (voided ones included).
-final dueDetailProvider = FutureProvider.family<fin.DueDetail, String>(
-  (ref, dueId) => ref.watch(financeRepositoryProvider).due(dueId),
-);
+final dueDetailProvider = FutureProvider.autoDispose
+    .family<fin.DueDetail, String>(
+      (ref, dueId) => ref.watch(financeRepositoryProvider).due(dueId),
+    );
 
 // ----------------------------------------------------------------- expenses
 
@@ -292,18 +293,23 @@ final expensesProvider =
 // ------------------------------------------------------------------ balance
 
 /// The balance of one season: dues by state, expenses by category.
-final seasonBalanceProvider = FutureProvider.family<fin.SeasonBalance, String>(
-  (ref, seasonId) => ref.watch(financeRepositoryProvider).balance(seasonId),
-);
+final seasonBalanceProvider = FutureProvider.autoDispose
+    .family<fin.SeasonBalance, String>(
+      (ref, seasonId) => ref.watch(financeRepositoryProvider).balance(seasonId),
+    );
 
 // ------------------------------------------- the coach's and the family's reads
 
 /// Who of a team is up to date (a flag per player, no amounts).
-final teamDueStatusProvider = FutureProvider.family<fin.TeamDueStatus, String>(
-  (ref, teamId) => ref.watch(financeRepositoryProvider).teamDueStatus(teamId),
-);
+final teamDueStatusProvider = FutureProvider.autoDispose
+    .family<fin.TeamDueStatus, String>(
+      (ref, teamId) =>
+          ref.watch(financeRepositoryProvider).teamDueStatus(teamId),
+    );
 
 /// A player's dues as the family sees them.
-final playerDuesProvider = FutureProvider.family<List<fin.PlayerDue>, String>(
-  (ref, playerId) => ref.watch(financeRepositoryProvider).playerDues(playerId),
-);
+final playerDuesProvider = FutureProvider.autoDispose
+    .family<List<fin.PlayerDue>, String>(
+      (ref, playerId) =>
+          ref.watch(financeRepositoryProvider).playerDues(playerId),
+    );

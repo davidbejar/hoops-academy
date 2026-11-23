@@ -246,8 +246,8 @@ class SessionDetailNotifier extends AsyncNotifier<SessionDetail>
   }
 }
 
-final sessionDetailProvider =
-    AsyncNotifierProvider.family<SessionDetailNotifier, SessionDetail, String>(
+final sessionDetailProvider = AsyncNotifierProvider.autoDispose
+    .family<SessionDetailNotifier, SessionDetail, String>(
       SessionDetailNotifier.new,
     );
 
@@ -546,8 +546,8 @@ class PlanDetailNotifier extends AsyncNotifier<ath.TrainingPlan>
   }
 }
 
-final planDetailProvider =
-    AsyncNotifierProvider.family<PlanDetailNotifier, ath.TrainingPlan, String>(
+final planDetailProvider = AsyncNotifierProvider.autoDispose
+    .family<PlanDetailNotifier, ath.TrainingPlan, String>(
       PlanDetailNotifier.new,
     );
 

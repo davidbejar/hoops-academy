@@ -29,22 +29,21 @@ class SetupData {
 }
 
 /// Match + the team's current roster (core) + the stored match roster.
-final matchSetupProvider = FutureProvider.family<SetupData, String>((
-  ref,
-  matchId,
-) async {
-  final repo = ref.watch(matchesRepositoryProvider);
-  final match = await repo.get(matchId);
-  final results = await Future.wait<Object>([
-    ref.watch(teamsRepositoryProvider).roster(match.teamId),
-    repo.roster(matchId),
-  ]);
-  return SetupData(
-    match,
-    results[0] as List<api.TeamPlayer>,
-    results[1] as List<RosterPlayer>,
-  );
-});
+final matchSetupProvider = FutureProvider.autoDispose.family<SetupData, String>(
+  (ref, matchId) async {
+    final repo = ref.watch(matchesRepositoryProvider);
+    final match = await repo.get(matchId);
+    final results = await Future.wait<Object>([
+      ref.watch(teamsRepositoryProvider).roster(match.teamId),
+      repo.roster(matchId),
+    ]);
+    return SetupData(
+      match,
+      results[0] as List<api.TeamPlayer>,
+      results[1] as List<RosterPlayer>,
+    );
+  },
+);
 
 /// Match roster: who plays, starters, jersey numbers (staff only, online).
 class MatchSetupScreen extends ConsumerWidget {

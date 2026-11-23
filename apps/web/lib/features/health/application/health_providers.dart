@@ -103,10 +103,8 @@ class InjuriesNotifier extends AsyncNotifier<List<ath.Injury>>
   }
 }
 
-final injuriesProvider =
-    AsyncNotifierProvider.family<InjuriesNotifier, List<ath.Injury>, String>(
-      InjuriesNotifier.new,
-    );
+final injuriesProvider = AsyncNotifierProvider.autoDispose
+    .family<InjuriesNotifier, List<ath.Injury>, String>(InjuriesNotifier.new);
 
 /// Open injuries of everyone the caller can see: drives the availability badge.
 final openInjuriesProvider = FutureProvider<Map<String, ath.Injury>>((
@@ -184,12 +182,10 @@ class MeasurementsNotifier extends AsyncNotifier<List<ath.BodyMeasurement>>
   }
 }
 
-final measurementsProvider =
-    AsyncNotifierProvider.family<
-      MeasurementsNotifier,
-      List<ath.BodyMeasurement>,
-      String
-    >(MeasurementsNotifier.new);
+final measurementsProvider = AsyncNotifierProvider.autoDispose
+    .family<MeasurementsNotifier, List<ath.BodyMeasurement>, String>(
+      MeasurementsNotifier.new,
+    );
 
 // ---------------------------------------------------------------- fitness tests
 
@@ -330,12 +326,10 @@ class TestResultsNotifier extends AsyncNotifier<List<ath.PhysicalTestResult>>
   }
 }
 
-final testResultsProvider =
-    AsyncNotifierProvider.family<
-      TestResultsNotifier,
-      List<ath.PhysicalTestResult>,
-      String
-    >(TestResultsNotifier.new);
+final testResultsProvider = AsyncNotifierProvider.autoDispose
+    .family<TestResultsNotifier, List<ath.PhysicalTestResult>, String>(
+      TestResultsNotifier.new,
+    );
 
 // ---------------------------------------------------------------------- norms
 

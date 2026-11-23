@@ -203,10 +203,8 @@ class TeamDetailNotifier extends AsyncNotifier<TeamDetail>
   }
 }
 
-final teamDetailProvider =
-    AsyncNotifierProvider.family<TeamDetailNotifier, TeamDetail, String>(
-      TeamDetailNotifier.new,
-    );
+final teamDetailProvider = AsyncNotifierProvider.autoDispose
+    .family<TeamDetailNotifier, TeamDetail, String>(TeamDetailNotifier.new);
 
 /// The numbers taken in a team with their players (the jersey dialog's list).
 final teamJerseyNumbersProvider = FutureProvider.autoDispose
@@ -338,10 +336,8 @@ class PlayerDetailNotifier extends AsyncNotifier<api.Player> {
   }
 }
 
-final playerDetailProvider =
-    AsyncNotifierProvider.family<PlayerDetailNotifier, api.Player, String>(
-      PlayerDetailNotifier.new,
-    );
+final playerDetailProvider = AsyncNotifierProvider.autoDispose
+    .family<PlayerDetailNotifier, api.Player, String>(PlayerDetailNotifier.new);
 
 // ------------------------------------------------------------------- approvals
 

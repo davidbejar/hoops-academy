@@ -123,8 +123,8 @@ final tenantsProvider =
     );
 
 /// Daily usage snapshots of one academy, for the trend chart (loaded apart from the dashboard).
-final tenantUsageHistoryProvider =
-    FutureProvider.family<api.TenantUsageHistory, String>(
+final tenantUsageHistoryProvider = FutureProvider.autoDispose
+    .family<api.TenantUsageHistory, String>(
       (ref, tenantId) =>
           ref.watch(platformRepositoryProvider).usageHistory(tenantId),
     );
@@ -174,8 +174,8 @@ class TenantDetailNotifier extends AsyncNotifier<TenantDetail>
   }
 }
 
-final tenantDetailProvider =
-    AsyncNotifierProvider.family<TenantDetailNotifier, TenantDetail, String>(
+final tenantDetailProvider = AsyncNotifierProvider.autoDispose
+    .family<TenantDetailNotifier, TenantDetail, String>(
       TenantDetailNotifier.new,
     );
 
