@@ -1,6 +1,7 @@
 package com.hoopsacademy.core.adapters.out.client;
 
 import com.hoopsacademy.common.tenancy.TenantId;
+import com.hoopsacademy.core.adapters.in.internal.UsageReportDto;
 import com.hoopsacademy.core.application.port.RemoteUsagePort;
 import com.hoopsacademy.core.application.port.UsageReport;
 import java.util.Optional;
