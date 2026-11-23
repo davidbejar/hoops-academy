@@ -1,0 +1,11 @@
+-- ============================================================================
+-- WP128 / V21 — CORE-20 (audit 2026-11-23): the open cases of one player (EligibilityCaseRepository.openOfPlayer,
+-- c.player_id = … and c.status = 'OPEN', read when a player is withdrawn) had no index starting with
+-- (tenant_id, player_id), so they were found through eligibility_case_status_idx and filtered.
+-- Measured with EXPLAIN ANALYZE on PostgreSQL 17, 1,000,000 cases (50 academies, one with 40 %, five cases per
+-- player over two years, 3 % OPEN, i.e. 12,000 open cases in the large academy): 7.7–9.2 ms (bitmap scan of the
+-- academy's open cases, 12,023 rows filtered away) became 0.01–0.1 ms (index scan); the partial index is 1.4 MB
+-- beside the 56 MB status index. The approval_request index the audit also proposed has nothing to serve
+-- (verification): its only player-keyed read runs for one pending player.
+-- ============================================================================
+create index eligibility_case_player_idx on core.eligibility_case (tenant_id, player_id) where status = 'OPEN';
