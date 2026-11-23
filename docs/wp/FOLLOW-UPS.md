@@ -455,7 +455,7 @@ compose, chart, properties and scripts and runs alone.
 
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
-| 1 | WP126 | Game: ingest reads the match once, `sync_receipt` dropped, feed cursor race, parked events unique | Opus · high | Running |
+| 1 | WP126 | Game: ingest reads the match once, `sync_receipt` dropped, feed cursor race, parked events unique | Opus · high | Done (ADR-0030 and ADR-0037 amendments; migrations V8, V9; game 556 tests, mutation 572/574; feed cursor and parked-twice bugs fixed) |
 | 1 | WP127 | Athlete: roster reads per request, tenant zone from the context, the 90 % domain gate, one test group | Opus · high | Running |
 | 1 | WP128 | Core: guardian-link N+1, outbox sends, one paged-query builder, dead code, test profiles and helpers | Opus · high | Running |
 | 1 | WP129 | Web: lists read every page (`fetchAll`, one `Pager`), live match stops polling, dead keys | Opus · high | Done (ADR-0061, ADR-0040 amendment; `fetchAll` + one `Pager`; live match disposes; web 1861 tests) |
