@@ -17,8 +17,6 @@ import java.util.function.Supplier;
 @ApplicationScoped
 class JpaMembershipRepository implements MembershipRepository {
 
-    private static final String NIL_TENANT = "00000000-0000-0000-0000-000000000000";
-
     private final EntityManager em;
     private final BoundTenant boundTenant;
 
@@ -77,25 +75,14 @@ class JpaMembershipRepository implements MembershipRepository {
 
     /** Runs {@code statement} with {@code app.subject} bound to {@code subject}, then puts the previous value back. */
     private <T> T asSubject(String subject, Supplier<T> statement) {
-        String previous = (String) em.createNativeQuery("select coalesce(current_setting('app.subject', true), '')")
-                .getSingleResult();
-        bindSubject(subject);
-        try {
-            return statement.get();
-        } finally {
-            bindSubject(previous);
-        }
+        return SessionSettings.with(em, SessionSettings.SUBJECT, subject,
+                SessionSettings.current(em, SessionSettings.SUBJECT), statement);
     }
 
     private static List<IndexedMembership> indexed(List<?> rows) {
         return rows.stream().map(Object[].class::cast)
                 .map(row -> new IndexedMembership(new TenantId((UUID) row[0]), new PersonId((UUID) row[1])))
                 .toList();
-    }
-
-    private void bindSubject(String subject) {
-        em.createNativeQuery("select set_config('app.subject', :sub, true)").setParameter("sub", subject)
-                .getSingleResult();
     }
 
     /** Must run in its own transaction with no tenant bound: it rebinds app.tenant_id to the nil tenant. */
@@ -105,7 +92,7 @@ class JpaMembershipRepository implements MembershipRepository {
             throw new IllegalStateException("ofSubject must not run inside a tenant-bound transaction");
         }
         em.createNativeQuery("select set_config('app.tenant_id', :nil, true), set_config('app.subject', :sub, true)")
-                .setParameter("nil", NIL_TENANT)
+                .setParameter("nil", SessionSettings.NIL_TENANT)
                 .setParameter("sub", subject)
                 .getSingleResult();
         List<?> rows = em.createNativeQuery("""

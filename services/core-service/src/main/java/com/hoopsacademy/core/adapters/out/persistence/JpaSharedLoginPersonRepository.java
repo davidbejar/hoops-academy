@@ -65,30 +65,7 @@ class JpaSharedLoginPersonRepository implements SharedLoginPersons {
             throw new IllegalArgumentException("Another tenant's person expected, got one of the bound tenant");
         }
         em.flush();
-        bindTenant(other.value());
-        T result;
-        try {
-            result = statements.get();
-        } catch (RuntimeException failure) {
-            restoreAfter(failure, home);
-            throw failure;
-        }
-        bindTenant(home);
-        return result;
-    }
-
-    /** The transaction rolls back anyway; a restore that fails on the aborted transaction must not hide the cause. */
-    private void restoreAfter(RuntimeException failure, UUID home) {
-        try {
-            bindTenant(home);
-        } catch (RuntimeException restore) {
-            failure.addSuppressed(restore);
-        }
-    }
-
-    private void bindTenant(UUID tenant) {
-        em.createNativeQuery("select set_config('app.tenant_id', :tenant, true)")
-                .setParameter("tenant", tenant.toString())
-                .getSingleResult();
+        return SessionSettings.with(em, SessionSettings.TENANT, other.value().toString(), home.toString(),
+                statements);
     }
 }

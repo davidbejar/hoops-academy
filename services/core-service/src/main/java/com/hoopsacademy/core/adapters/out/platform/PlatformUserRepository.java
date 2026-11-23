@@ -4,6 +4,7 @@ import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.adapters.out.persistence.LikePattern;
 import com.hoopsacademy.core.adapters.out.persistence.NativeValues;
+import com.hoopsacademy.core.adapters.out.persistence.SessionSettings;
 import com.hoopsacademy.core.application.port.PlatformUsers;
 import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.application.shared.PageResult;
@@ -34,7 +35,6 @@ import java.util.UUID;
 @ApplicationScoped
 class PlatformUserRepository implements PlatformUsers {
 
-    private static final String NIL_TENANT = "00000000-0000-0000-0000-000000000000";
     private static final String MATCHES = """
              where lower(u.email) like :q escape '\\'
                 or exists (select 1 from core.person p
@@ -49,8 +49,7 @@ class PlatformUserRepository implements PlatformUsers {
 
     @Override
     public PageResult<Login> list(Optional<String> query, PageRequest page) {
-        em.createNativeQuery("select set_config('app.tenant_id', :nil, true)").setParameter("nil", NIL_TENANT)
-                .getSingleResult();
+        SessionSettings.set(em, SessionSettings.TENANT, SessionSettings.NIL_TENANT);
         Optional<String> pattern = query.map(LikePattern::contains);
         String where = pattern.isPresent() ? MATCHES : "";
         Query count = em.createNativeQuery("select count(*) from core.app_user u " + where);
