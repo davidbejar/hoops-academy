@@ -9,8 +9,10 @@ import com.hoopsacademy.common.replica.ReplicaConsumer;
 import com.hoopsacademy.common.replica.ReplicaMetrics;
 import com.hoopsacademy.common.replica.RetryPolicy;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.quarkus.runtime.Startup;
+import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 import java.time.Clock;
@@ -32,15 +34,26 @@ class ReplicaPipelineProducer {
         return new CoreEventDecoder<>(json, new CoreEventMapper());
     }
 
-    /** Created at startup, so the meters of every topic exist before the first record (ADR-0062). */
     @Produces
     @Singleton
-    @Startup
     ReplicaConsumer<RosterEvent> replicaConsumer(CoreEventDecoder<RosterEvent> decoder, ApplyRosterEvent apply,
             ParkedEvents parked, MeterRegistry metrics, Clock clock,
             @ConfigProperty(name = "hoops.roster.replica.max-attempts", defaultValue = "5") int maxAttempts,
             @ConfigProperty(name = "hoops.roster.replica.first-backoff", defaultValue = "PT0.5S") Duration firstBackoff) {
         return new ReplicaConsumer<>(decoder, apply::apply, parked, new ReplicaMetrics(metrics), clock,
                 new RetryPolicy(maxAttempts, firstBackoff));
+    }
+
+    /**
+     * With the consumer on, the pipeline is created at startup rather than on the first record, so the parked counter
+     * and lag gauge of every topic exist from the start (ADR-0062). With it off nothing registers them: a service that
+     * does not consume shows no replica meters.
+     */
+    void createAtStartup(@Observes StartupEvent event,
+            @ConfigProperty(name = "hoops.roster.consumer.enabled", defaultValue = "true") boolean consumerEnabled,
+            Instance<ReplicaConsumer<RosterEvent>> consumer) {
+        if (consumerEnabled) {
+            consumer.get();
+        }
     }
 }
