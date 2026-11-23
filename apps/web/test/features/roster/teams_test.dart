@@ -444,6 +444,25 @@ void main() {
       },
     );
 
+    testWidgets('a failed player search says why, like the other pickers', (
+      tester,
+    ) async {
+      final core = coreWithTeams();
+      await pumpAs(
+        tester,
+        roles: {TenantRole.admin},
+        core: core,
+        location: '/teams/t1',
+      );
+      core.players.failWith = const AppError(
+        kind: AppErrorKind.forbidden,
+        status: 403,
+      );
+      await tapKey(tester, 'roster-assign');
+      expect(find.text('No tienes permiso para hacer esto.'), findsOneWidget);
+      expect(find.text('Ha ocurrido un error inesperado.'), findsNothing);
+    });
+
     testWidgets(
       'play-up verdict shows the badge and allows assigning with a jersey',
       (tester) async {
