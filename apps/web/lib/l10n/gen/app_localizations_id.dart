@@ -28,11 +28,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get signOut => 'Keluar';
 
   @override
-  String signedInAs(String name) {
-    return 'Masuk sebagai $name';
-  }
-
-  @override
   String get landingEyebrow => 'Dibuat khusus untuk akademi basket';
 
   @override
@@ -280,11 +275,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get navAppActivity => 'Audit';
 
   @override
-  String placeholderModule(String module) {
-    return '$module: segera hadir';
-  }
-
-  @override
   String get profileTitle => 'Profil';
 
   @override
@@ -368,9 +358,6 @@ class AppLocalizationsId extends AppLocalizations {
   String timesShownIn(String zone) {
     return 'Waktu ditampilkan dalam zona waktu akademi: $zone';
   }
-
-  @override
-  String get profileLoadFailed => 'Kami tidak dapat memuat profil Anda';
 
   @override
   String get errorNetwork =>
@@ -1063,9 +1050,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get financeBalanceNoSeasons => 'Belum ada musim';
-
-  @override
-  String get financeBalanceIncome => 'Tagihan';
 
   @override
   String get financeBalancePaid => 'Terkumpul';
@@ -2659,9 +2643,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get scheduleValidUntil => 'Berlaku sampai';
 
   @override
-  String get scheduleNoEnd => 'Tanpa tanggal akhir';
-
-  @override
   String get scheduleDatesInvalid =>
       'Tanggal akhir tidak boleh sebelum tanggal mulai';
 
@@ -2833,9 +2814,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get planAssign => 'Tugaskan';
-
-  @override
-  String get planWatchVideo => 'Tonton video';
 
   @override
   String get assignTitle => 'Tugaskan rencana';
@@ -3034,9 +3012,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get growthHideTable => 'Sembunyikan tabel';
 
   @override
-  String get growthDeleteConfirm => 'Hapus pengukuran ini?';
-
-  @override
   String chartSummary(int count, String name, String value) {
     return 'Grafik $name: $count data, terbaru $value';
   }
@@ -3085,11 +3060,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get bandExcellent => 'Sangat baik';
 
   @override
-  String testExpectedBand(String band) {
-    return 'Pita yang diharapkan: $band';
-  }
-
-  @override
   String get testNoBand => 'Tidak ada norma untuk usia dan jenis kelamin ini';
 
   @override
@@ -3107,9 +3077,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get testEmpty => 'Belum ada hasil tes';
 
   @override
-  String get testChartLegend => 'Pita yang diharapkan';
-
-  @override
   String testAtAge(int age) {
     return 'usia $age';
   }
@@ -3118,9 +3085,6 @@ class AppLocalizationsId extends AppLocalizations {
   String testResultLine(String unit, String value) {
     return '$value $unit';
   }
-
-  @override
-  String get testDeleteConfirm => 'Hapus hasil ini?';
 
   @override
   String get testTypesTitle => 'Jenis tes';
@@ -3251,9 +3215,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get healthMenuNorms => 'Norma';
 
   @override
-  String get meTitle => 'Profil olahraga saya';
-
-  @override
   String get meSeasonStats => 'Statistik musim';
 
   @override
@@ -3270,9 +3231,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get meNoPlayer => 'Akun Anda belum terhubung ke pemain';
-
-  @override
-  String get myPlayersTitle => 'Pemain saya';
 
   @override
   String get myPlayersEmpty => 'Anda belum memiliki pemain terhubung';
@@ -3413,12 +3371,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get tenantReason => 'Alasan';
-
-  @override
-  String get tenantSuspendTitle => 'Tangguhkan akademi';
-
-  @override
-  String get tenantWithdrawTitle => 'Tarik akademi';
 
   @override
   String get tenantWithdrawWarning =>

@@ -136,12 +136,6 @@ abstract class AppLocalizations {
   /// **'Cerrar sesión'**
   String get signOut;
 
-  /// No description provided for @signedInAs.
-  ///
-  /// In es, this message translates to:
-  /// **'Sesión iniciada como {name}'**
-  String signedInAs(String name);
-
   /// No description provided for @landingEyebrow.
   ///
   /// In es, this message translates to:
@@ -574,12 +568,6 @@ abstract class AppLocalizations {
   /// **'Auditoría'**
   String get navAppActivity;
 
-  /// No description provided for @placeholderModule.
-  ///
-  /// In es, this message translates to:
-  /// **'{module}: próximamente'**
-  String placeholderModule(String module);
-
   /// No description provided for @profileTitle.
   ///
   /// In es, this message translates to:
@@ -735,12 +723,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Las horas se muestran en la zona horaria de la academia: {zone}'**
   String timesShownIn(String zone);
-
-  /// No description provided for @profileLoadFailed.
-  ///
-  /// In es, this message translates to:
-  /// **'No hemos podido cargar tu perfil'**
-  String get profileLoadFailed;
 
   /// No description provided for @errorNetwork.
   ///
@@ -1941,12 +1923,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Aún no hay temporadas'**
   String get financeBalanceNoSeasons;
-
-  /// No description provided for @financeBalanceIncome.
-  ///
-  /// In es, this message translates to:
-  /// **'Cuotas'**
-  String get financeBalanceIncome;
 
   /// No description provided for @financeBalancePaid.
   ///
@@ -4846,12 +4822,6 @@ abstract class AppLocalizations {
   /// **'Válido hasta'**
   String get scheduleValidUntil;
 
-  /// No description provided for @scheduleNoEnd.
-  ///
-  /// In es, this message translates to:
-  /// **'Sin fecha de fin'**
-  String get scheduleNoEnd;
-
   /// No description provided for @scheduleDatesInvalid.
   ///
   /// In es, this message translates to:
@@ -5163,12 +5133,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Asignar'**
   String get planAssign;
-
-  /// No description provided for @planWatchVideo.
-  ///
-  /// In es, this message translates to:
-  /// **'Ver vídeo'**
-  String get planWatchVideo;
 
   /// No description provided for @assignTitle.
   ///
@@ -5536,12 +5500,6 @@ abstract class AppLocalizations {
   /// **'Ocultar tabla'**
   String get growthHideTable;
 
-  /// No description provided for @growthDeleteConfirm.
-  ///
-  /// In es, this message translates to:
-  /// **'¿Eliminar esta medida?'**
-  String get growthDeleteConfirm;
-
   /// No description provided for @chartSummary.
   ///
   /// In es, this message translates to:
@@ -5632,12 +5590,6 @@ abstract class AppLocalizations {
   /// **'Excelente'**
   String get bandExcellent;
 
-  /// No description provided for @testExpectedBand.
-  ///
-  /// In es, this message translates to:
-  /// **'Banda esperada: {band}'**
-  String testExpectedBand(String band);
-
   /// No description provided for @testNoBand.
   ///
   /// In es, this message translates to:
@@ -5668,12 +5620,6 @@ abstract class AppLocalizations {
   /// **'Sin resultados de pruebas'**
   String get testEmpty;
 
-  /// No description provided for @testChartLegend.
-  ///
-  /// In es, this message translates to:
-  /// **'Bandas esperadas'**
-  String get testChartLegend;
-
   /// No description provided for @testAtAge.
   ///
   /// In es, this message translates to:
@@ -5685,12 +5631,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'{value} {unit}'**
   String testResultLine(String unit, String value);
-
-  /// No description provided for @testDeleteConfirm.
-  ///
-  /// In es, this message translates to:
-  /// **'¿Eliminar este resultado?'**
-  String get testDeleteConfirm;
 
   /// No description provided for @testTypesTitle.
   ///
@@ -5926,12 +5866,6 @@ abstract class AppLocalizations {
   /// **'Normas'**
   String get healthMenuNorms;
 
-  /// No description provided for @meTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Mi perfil deportivo'**
-  String get meTitle;
-
   /// No description provided for @meSeasonStats.
   ///
   /// In es, this message translates to:
@@ -5967,12 +5901,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Tu cuenta aún no está vinculada a un jugador'**
   String get meNoPlayer;
-
-  /// No description provided for @myPlayersTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Mis jugadores'**
-  String get myPlayersTitle;
 
   /// No description provided for @myPlayersEmpty.
   ///
@@ -6249,18 +6177,6 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Motivo'**
   String get tenantReason;
-
-  /// No description provided for @tenantSuspendTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Suspender la academia'**
-  String get tenantSuspendTitle;
-
-  /// No description provided for @tenantWithdrawTitle.
-  ///
-  /// In es, this message translates to:
-  /// **'Retirar la academia'**
-  String get tenantWithdrawTitle;
 
   /// No description provided for @tenantWithdrawWarning.
   ///

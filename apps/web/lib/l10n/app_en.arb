@@ -6,7 +6,6 @@
   "signIn": "Sign in",
   "signInSubtitle": "Sign in with your academy account",
   "signOut": "Sign out",
-  "signedInAs": "Signed in as {name}",
   "landingEyebrow": "Built for basketball academies only",
   "landingHeadline": "Run your academy like a program, not a spreadsheet.",
   "landingSubheadline": "Rosters, eligibility, live match stats, training attendance and player development, in one place that works courtside, even without signal.",
@@ -79,7 +78,6 @@
   "navAppUsers": "Users",
   "navAppRequests": "Approvals",
   "navAppActivity": "Audit",
-  "placeholderModule": "{module}: coming soon",
   "profileTitle": "Profile",
   "language": "Language",
   "languageName_es": "Español",
@@ -112,7 +110,6 @@
   "@timesShownIn": {
     "placeholders": { "zone": { "type": "String" } }
   },
-  "profileLoadFailed": "We could not load your profile",
   "errorNetwork": "Cannot reach the server. Check your connection and try again.",
   "errorTimeout": "The server is taking too long to respond. Try again.",
   "errorUnauthorized": "Your session has expired. Please sign in again.",
@@ -430,7 +427,6 @@
     }
   },
   "financeBalanceNoSeasons": "No seasons yet",
-  "financeBalanceIncome": "Dues",
   "financeBalancePaid": "Collected",
   "financeBalanceOpen": "Still to collect",
   "financeBalanceWaived": "Waived",
@@ -1032,7 +1028,6 @@
   "scheduleTimeInvalid": "Use the HH:MM format",
   "scheduleValidFrom": "Valid from",
   "scheduleValidUntil": "Valid until",
-  "scheduleNoEnd": "No end date",
   "scheduleDatesInvalid": "The end date must not be before the start",
   "scheduleLine": "{day} {time} · {minutes} min",
   "@scheduleLine": {
@@ -1145,7 +1140,6 @@
   "planItemDeleteConfirm": "Remove this exercise?",
   "planDeleteConfirm": "Delete this plan?",
   "planAssign": "Assign",
-  "planWatchVideo": "Watch video",
   "assignTitle": "Assign plan",
   "assignTarget": "Assign to",
   "assignToTeam": "A team",
@@ -1255,7 +1249,6 @@
   "growthNeedOne": "Enter height, weight or both",
   "growthShowTable": "Show table",
   "growthHideTable": "Hide table",
-  "growthDeleteConfirm": "Delete this measurement?",
   "chartSummary": "Chart of {name}: {count} points, latest {value}",
   "@chartSummary": {
     "placeholders": {
@@ -1284,14 +1277,6 @@
   "bandAverage": "Average",
   "bandAboveAverage": "Above average",
   "bandExcellent": "Excellent",
-  "testExpectedBand": "Expected band: {band}",
-  "@testExpectedBand": {
-    "placeholders": {
-      "band": {
-        "type": "String"
-      }
-    }
-  },
   "testNoBand": "No norm for this age and gender",
   "testReferencePending": "Reference pending",
   "testSavedBand": "Result saved. Band: {band}",
@@ -1304,7 +1289,6 @@
   },
   "testSavedNoBand": "Result saved (no applicable norm)",
   "testEmpty": "No test results yet",
-  "testChartLegend": "Expected bands",
   "testAtAge": "age {age}",
   "@testAtAge": {
     "placeholders": {
@@ -1324,7 +1308,6 @@
       }
     }
   },
-  "testDeleteConfirm": "Delete this result?",
   "testTypesTitle": "Test types",
   "testTypeNew": "New custom test",
   "testTypeCode": "Code",
@@ -1405,14 +1388,12 @@
   "normAllTests": "All tests",
   "healthMenuTests": "Test types",
   "healthMenuNorms": "Norms",
-  "meTitle": "My sports profile",
   "meSeasonStats": "Season statistics",
   "meUpcoming": "Upcoming training",
   "meNoUpcoming": "No upcoming training",
   "meTabTraining": "Training",
   "meTabPlans": "Plans",
   "meNoPlayer": "Your account is not linked to a player yet",
-  "myPlayersTitle": "My players",
   "myPlayersEmpty": "You have no linked players",
   "profileAccount": "Account and security",
   "profileAccountHint": "Password, two-step verification and sessions. Opens in a new tab.",
@@ -1459,8 +1440,6 @@
   "tenantWithdraw": "Withdraw",
   "tenantReactivate": "Reactivate",
   "tenantReason": "Reason",
-  "tenantSuspendTitle": "Suspend the academy",
-  "tenantWithdrawTitle": "Withdraw the academy",
   "tenantWithdrawWarning": "Withdrawing an academy starts its data retention period.",
   "tenantUpdated": "Status updated",
   "tenantCreatedOn": "Created {date}",

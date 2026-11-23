@@ -9,14 +9,6 @@
   "signIn": "Iniciar sesión",
   "signInSubtitle": "Accede con tu cuenta de la academia",
   "signOut": "Cerrar sesión",
-  "signedInAs": "Sesión iniciada como {name}",
-  "@signedInAs": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "landingEyebrow": "Pensado solo para academias de baloncesto",
   "landingHeadline": "Dirige tu academia como un programa, no como una hoja de cálculo.",
   "landingSubheadline": "Plantillas, elegibilidad, estadísticas en vivo, asistencia a entrenamientos y desarrollo de jugadores, en un solo sitio que funciona a pie de pista, incluso sin cobertura.",
@@ -89,14 +81,6 @@
   "navAppUsers": "Usuarios",
   "navAppRequests": "Peticiones",
   "navAppActivity": "Auditoría",
-  "placeholderModule": "{module}: próximamente",
-  "@placeholderModule": {
-    "placeholders": {
-      "module": {
-        "type": "String"
-      }
-    }
-  },
   "profileTitle": "Perfil",
   "language": "Idioma",
   "languageName_es": "Español",
@@ -129,7 +113,6 @@
   "@timesShownIn": {
     "placeholders": { "zone": { "type": "String" } }
   },
-  "profileLoadFailed": "No hemos podido cargar tu perfil",
   "errorNetwork": "No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo.",
   "errorTimeout": "El servidor tarda demasiado en responder. Inténtalo de nuevo.",
   "errorUnauthorized": "Tu sesión ha caducado. Inicia sesión de nuevo.",
@@ -464,7 +447,6 @@
     }
   },
   "financeBalanceNoSeasons": "Aún no hay temporadas",
-  "financeBalanceIncome": "Cuotas",
   "financeBalancePaid": "Cobrado",
   "financeBalanceOpen": "Pendiente de cobro",
   "financeBalanceWaived": "Condonado",
@@ -1395,7 +1377,6 @@
   "scheduleTimeInvalid": "Usa el formato HH:MM",
   "scheduleValidFrom": "Válido desde",
   "scheduleValidUntil": "Válido hasta",
-  "scheduleNoEnd": "Sin fecha de fin",
   "scheduleDatesInvalid": "La fecha final debe ser posterior a la inicial",
   "scheduleLine": "{day} {time} · {minutes} min",
   "@scheduleLine": {
@@ -1508,7 +1489,6 @@
   "planItemDeleteConfirm": "¿Quitar este ejercicio?",
   "planDeleteConfirm": "¿Eliminar este plan?",
   "planAssign": "Asignar",
-  "planWatchVideo": "Ver vídeo",
   "assignTitle": "Asignar plan",
   "assignTarget": "Destinatario",
   "assignToTeam": "Un equipo",
@@ -1618,7 +1598,6 @@
   "growthNeedOne": "Indica altura, peso o ambos",
   "growthShowTable": "Ver tabla",
   "growthHideTable": "Ocultar tabla",
-  "growthDeleteConfirm": "¿Eliminar esta medida?",
   "chartSummary": "Gráfico de {name}: {count} medidas, la última {value}",
   "@chartSummary": {
     "placeholders": {
@@ -1647,14 +1626,6 @@
   "bandAverage": "Medio",
   "bandAboveAverage": "Sobre la media",
   "bandExcellent": "Excelente",
-  "testExpectedBand": "Banda esperada: {band}",
-  "@testExpectedBand": {
-    "placeholders": {
-      "band": {
-        "type": "String"
-      }
-    }
-  },
   "testNoBand": "Sin norma para esta edad y género",
   "testReferencePending": "Referencia pendiente",
   "testSavedBand": "Resultado guardado. Banda: {band}",
@@ -1667,7 +1638,6 @@
   },
   "testSavedNoBand": "Resultado guardado (sin norma aplicable)",
   "testEmpty": "Sin resultados de pruebas",
-  "testChartLegend": "Bandas esperadas",
   "testAtAge": "{age} años",
   "@testAtAge": {
     "placeholders": {
@@ -1687,7 +1657,6 @@
       }
     }
   },
-  "testDeleteConfirm": "¿Eliminar este resultado?",
   "testTypesTitle": "Tipos de prueba",
   "testTypeNew": "Nueva prueba personalizada",
   "testTypeCode": "Código",
@@ -1768,14 +1737,12 @@
   "normAllTests": "Todas las pruebas",
   "healthMenuTests": "Tipos de prueba",
   "healthMenuNorms": "Normas",
-  "meTitle": "Mi perfil deportivo",
   "meSeasonStats": "Estadísticas de la temporada",
   "meUpcoming": "Próximos entrenamientos",
   "meNoUpcoming": "No hay entrenamientos próximos",
   "meTabTraining": "Entrenos",
   "meTabPlans": "Planes",
   "meNoPlayer": "Tu cuenta aún no está vinculada a un jugador",
-  "myPlayersTitle": "Mis jugadores",
   "myPlayersEmpty": "No tienes jugadores vinculados",
   "profileAccount": "Cuenta y seguridad",
   "profileAccountHint": "Contraseña, verificación en dos pasos y sesiones. Se abre en una pestaña nueva.",
@@ -1822,8 +1789,6 @@
   "tenantWithdraw": "Retirar",
   "tenantReactivate": "Reactivar",
   "tenantReason": "Motivo",
-  "tenantSuspendTitle": "Suspender la academia",
-  "tenantWithdrawTitle": "Retirar la academia",
   "tenantWithdrawWarning": "Al retirar una academia comienza el plazo de conservación de datos.",
   "tenantUpdated": "Estado actualizado",
   "tenantCreatedOn": "Creada el {date}",

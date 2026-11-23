@@ -6,7 +6,6 @@
   "signIn": "Masuk",
   "signInSubtitle": "Masuk dengan akun akademi Anda",
   "signOut": "Keluar",
-  "signedInAs": "Masuk sebagai {name}",
   "landingEyebrow": "Dibuat khusus untuk akademi basket",
   "landingHeadline": "Kelola akademimu seperti sebuah program, bukan lembar kerja.",
   "landingSubheadline": "Roster, kelayakan, statistik pertandingan langsung, kehadiran latihan, dan perkembangan pemain, dalam satu tempat yang bekerja di pinggir lapangan, bahkan tanpa sinyal.",
@@ -79,7 +78,6 @@
   "navAppUsers": "Pengguna",
   "navAppRequests": "Permintaan",
   "navAppActivity": "Audit",
-  "placeholderModule": "{module}: segera hadir",
   "profileTitle": "Profil",
   "language": "Bahasa",
   "languageName_es": "Español",
@@ -112,7 +110,6 @@
   "@timesShownIn": {
     "placeholders": { "zone": { "type": "String" } }
   },
-  "profileLoadFailed": "Kami tidak dapat memuat profil Anda",
   "errorNetwork": "Tidak dapat terhubung ke server. Periksa koneksi Anda lalu coba lagi.",
   "errorTimeout": "Server terlalu lama merespons. Coba lagi.",
   "errorUnauthorized": "Sesi Anda telah berakhir. Silakan masuk kembali.",
@@ -430,7 +427,6 @@
     }
   },
   "financeBalanceNoSeasons": "Belum ada musim",
-  "financeBalanceIncome": "Tagihan",
   "financeBalancePaid": "Terkumpul",
   "financeBalanceOpen": "Belum tertagih",
   "financeBalanceWaived": "Dibebaskan",
@@ -1032,7 +1028,6 @@
   "scheduleTimeInvalid": "Gunakan format HH:MM",
   "scheduleValidFrom": "Berlaku mulai",
   "scheduleValidUntil": "Berlaku sampai",
-  "scheduleNoEnd": "Tanpa tanggal akhir",
   "scheduleDatesInvalid": "Tanggal akhir tidak boleh sebelum tanggal mulai",
   "scheduleLine": "{day} {time} · {minutes} menit",
   "@scheduleLine": {
@@ -1145,7 +1140,6 @@
   "planItemDeleteConfirm": "Hapus latihan ini?",
   "planDeleteConfirm": "Hapus rencana ini?",
   "planAssign": "Tugaskan",
-  "planWatchVideo": "Tonton video",
   "assignTitle": "Tugaskan rencana",
   "assignTarget": "Ditugaskan ke",
   "assignToTeam": "Satu tim",
@@ -1255,7 +1249,6 @@
   "growthNeedOne": "Isi tinggi, berat atau keduanya",
   "growthShowTable": "Tampilkan tabel",
   "growthHideTable": "Sembunyikan tabel",
-  "growthDeleteConfirm": "Hapus pengukuran ini?",
   "chartSummary": "Grafik {name}: {count} data, terbaru {value}",
   "@chartSummary": {
     "placeholders": {
@@ -1284,14 +1277,6 @@
   "bandAverage": "Rata-rata",
   "bandAboveAverage": "Di atas rata-rata",
   "bandExcellent": "Sangat baik",
-  "testExpectedBand": "Pita yang diharapkan: {band}",
-  "@testExpectedBand": {
-    "placeholders": {
-      "band": {
-        "type": "String"
-      }
-    }
-  },
   "testNoBand": "Tidak ada norma untuk usia dan jenis kelamin ini",
   "testReferencePending": "Rujukan menyusul",
   "testSavedBand": "Hasil disimpan. Pita: {band}",
@@ -1304,7 +1289,6 @@
   },
   "testSavedNoBand": "Hasil disimpan (tanpa norma)",
   "testEmpty": "Belum ada hasil tes",
-  "testChartLegend": "Pita yang diharapkan",
   "testAtAge": "usia {age}",
   "@testAtAge": {
     "placeholders": {
@@ -1324,7 +1308,6 @@
       }
     }
   },
-  "testDeleteConfirm": "Hapus hasil ini?",
   "testTypesTitle": "Jenis tes",
   "testTypeNew": "Tes kustom baru",
   "testTypeCode": "Kode",
@@ -1405,14 +1388,12 @@
   "normAllTests": "Semua tes",
   "healthMenuTests": "Jenis tes",
   "healthMenuNorms": "Norma",
-  "meTitle": "Profil olahraga saya",
   "meSeasonStats": "Statistik musim",
   "meUpcoming": "Latihan mendatang",
   "meNoUpcoming": "Tidak ada latihan mendatang",
   "meTabTraining": "Latihan",
   "meTabPlans": "Rencana",
   "meNoPlayer": "Akun Anda belum terhubung ke pemain",
-  "myPlayersTitle": "Pemain saya",
   "myPlayersEmpty": "Anda belum memiliki pemain terhubung",
   "profileAccount": "Akun dan keamanan",
   "profileAccountHint": "Kata sandi, verifikasi dua langkah, dan sesi. Dibuka di tab baru.",
@@ -1459,8 +1440,6 @@
   "tenantWithdraw": "Tarik",
   "tenantReactivate": "Aktifkan kembali",
   "tenantReason": "Alasan",
-  "tenantSuspendTitle": "Tangguhkan akademi",
-  "tenantWithdrawTitle": "Tarik akademi",
   "tenantWithdrawWarning": "Menarik akademi memulai masa retensi data.",
   "tenantUpdated": "Status diperbarui",
   "tenantCreatedOn": "Dibuat {date}",

@@ -28,11 +28,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get signOut => 'Cerrar sesión';
 
   @override
-  String signedInAs(String name) {
-    return 'Sesión iniciada como $name';
-  }
-
-  @override
   String get landingEyebrow => 'Pensado solo para academias de baloncesto';
 
   @override
@@ -281,11 +276,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get navAppActivity => 'Auditoría';
 
   @override
-  String placeholderModule(String module) {
-    return '$module: próximamente';
-  }
-
-  @override
   String get profileTitle => 'Perfil';
 
   @override
@@ -369,9 +359,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String timesShownIn(String zone) {
     return 'Las horas se muestran en la zona horaria de la academia: $zone';
   }
-
-  @override
-  String get profileLoadFailed => 'No hemos podido cargar tu perfil';
 
   @override
   String get errorNetwork =>
@@ -1067,9 +1054,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get financeBalanceNoSeasons => 'Aún no hay temporadas';
-
-  @override
-  String get financeBalanceIncome => 'Cuotas';
 
   @override
   String get financeBalancePaid => 'Cobrado';
@@ -2667,9 +2651,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get scheduleValidUntil => 'Válido hasta';
 
   @override
-  String get scheduleNoEnd => 'Sin fecha de fin';
-
-  @override
   String get scheduleDatesInvalid =>
       'La fecha final debe ser posterior a la inicial';
 
@@ -2841,9 +2822,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get planAssign => 'Asignar';
-
-  @override
-  String get planWatchVideo => 'Ver vídeo';
 
   @override
   String get assignTitle => 'Asignar plan';
@@ -3042,9 +3020,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get growthHideTable => 'Ocultar tabla';
 
   @override
-  String get growthDeleteConfirm => '¿Eliminar esta medida?';
-
-  @override
   String chartSummary(int count, String name, String value) {
     return 'Gráfico de $name: $count medidas, la última $value';
   }
@@ -3093,11 +3068,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get bandExcellent => 'Excelente';
 
   @override
-  String testExpectedBand(String band) {
-    return 'Banda esperada: $band';
-  }
-
-  @override
   String get testNoBand => 'Sin norma para esta edad y género';
 
   @override
@@ -3115,9 +3085,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get testEmpty => 'Sin resultados de pruebas';
 
   @override
-  String get testChartLegend => 'Bandas esperadas';
-
-  @override
   String testAtAge(int age) {
     return '$age años';
   }
@@ -3126,9 +3093,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String testResultLine(String unit, String value) {
     return '$value $unit';
   }
-
-  @override
-  String get testDeleteConfirm => '¿Eliminar este resultado?';
 
   @override
   String get testTypesTitle => 'Tipos de prueba';
@@ -3260,9 +3224,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get healthMenuNorms => 'Normas';
 
   @override
-  String get meTitle => 'Mi perfil deportivo';
-
-  @override
   String get meSeasonStats => 'Estadísticas de la temporada';
 
   @override
@@ -3279,9 +3240,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get meNoPlayer => 'Tu cuenta aún no está vinculada a un jugador';
-
-  @override
-  String get myPlayersTitle => 'Mis jugadores';
 
   @override
   String get myPlayersEmpty => 'No tienes jugadores vinculados';
@@ -3422,12 +3380,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tenantReason => 'Motivo';
-
-  @override
-  String get tenantSuspendTitle => 'Suspender la academia';
-
-  @override
-  String get tenantWithdrawTitle => 'Retirar la academia';
 
   @override
   String get tenantWithdrawWarning =>

@@ -28,11 +28,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signOut => 'Sign out';
 
   @override
-  String signedInAs(String name) {
-    return 'Signed in as $name';
-  }
-
-  @override
   String get landingEyebrow => 'Built for basketball academies only';
 
   @override
@@ -279,11 +274,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navAppActivity => 'Audit';
 
   @override
-  String placeholderModule(String module) {
-    return '$module: coming soon';
-  }
-
-  @override
   String get profileTitle => 'Profile';
 
   @override
@@ -367,9 +357,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String timesShownIn(String zone) {
     return 'Times are shown in the academy\'s time zone: $zone';
   }
-
-  @override
-  String get profileLoadFailed => 'We could not load your profile';
 
   @override
   String get errorNetwork =>
@@ -1063,9 +1050,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get financeBalanceNoSeasons => 'No seasons yet';
-
-  @override
-  String get financeBalanceIncome => 'Dues';
 
   @override
   String get financeBalancePaid => 'Collected';
@@ -2654,9 +2638,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scheduleValidUntil => 'Valid until';
 
   @override
-  String get scheduleNoEnd => 'No end date';
-
-  @override
   String get scheduleDatesInvalid =>
       'The end date must not be before the start';
 
@@ -2825,9 +2806,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get planAssign => 'Assign';
-
-  @override
-  String get planWatchVideo => 'Watch video';
 
   @override
   String get assignTitle => 'Assign plan';
@@ -3027,9 +3005,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get growthHideTable => 'Hide table';
 
   @override
-  String get growthDeleteConfirm => 'Delete this measurement?';
-
-  @override
   String chartSummary(int count, String name, String value) {
     return 'Chart of $name: $count points, latest $value';
   }
@@ -3078,11 +3053,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bandExcellent => 'Excellent';
 
   @override
-  String testExpectedBand(String band) {
-    return 'Expected band: $band';
-  }
-
-  @override
   String get testNoBand => 'No norm for this age and gender';
 
   @override
@@ -3100,9 +3070,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get testEmpty => 'No test results yet';
 
   @override
-  String get testChartLegend => 'Expected bands';
-
-  @override
   String testAtAge(int age) {
     return 'age $age';
   }
@@ -3111,9 +3078,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String testResultLine(String unit, String value) {
     return '$value $unit';
   }
-
-  @override
-  String get testDeleteConfirm => 'Delete this result?';
 
   @override
   String get testTypesTitle => 'Test types';
@@ -3244,9 +3208,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get healthMenuNorms => 'Norms';
 
   @override
-  String get meTitle => 'My sports profile';
-
-  @override
   String get meSeasonStats => 'Season statistics';
 
   @override
@@ -3263,9 +3224,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get meNoPlayer => 'Your account is not linked to a player yet';
-
-  @override
-  String get myPlayersTitle => 'My players';
 
   @override
   String get myPlayersEmpty => 'You have no linked players';
@@ -3407,12 +3365,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantReason => 'Reason';
-
-  @override
-  String get tenantSuspendTitle => 'Suspend the academy';
-
-  @override
-  String get tenantWithdrawTitle => 'Withdraw the academy';
 
   @override
   String get tenantWithdrawWarning =>
