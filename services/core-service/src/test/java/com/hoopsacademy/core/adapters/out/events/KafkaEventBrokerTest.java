@@ -294,6 +294,26 @@ class KafkaEventBrokerTest {
     }
 
     @Test
+    void acknowledgementsThatArriveWithinTheTimeoutAreAwaited() {
+        MockProducer<String, String> producer = new MockProducer<>(false, null, new StringSerializer(),
+                new StringSerializer());
+        KafkaEventBroker broker = new KafkaEventBroker(() -> producer, Duration.ofSeconds(10), 3, registry);
+        var answers = java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
+        try {
+            // the broker answers a little after the batch went out, well within the timeout
+            answers.scheduleWithFixedDelay(producer::completeNext, 100, 5,
+                    java.util.concurrent.TimeUnit.MILLISECONDS);
+
+            broker.sendAll(List.of(new EventBroker.Message("core.team", "t:a", "{}"),
+                    new EventBroker.Message("core.team", "t:b", "{}")));
+        } finally {
+            answers.shutdownNow();
+        }
+
+        assertThat(producer.history()).hasSize(2);
+    }
+
+    @Test
     void anEmptyBatchSendsNothingAndCreatesNoProducer() {
         KafkaEventBroker broker = broker(3);
 
