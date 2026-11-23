@@ -73,13 +73,6 @@ public class TenancyProbeResource {
     }
 
     @GET
-    @Path("platform/probe/ping")
-    @Authenticated
-    public String platformPing() {
-        return "tenant-bound=" + tenantContext.tenantId().isPresent();
-    }
-
-    @GET
     @Path("internal/probe/ping")
     public String internalPing() {
         return "tenant-bound=" + tenantContext.tenantId().isPresent();
