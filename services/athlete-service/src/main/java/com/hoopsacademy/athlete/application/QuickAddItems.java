@@ -89,7 +89,7 @@ public class QuickAddItems {
     }
 
     private LocalDate dayOf(AuthzContext caller, TrainingSession session) {
-        return LocalDate.ofInstant(session.startsAt(), clock.zoneOf(caller.tenantId()));
+        return LocalDate.ofInstant(session.startsAt(), clock.zoneOf(caller));
     }
 
     /**

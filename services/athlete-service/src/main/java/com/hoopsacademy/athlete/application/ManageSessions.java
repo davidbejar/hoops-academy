@@ -64,8 +64,8 @@ public class ManageSessions {
                 return new PageResult<>(java.util.List.of(), calendar.page(), calendar.size(), 0);
             }
         }
-        ZoneId zone = clock.zoneOf(caller.tenantId());
-        LocalDate today = clock.today(caller.tenantId());
+        ZoneId zone = clock.zoneOf(caller);
+        LocalDate today = clock.now().atZone(zone).toLocalDate();
         LocalDate from = calendar.from().orElseGet(() -> calendar.to().map(t -> t.minusDays(MAX_RANGE_DAYS - 1L)).orElse(today));
         LocalDate to = calendar.to().orElseGet(() -> calendar.from().isPresent()
                 ? from.plusDays(MAX_RANGE_DAYS - 1L) : today.plusWeeks(DEFAULT_HORIZON_WEEKS));

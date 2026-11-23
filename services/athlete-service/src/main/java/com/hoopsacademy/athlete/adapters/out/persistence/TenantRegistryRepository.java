@@ -30,13 +30,8 @@ class TenantRegistryRepository implements TenantRegistry {
     @Override
     public void register(TenantId tenant, ZoneId zone) {
         execute("insert into athlete.tenant_registry (id, timezone) values (?::uuid, ?) "
-                + "on conflict (id) do update set timezone = excluded.timezone, updated_at = now()", tenant, zone);
-    }
-
-    @Override
-    public void registerIfAbsent(TenantId tenant, ZoneId zone) {
-        execute("insert into athlete.tenant_registry (id, timezone) values (?::uuid, ?) on conflict (id) do nothing",
-                tenant, zone);
+                + "on conflict (id) do update set timezone = excluded.timezone, updated_at = now() "
+                + "where athlete.tenant_registry.timezone is distinct from excluded.timezone", tenant, zone);
     }
 
     @Override

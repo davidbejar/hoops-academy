@@ -89,7 +89,7 @@ public class ManageAttendance {
 
     private List<AttendanceEntry> buildSheet(AuthzContext caller, TrainingSession session) {
         TeamRoster teamRoster = roster.teamRoster(caller.tenantId(), session.teamId());
-        LocalDate date = session.startsAt().atZone(clock.zoneOf(caller.tenantId())).toLocalDate();
+        LocalDate date = session.startsAt().atZone(clock.zoneOf(caller)).toLocalDate();
         List<Attendance> recorded = attendance.findBySession(session.id());
         List<PlayerId> players = teamRoster.playerIds();
         return AttendanceSheet.build(players, recorded, absences.covering(players, date), date);

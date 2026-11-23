@@ -62,7 +62,7 @@ public class ManageSchedules {
                 request.startTime(), request.durationMinutes(), request.location(), request.validFrom(),
                 request.validUntil());
         schedules.save(schedule);
-        materialise.forChangedSchedule(schedule);
+        materialise.forChangedSchedule(caller, schedule);
         return schedule;
     }
 
@@ -79,7 +79,7 @@ public class ManageSchedules {
                 Patches.apply(change.validUntil(), current.validUntil()));
         zones.remember(caller);
         schedules.save(changed);
-        materialise.forChangedSchedule(changed);
+        materialise.forChangedSchedule(caller, changed);
         return changed;
     }
 

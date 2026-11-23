@@ -36,7 +36,7 @@ public class PastSeasons {
     private boolean hasEnded(AuthzContext caller, TeamId team) {
         try {
             return roster.teamRoster(caller.tenantId(), team).seasonEnd()
-                    .filter(lastDay -> lastDay.isBefore(clock.today(caller.tenantId()))).isPresent();
+                    .filter(lastDay -> lastDay.isBefore(clock.today(caller))).isPresent();
         } catch (NotFoundException unknownTeam) {
             return false;
         }

@@ -96,7 +96,7 @@ public class ManageInjuries {
     public PlayerAvailability availability(AuthzContext caller, PlayerId player) {
         access.requireRead(caller, player, "Player");
         requirePlayer(caller, player);
-        return PlayerAvailability.of(player, injuries.openOf(player), clock.today(caller.tenantId()));
+        return PlayerAvailability.of(player, injuries.openOf(player), clock.today(caller));
     }
 
     private void requirePlayer(AuthzContext caller, PlayerId player) {

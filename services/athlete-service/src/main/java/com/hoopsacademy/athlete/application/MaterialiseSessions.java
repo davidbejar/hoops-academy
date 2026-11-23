@@ -8,7 +8,7 @@ import com.hoopsacademy.athlete.domain.SessionStatus;
 import com.hoopsacademy.athlete.domain.TrainingSchedule;
 import com.hoopsacademy.athlete.domain.TrainingSession;
 import com.hoopsacademy.common.tenancy.TenantContext;
-import com.hoopsacademy.common.tenancy.TenantId;
+import com.hoopsacademy.common.tenancy.AuthzContext;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
@@ -53,24 +53,21 @@ public class MaterialiseSessions {
     /** Adds the missing sessions of every active schedule of the bound tenant (the nightly job). @return how many were created */
     @Transactional
     public int forAllSchedules() {
-        return materialise(schedules.findActive(Optional.empty(), Optional.empty()), false);
+        List<TrainingSchedule> active = schedules.findActive(Optional.empty(), Optional.empty());
+        return active.isEmpty() ? 0 : materialise(active, clock.zoneOf(tenantContext.requireTenantId()), false);
     }
 
     /**
      * After a schedule was created or changed: adds missing sessions and brings the untouched future ones in line
-     * (moves/removes PLANNED sessions that nobody edited and that have no attendance). @return how many were created
+     * (moves/removes PLANNED sessions that nobody edited and that have no attendance), in the caller's tenant zone.
+     * @return how many were created
      */
     @Transactional
-    public int forChangedSchedule(TrainingSchedule schedule) {
-        return materialise(List.of(schedule), true);
+    public int forChangedSchedule(AuthzContext caller, TrainingSchedule schedule) {
+        return materialise(List.of(schedule), clock.zoneOf(caller), true);
     }
 
-    private int materialise(List<TrainingSchedule> active, boolean reconcile) {
-        if (active.isEmpty()) {
-            return 0;
-        }
-        TenantId tenant = tenantContext.requireTenantId();
-        ZoneId zone = clock.zoneOf(tenant);
+    private int materialise(List<TrainingSchedule> active, ZoneId zone, boolean reconcile) {
         Instant now = clock.now();
         LocalDate today = now.atZone(zone).toLocalDate();
         List<PlannedSlot> slots = SessionMaterialiser.slotsAhead(active, today, horizonWeeks, zone);
