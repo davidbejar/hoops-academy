@@ -442,6 +442,65 @@ WP123; then the docs pass WP125. Fixes and additions by the orchestrator at merg
     image, LINDDUN and the docs pass; Sonnet · high for the finance web; Sonnet · medium for the PDF buttons and the
     small fixes.
 
+## Plan (2026-11-23, ninth round)
+Decided in the interview of 2026-11-23 (decisions 104–113 below), after a read-only audit of the whole repository for
+duplication and inefficiencies (twelve reviewers, six verifiers: 173 findings, 119 confirmed, 49 confirmed with
+corrections, 5 already known, none refuted). The audit files are local working material, not committed (decision
+111); every brief names its finding IDs (`CORE-01`, `X-03`, …) and every handover ends with an ID-by-ID table, so the
+record is in the work packages. Same mechanics (`wp-round` skill; at most four building agents per wave). A wave is
+disjoint by area: the three Quarkus services first, each alone in its own module; then the three moves into
+`common-quarkus`, one per wave because each touches the library and the services (WP130, WP134, WP137); the web has one
+WP per wave (WP129, WP135, WP138); the chart and kind belong to WP136; the realm variable rename (WP139) touches
+compose, chart, properties and scripts and runs alone.
+
+| Wave | WP | Title | Model | Status |
+|---|---|---|---|---|
+| 1 | WP126 | Game: ingest reads the match once, `sync_receipt` dropped, feed cursor race, parked events unique | Opus · high | Running |
+| 1 | WP127 | Athlete: roster reads per request, tenant zone from the context, the 90 % domain gate, one test group | Opus · high | Running |
+| 1 | WP128 | Core: guardian-link N+1, outbox sends, one paged-query builder, dead code, test profiles and helpers | Opus · high | Running |
+| 1 | WP129 | Web: lists read every page (`fetchAll`, one `Pager`), live match stops polling, dead keys | Opus · high | Running |
+| 2 | WP130 | Roster replica pipeline once in `common-quarkus` (decoder, consumer, history store) | Opus · high | After wave 1 |
+| 2 | WP131 | Finance: test support once, one Postgres per test run, `applied_event` retention, small clean-ups | Opus · medium | After wave 1 |
+| 2 | WP132 | pdf-service: test helpers and contract cache, `tower` to dev, token leeway and Problem names aligned | Sonnet · medium | After wave 1 |
+| 2 | WP133 | CI and scripts: concurrency groups, gates run once, pins, composite actions, generator version | Sonnet · high | After wave 1 |
+| 3 | WP134 | Replica authorisation rule once in `common-quarkus`, under mutation testing | Opus · high | After wave 2 |
+| 3 | WP135 | Web: one home for dates, validators, export buttons, error messages, section states | Sonnet · high | After wave 2 |
+| 3 | WP136 | Chart: library chart for the service sub-charts; one source for the kind and cloud install pins | Opus · high | After wave 2 |
+| 4 | WP137 | Common plumbing: Problem exceptions, paging, language, clock, shared properties, poms, test support, vectors | Opus · high | After wave 3 |
+| 4 | WP138 | Web: the tests run against the demo mock; the separate test fakes go | Opus · high | After wave 3 |
+| 5 | WP139 | One name for the realm URL everywhere; one login helper for the scripts; database roles from one list | Opus · high | Last but one, alone |
+| 6 | WP140 | Docs pass | Opus · medium | Last alone |
+
+### Decisions of 2026-11-23, eighth interview (product owner)
+104. **Scope of the round → WP126–WP140**: everything the audit confirmed: the bugs and gaps found on the way, the hot
+    paths, build and CI time, and the duplication, including the large moves. Left alone because deliberate or already
+    tracked: the two transactions per finance request (FIN-01), a domain `Sheet` trait in pdf-service (PDF-01), the
+    `infra/` copies in the chart (DEP-04; ADR-0022, ADR-0038), the retention job per service (WP98), the passive ZAP
+    baseline in `ci.yml` (ADR-0045), ADR-0048's "no new SQL" (CORE-11).
+105. **Lists cut at the first page → WP129**: lists a screen needs whole (members, players, guardians, absences, fee
+    plans) load every page through one shared `fetchAll`; open-ended lists (audit, dues, feeds) use one shared `Pager`
+    widget in place of the four copies. No contract change. ADR-0061.
+106. **Roster replica pipeline → WP126, WP130**: game's `parked_event` gets its unique key now (WP126); decoder,
+    consumer (one retry and metric policy, one reason limit) and history store move into `common-quarkus` (WP130). The
+    retention job stays per service (WP98). ADR-0062 (amends ADR-0037).
+107. **Replica authorisation rule → WP134**: written once in `common-quarkus`, used by core, game and athlete, under
+    mutation testing once. ADR-0066 (amends ADR-0053, whose argument for per-service copies does not hold for the
+    tenant-isolation rule).
+108. **Web fake backends → WP138**: the widget tests run against the demo mock (seeded per test); the separate test
+    fakes are deleted feature by feature. ADR-0070 (amends ADR-0030).
+109. **`game.sync_receipt` → WP126**: dropped (port, adapter, call and table) in a new migration; nothing reads it.
+110. **Realm URL → WP139**: one variable for the realm URL and one for the admin base URL in every service, compose,
+    the chart, kind, Tilt, the scripts and `.env.example`, with working defaults; the stale `localhost:8180` goes. The
+    orchestrator updates the owner's `.env` at merge time. ADR-0071.
+111. **Audit files**: `audit/2026-11-23/` stays untracked while the round runs and is deleted at close-out after asking
+    the owner; this file and the handovers are the record.
+112. **Rules copied across languages (X-11) → WP131, WP132**: the Go and Rust services take the Java services' token
+    clock leeway, and pdf-service the Problem type names of `common.yaml`; each side adds a test that reads the value
+    from the contract or states the shared number.
+113. **Models**: Opus · high for the three services, the three moves into the library, the chart, the realm rename
+    and both web WPs that change behaviour or the test base; Opus · medium for finance and the docs pass; Sonnet · high
+    for CI and the web duplication; Sonnet · medium for pdf-service.
+
 ## Open
 
 ### Pending user actions
