@@ -129,6 +129,10 @@ void main() {
         ],
       ),
     ),
+    'pager': (
+      const Size(360, 120),
+      () => Pager(keyPrefix: 'p', page: 1, totalPages: 3, onPage: (_) {}),
+    ),
   };
 
   for (final MapEntry(key: name, value: (size, build)) in cases.entries) {
