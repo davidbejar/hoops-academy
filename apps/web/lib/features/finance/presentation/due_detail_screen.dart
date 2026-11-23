@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/date_field.dart';
 import '../../../core/ui/kit.dart';
@@ -202,7 +203,7 @@ class _PaymentTile extends ConsumerWidget {
               payment.voidedBy?.displayName ?? '',
               payment.voidedAt == null
                   ? ''
-                  : DateField.format(
+                  : isoDate(
                       ref.watch(tenantZoneProvider).wall(payment.voidedAt!),
                     ),
             ),
@@ -407,7 +408,7 @@ class _PayDueDialogState extends ConsumerState<PayDueDialog> {
               .read(duesProvider.notifier)
               .pay(
                 widget.due.id,
-                paidOn: fin.Date(_paidOn.year, _paidOn.month, _paidOn.day),
+                paidOn: toFinDate(_paidOn),
                 method: _method,
                 note: note.isEmpty ? null : note,
               ),

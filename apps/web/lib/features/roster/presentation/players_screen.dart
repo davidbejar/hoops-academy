@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
@@ -636,7 +637,7 @@ class _PlayerFormScreenState extends ConsumerState<PlayerFormScreen> {
       lastDate: DateTime.now(),
     );
     if (picked != null) {
-      setState(() => _birth = api.Date(picked.year, picked.month, picked.day));
+      setState(() => _birth = toApiDate(picked));
     }
   }
 

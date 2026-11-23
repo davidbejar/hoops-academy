@@ -1,9 +1,9 @@
 import 'package:built_collection/built_collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
-import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/export/server_csv_export.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/date_field.dart';
@@ -101,7 +101,7 @@ class _Filters extends ConsumerWidget {
           label: label,
           value: value?.toDateTime(),
           onChanged: (d) {
-            final date = fin.Date(d.year, d.month, d.day);
+            final date = toFinDate(d);
             isFrom ? notifier.filter(from: date) : notifier.filter(to: date);
           },
           onClear: () =>
@@ -185,7 +185,7 @@ class _ExpenseList extends ConsumerWidget {
             title: e.description,
             subtitle:
                 '${e.category.label(l)} · '
-                '${DateFormat.yMMMd(locale).format(e.spentOn.toDateTime())}',
+                '${displayDate(locale, e.spentOn.toDateTime())}',
             trailing: Text(
               money?.format(e.amountMinor) ?? '${e.amountMinor}',
               style: text.titleMedium,
@@ -287,7 +287,7 @@ class _ExpenseDialogState extends ConsumerState<ExpenseDialog> {
     super.dispose();
   }
 
-  fin.Date get _spentOn => fin.Date(_day.year, _day.month, _day.day);
+  fin.Date get _spentOn => toFinDate(_day);
 
   Future<bool> _submit(AppLocalizations l) {
     final notifier = ref.read(expensesProvider.notifier);

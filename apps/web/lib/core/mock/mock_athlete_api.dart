@@ -1,3 +1,4 @@
+import '../time/dates.dart';
 import '../time/tenant_zone.dart';
 import 'mock_authz.dart';
 import 'mock_core_api.dart';
@@ -62,9 +63,7 @@ class MockAthleteApi {
   String _id(String prefix) => '$prefix-${_seq++}';
   String get _stamp => _now().toUtc().toIso8601String();
   DateTime get _today => _zone.today(_now());
-  static String _date(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-  String _dayIn(int days) => _date(_today.add(Duration(days: days)));
+  String _dayIn(int days) => isoDate(_today.add(Duration(days: days)));
 
   // ------------------------------------------------------------------ seed
   void _seed() {
@@ -182,7 +181,7 @@ class MockAthleteApi {
       )) {
         final time = '${s['startTime']}'.split(':').map(int.parse).toList();
         _sessions.add({
-          'id': 'ses-${s['id']}-${_date(day)}',
+          'id': 'ses-${s['id']}-${isoDate(day)}',
           'teamId': s['teamId'],
           'scheduleId': s['id'],
           'startsAt': _zone
@@ -878,7 +877,7 @@ class MockAthleteApi {
             if ((team == null || s['teamId'] == team) &&
                 _az.canSeeTeam('${s['teamId']}') &&
                 _inRange(
-                  _date(_zone.wall(DateTime.parse('${s['startsAt']}'))),
+                  isoDate(_zone.wall(DateTime.parse('${s['startsAt']}'))),
                   from,
                   to,
                 ))
@@ -948,7 +947,7 @@ class MockAthleteApi {
       (to == null || day.compareTo(to) <= 0);
 
   Map<String, Object?> _sheet(Map<String, Object?> session) {
-    final day = _date(_zone.wall(DateTime.parse('${session['startsAt']}')));
+    final day = isoDate(_zone.wall(DateTime.parse('${session['startsAt']}')));
     final recorded = _attendance['${session['id']}'] ?? const {};
     return {
       'sessionId': session['id'],
@@ -1177,7 +1176,7 @@ class MockAthleteApi {
         'id': _id('plan'),
         'name':
             current?['name'] ??
-            'Sesión ${_date(_zone.wall(DateTime.parse('${s['startsAt']}')))}',
+            'Sesión ${isoDate(_zone.wall(DateTime.parse('${s['startsAt']}')))}',
         'description': current?['description'],
         'template': false,
         'sourceTemplateId': current?['id'],

@@ -2,12 +2,12 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
+import '../../../core/time/dates.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/date_field.dart';
 import '../../../core/ui/form_dialog.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../tenant/application/tenant_providers.dart';
-import '../../training/presentation/training_labels.dart' show two;
 
 /// What the dialog hands to the caller: the fields of `UpdateMatchRequest`. A null [venue] means "emptied" (the
 /// repository then sends it in `clear`); the periods are null when they must stay as they are.
@@ -135,7 +135,7 @@ class _MatchEditDialogState extends ConsumerState<MatchEditDialog> {
               labelText: l.matchTime,
               suffixIcon: const Icon(Icons.schedule),
             ),
-            child: Text('${two(_time.hour)}:${two(_time.minute)}'),
+            child: Text('${twoDigits(_time.hour)}:${twoDigits(_time.minute)}'),
           ),
         ),
         formGap,

@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
@@ -12,7 +13,6 @@ import '../../roster/application/roster_providers.dart';
 import '../application/training_providers.dart';
 import 'assignment_widgets.dart';
 import 'player_picker.dart';
-import 'training_labels.dart';
 
 /// Staff overview of assigned plans with progress counts.
 class AssignmentsScreen extends ConsumerWidget {

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 
+import '../../../core/time/dates.dart';
 import '../../../core/mock/mock_core_api.dart';
 import '../../../core/time/tenant_zone.dart';
 import '../../../core/mock/mock_query.dart';
@@ -101,7 +102,7 @@ class MockFinanceApi {
         } else if (i < paidCount) {
           _addPayment(
             due,
-            paidOn: _day(period.start.year, period.start.month, 3 + i % 4),
+            paidOn: isoDateOf(period.start.year, period.start.month, 3 + i % 4),
             method: ['CASH', 'BANK_TRANSFER', 'CARD'][i % 3],
           );
         }
@@ -224,7 +225,7 @@ class MockFinanceApi {
     if (period.kind == PeriodKind.season) {
       return (start: seasonStart, end: seasonEnd);
     }
-    String iso(DateTime d) => _day(d.year, d.month, d.day);
+    String iso(DateTime d) => isoDateOf(d.year, d.month, d.day);
     final start = iso(period.start);
     final end = iso(period.end);
     return (
@@ -247,14 +248,11 @@ class MockFinanceApi {
     );
   }
 
-  static String _day(int y, int m, int d) =>
-      '${y.toString().padLeft(4, '0')}-${m.toString().padLeft(2, '0')}-${d.toString().padLeft(2, '0')}';
-
   String _stamp() => _now().toUtc().toIso8601String();
 
   String _today() {
     final d = TenantZone.of(_zone).today(_now());
-    return _day(d.year, d.month, d.day);
+    return isoDateOf(d.year, d.month, d.day);
   }
 
   void _addPayment(

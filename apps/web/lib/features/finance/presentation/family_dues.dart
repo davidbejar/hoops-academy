@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
-import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/finance_providers.dart';
@@ -68,7 +68,7 @@ class _FamilyDueRow extends StatelessWidget {
               method != null)
             Text(
               l.financeFamilyPaidOn(
-                DateFormat.yMMMd(locale).format(paidOn.toDateTime()),
+                displayDate(locale, paidOn.toDateTime()),
                 method.label(l),
               ),
               style: text.bodySmall,

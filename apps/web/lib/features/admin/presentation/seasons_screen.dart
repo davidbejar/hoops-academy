@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/async_body.dart';
@@ -111,7 +112,7 @@ class _SeasonDialogState extends ConsumerState<SeasonDialog> {
     );
     if (picked == null) return;
     setState(() {
-      final d = api.Date(picked.year, picked.month, picked.day);
+      final d = toApiDate(picked);
       start ? _start = d : _end = d;
     });
   }

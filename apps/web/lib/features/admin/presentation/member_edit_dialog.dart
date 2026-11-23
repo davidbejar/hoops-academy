@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/date_field.dart';
@@ -108,8 +109,7 @@ class _MemberEditDialogState extends ConsumerState<MemberEditDialog> {
           label: l.playerBirthDate,
           value: _birth?.toDateTime(),
           lastDate: DateTime.now(),
-          onChanged: (d) =>
-              setState(() => _birth = api.Date(d.year, d.month, d.day)),
+          onChanged: (d) => setState(() => _birth = toApiDate(d)),
           onClear: () => setState(() => _birth = null),
         ),
         formGap,

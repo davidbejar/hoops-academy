@@ -3,7 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/core/time/tenant_zone.dart';
-import 'package:hoops_app/core/ui/date_field.dart';
+import 'package:hoops_app/core/time/dates.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import 'core_fixtures.dart';
@@ -43,9 +43,8 @@ FakeCore financeCore({Map<String, List<api.TeamStaffMember>>? staff}) =>
 
 /// Today in the academy's zone as `YYYY-MM-DD`, from the same clock the app
 /// uses (never a fixed day or the device's zone).
-String academyToday([DateTime? now]) => DateField.format(
-  TenantZone.of(financeTestZone).today(now ?? DateTime.now()),
-);
+String academyToday([DateTime? now]) =>
+    isoDate(TenantZone.of(financeTestZone).today(now ?? DateTime.now()));
 
 /// Pumps the app as an ADMIN of the academy and opens [location].
 Future<Harness> pumpFinance(

@@ -1,8 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/errors/app_error.dart';
 import '../../../core/ui/actions.dart';
@@ -124,8 +124,7 @@ class _RequestCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final requested = DateFormat.yMMMd(locale)
-        .format(request.requestedAt.toLocal());
+    final requested = displayDate(locale, request.requestedAt.toLocal());
     final who = [
       if ((request.name ?? '').isNotEmpty) request.name!,
       request.email,

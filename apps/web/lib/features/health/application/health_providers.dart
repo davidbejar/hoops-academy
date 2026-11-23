@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/api/clear_list.dart';
-import '../../training/application/training_providers.dart' show toAthDate;
 import '../data/fitness_repository.dart';
 import '../data/health_repository.dart';
 

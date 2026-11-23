@@ -7,6 +7,7 @@ import '../../../core/errors/app_error.dart';
 import '../../../core/ui/actions.dart';
 import '../../../core/ui/app_error_view.dart';
 import '../../../core/ui/async_body.dart';
+import '../../../core/time/dates.dart';
 import '../../../core/ui/chart_tokens.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
@@ -14,11 +15,6 @@ import '../application/platform_providers.dart';
 import 'platform_screen.dart' show TenantStatusChip;
 import 'tenant_admins_section.dart';
 import 'usage_trend.dart';
-
-String _date(DateTime d) {
-  final t = d.toLocal();
-  return '${t.year}-${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')}';
-}
 
 /// Tenant detail: lifecycle actions and the usage dashboard.
 class TenantDetailScreen extends ConsumerWidget {
@@ -95,13 +91,9 @@ class _Header extends ConsumerWidget {
         spacing: HoopsSpace.xs,
         children: [
           Text('${t.timezone} · ${t.defaultLocale.name}'),
-          Text(l.tenantCreatedOn(_date(t.createdAt))),
+          Text(l.tenantCreatedOn(isoDate(t.createdAt.toLocal()))),
           if (t.retainUntil != null)
-            Text(
-              l.tenantRetainUntil(
-                '${t.retainUntil!.year}-${t.retainUntil!.month.toString().padLeft(2, '0')}-${t.retainUntil!.day.toString().padLeft(2, '0')}',
-              ),
-            ),
+            Text(l.tenantRetainUntil(formatDate(t.retainUntil!))),
           const SizedBox(height: HoopsSpace.sm),
           Wrap(
             spacing: HoopsSpace.sm,
@@ -245,7 +237,7 @@ class _ServiceCard extends StatelessWidget {
       title: _serviceLabel(l, report.service.name),
       subtitle: report.lastActivityAt == null
           ? null
-          : l.usageLastActivity(_date(report.lastActivityAt!)),
+          : l.usageLastActivity(isoDate(report.lastActivityAt!.toLocal())),
       child: Column(
         spacing: HoopsSpace.gap,
         children: [

@@ -3,19 +3,17 @@
 /// exports' `Content-Disposition`).
 library;
 
+import '../time/dates.dart' show compactDate;
+
 String exportFileName({
   required String slug,
   required String what,
   required DateTime date,
   required String extension,
 }) {
-  final day =
-      '${date.year.toString().padLeft(4, '0')}'
-      '${date.month.toString().padLeft(2, '0')}'
-      '${date.day.toString().padLeft(2, '0')}';
   final academy = asciiSlug(slug);
   return 'hoops-${academy.isEmpty ? 'academy' : academy}-${asciiSlug(what)}'
-      '-$day.$extension';
+      '-${compactDate(date)}.$extension';
 }
 
 /// Lower-case `a-z0-9` words joined by single dashes; Latin accents fold to

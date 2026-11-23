@@ -2,8 +2,8 @@ import 'dart:typed_data';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/export/server_csv_export.dart';
 import '../../../core/ui/async_body.dart';
@@ -179,8 +179,8 @@ class AuditLogView extends ConsumerWidget {
   }
 
   static String _range(AuditQuery q, String locale) {
-    final f = DateFormat.yMMMd(locale);
-    return '${f.format(q.fromDay!)} – ${f.format(q.toDay!)}';
+    return '${displayDate(locale, q.fromDay!)} – '
+        '${displayDate(locale, q.toDay!)}';
   }
 
   static Future<void> _pickRange(
@@ -215,7 +215,7 @@ class AuditEntryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final when = DateFormat.yMMMd(locale).add_Hm().format(entry.at.toLocal());
+    final when = displayDateTime(locale, entry.at.toLocal());
     final actor = entry.actorName ?? entry.actorKind.label(l);
     final target = entry.targetName ?? entry.targetType.label(l);
     return ListRow(

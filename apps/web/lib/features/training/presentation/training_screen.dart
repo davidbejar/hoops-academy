@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/session/capabilities.dart';
@@ -562,7 +563,7 @@ class _SessionDialogState extends ConsumerState<SessionDialog> {
               labelText: l.sessionStartTime,
               suffixIcon: const Icon(Icons.schedule),
             ),
-            child: Text('${two(_time.hour)}:${two(_time.minute)}'),
+            child: Text('${twoDigits(_time.hour)}:${twoDigits(_time.minute)}'),
           ),
         ),
         formGap,

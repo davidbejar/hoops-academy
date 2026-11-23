@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
-import 'package:intl/intl.dart';
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/ui/chart_tokens.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
@@ -103,7 +103,7 @@ class _Figures extends ConsumerWidget {
     final money = ref.watch(moneyFormatProvider);
     final locale = localeOf(context);
     String show(int minor) => money?.format(minor) ?? '$minor';
-    final day = DateFormat.yMMMd(locale);
+    String day(DateTime d) => displayDate(locale, d);
     final net = balance.netMinor;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -111,8 +111,8 @@ class _Figures extends ConsumerWidget {
       children: [
         Text(
           l.financeBalanceRange(
-            day.format(balance.from.toDateTime()),
-            day.format(balance.to.toDateTime()),
+            day(balance.from.toDateTime()),
+            day(balance.to.toDateTime()),
           ),
           key: const Key('balance-range'),
           style: Theme.of(context).textTheme.bodyMedium,

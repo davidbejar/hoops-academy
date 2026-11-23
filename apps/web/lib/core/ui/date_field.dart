@@ -1,5 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../time/dates.dart';
+
 /// Read-only field that opens the date picker. [value] null shows [hint].
 class DateField extends StatelessWidget {
   const DateField({
@@ -21,9 +23,6 @@ class DateField extends StatelessWidget {
   final VoidCallback? onClear;
   final String? errorText;
 
-  static String format(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
   @override
   Widget build(BuildContext context) => InkWell(
     onTap: () async {
@@ -44,7 +43,7 @@ class DateField extends StatelessWidget {
             ? IconButton(icon: const Icon(Icons.clear), onPressed: onClear)
             : const Icon(Icons.calendar_today_outlined),
       ),
-      child: Text(value == null ? '' : format(value!)),
+      child: Text(value == null ? '' : isoDate(value!)),
     ),
   );
 }

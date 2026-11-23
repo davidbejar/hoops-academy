@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
@@ -10,7 +11,6 @@ import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/training_providers.dart';
 import 'player_picker.dart';
-import 'training_labels.dart';
 
 /// Planned absences: staff (any player), PARENT (linked), PLAYER (self).
 class AbsencesScreen extends ConsumerWidget {

@@ -2,8 +2,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
-import 'package:intl/intl.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/session/capabilities.dart';
 import '../../../core/ui/actions.dart';
@@ -153,9 +153,10 @@ class MatchTile extends ConsumerWidget {
     final l = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
     final locale = Localizations.localeOf(context).toLanguageTag();
-    final when = DateFormat.yMMMd(locale)
-        .add_Hm()
-        .format(ref.watch(tenantZoneProvider).wall(match.scheduledAt));
+    final when = displayDateTime(
+      locale,
+      ref.watch(tenantZoneProvider).wall(match.scheduledAt),
+    );
     final played =
         match.status == gen.MatchStatus.LIVE ||
         match.status == gen.MatchStatus.FINISHED;

@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/api/clear_list.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/session/capabilities.dart';
@@ -10,8 +11,6 @@ import '../../../core/ui/date_field.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../../training/presentation/player_picker.dart' show playerNameProvider;
-import '../../training/presentation/training_labels.dart' show fullDate;
-import '../../training/application/training_providers.dart' show toAthDate;
 import '../application/health_providers.dart';
 import '../../roster/presentation/season_bar.dart';
 import 'charts.dart';

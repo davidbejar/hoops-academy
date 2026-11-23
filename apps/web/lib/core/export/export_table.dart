@@ -5,6 +5,8 @@
 /// plain unit tests.
 library;
 
+import '../time/dates.dart' show twoDigits;
+
 /// One cell. The type decides how a writer shows it: text is guarded against
 /// spreadsheet formulas, numbers are written as numbers, dates and times are
 /// typed in XLSX and ISO text in CSV.
@@ -53,11 +55,6 @@ class ExportTable {
   final List<List<ExportCell>> rows;
 }
 
-/// `yyyy-MM-dd`.
-String isoDate(DateTime d) =>
-    '${d.year.toString().padLeft(4, '0')}-${_two(d.month)}-${_two(d.day)}';
-
 /// `HH:mm`.
-String isoTime(int hour, int minute) => '${_two(hour)}:${_two(minute)}';
-
-String _two(int n) => n.toString().padLeft(2, '0');
+String isoTime(int hour, int minute) =>
+    '${twoDigits(hour)}:${twoDigits(minute)}';

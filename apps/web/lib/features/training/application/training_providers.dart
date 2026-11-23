@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/time/dates.dart';
 import '../../tenant/application/tenant_providers.dart';
 
 import '../../../core/api/api.dart' as api;
@@ -33,8 +34,6 @@ final plansRepositoryProvider = Provider<PlansRepository>(
 final uiLanguageProvider = Provider<String>(
   (ref) => ref.watch(effectiveLocaleProvider).languageCode,
 );
-
-ath.Date toAthDate(DateTime d) => ath.Date(d.year, d.month, d.day);
 
 /// Team name for chips; null while unknown (parents may not read teams).
 final teamNamesProvider = Provider<Map<String, String>>((ref) {

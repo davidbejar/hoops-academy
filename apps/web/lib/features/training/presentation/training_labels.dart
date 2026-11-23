@@ -1,3 +1,4 @@
+import '../../../core/time/dates.dart';
 import '../../../core/time/tenant_zone.dart';
 
 import 'package:material_ui/material_ui.dart';
@@ -89,19 +90,11 @@ const completionChoices = [
   ath.CompletionStatus.NOT_DONE,
 ];
 
-String two(int n) => n.toString().padLeft(2, '0');
-
 /// `HH:mm` of the instant [d] in the academy [zone].
 String formatTime(DateTime d, TenantZone zone) {
   final t = zone.wall(d);
-  return '${two(t.hour)}:${two(t.minute)}';
+  return '${twoDigits(t.hour)}:${twoDigits(t.minute)}';
 }
-
-/// `dd/MM`.
-String shortDate(DateTime d) => '${two(d.day)}/${two(d.month)}';
-
-/// `dd/MM/yyyy` from a contract date.
-String fullDate(ath.Date d) => '${two(d.day)}/${two(d.month)}/${d.year}';
 
 /// "10 min · 3 × 10": the facts of an exercise or a plan item; null when it
 /// has none.

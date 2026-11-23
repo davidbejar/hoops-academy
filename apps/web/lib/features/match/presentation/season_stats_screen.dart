@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 import 'package:intl/intl.dart';
 
+import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/export/export_menu.dart';
 import '../../../core/export/export_runner.dart';
@@ -160,8 +161,7 @@ class _StatsBody extends ConsumerWidget {
                     ListRow(
                       key: Key('stats-match-${m.matchId}'),
                       title: l.matchVs(m.opponentName),
-                      subtitle: DateFormat.yMMMd(locale)
-                          .format(zone.wall(m.scheduledAt)),
+                      subtitle: displayDate(locale, zone.wall(m.scheduledAt)),
                       trailing: Column(
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.end,

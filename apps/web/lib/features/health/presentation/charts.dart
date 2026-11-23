@@ -7,7 +7,7 @@ import '../../../core/design/tokens.dart';
 import '../../../core/api/athlete_api.dart' as ath;
 import '../../../core/ui/chart_card.dart';
 import '../../../core/ui/chart_tokens.dart';
-import '../../../core/ui/labels.dart' show formatAthDate;
+import '../../../core/time/dates.dart' show chartDate;
 import '../../../l10n/gen/app_localizations.dart';
 import 'health_labels.dart';
 
@@ -42,9 +42,6 @@ DateTime _fromDays(double v) => DateTime.fromMillisecondsSinceEpoch(
 
 String _fmt(double v) =>
     v == v.roundToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
-
-String _shortDate(DateTime d) =>
-    '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${(d.year % 100).toString().padLeft(2, '0')}';
 
 /// Shared line-chart body: thin 2 px line, >= 8 px markers with a 2 px
 /// surface ring, recessive grid, ink-coloured axis text.
@@ -114,7 +111,7 @@ class _Line extends StatelessWidget {
                   ? const SizedBox.shrink()
                   : SideTitleWidget(
                       meta: meta,
-                      child: Text(_shortDate(_fromDays(v)), style: style),
+                      child: Text(chartDate(_fromDays(v)), style: style),
                     ),
             ),
           ),
@@ -125,7 +122,7 @@ class _Line extends StatelessWidget {
             getTooltipItems: (spots) => [
               for (final s in spots)
                 LineTooltipItem(
-                  '${_shortDate(points[s.spotIndex].at)}\n${_fmt(s.y)}',
+                  '${chartDate(points[s.spotIndex].at)}\n${_fmt(s.y)}',
                   TextStyle(color: palette.ink, fontSize: _ChartSize.labelText),
                 ),
             ],
@@ -205,7 +202,7 @@ class _GrowthChartState extends State<GrowthChart> {
                 for (final pt in pts.reversed)
                   DataRow(
                     cells: [
-                      DataCell(Text(_shortDate(pt.at))),
+                      DataCell(Text(chartDate(pt.at))),
                       DataCell(Text(_fmt(pt.value))),
                     ],
                   ),
@@ -339,5 +336,3 @@ List<ChartPoint> resultPoints(Iterable<ath.PhysicalTestResult> list) => [
       pending: r.referencePending,
     ),
 ];
-
-String athDateText(ath.Date d) => formatAthDate(d);
