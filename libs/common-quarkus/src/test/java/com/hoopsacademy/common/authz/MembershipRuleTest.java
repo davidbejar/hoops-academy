@@ -100,6 +100,9 @@ class MembershipRuleTest extends MembershipRuleContract {
         assertThat(new MembershipReads.TenantState(TenantStatus.ACTIVE, zone).active()).isTrue();
         assertThat(new MembershipReads.TenantState(TenantStatus.SUSPENDED, zone).active()).isFalse();
         assertThat(new MembershipReads.TenantState(TenantStatus.WITHDRAWN, zone).active()).isFalse();
+        assertThatThrownBy(() -> new MembershipReads.TenantState(null, zone)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new MembershipReads.TenantState(TenantStatus.ACTIVE, null))
+                .isInstanceOf(NullPointerException.class);
     }
 
     /** The reads of a store holding the world, recording which ones the rule makes. */
