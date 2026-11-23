@@ -21,14 +21,13 @@ Headless by default (--headed opens a window). CI: HOOPS_E2E_ARTIFACT_DIR=<dir> 
   HOOPS_E2E_PASSWORD=<temporary> HOOPS_E2E_NEW_PASSWORD=<new> python3 -I ... --user <new login> --set-new-password
 """
 import argparse
-import json
 import os
 import socket
 import subprocess
 import sys
-import time
-import urllib.error
-import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # python3 -I does not add the script's folder
+from webdriver import WebDriver, driver_up, wait_for  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 SIGN_IN_LABELS = ("Iniciar sesión", "Sign in", "Masuk")
@@ -43,62 +42,6 @@ def dev_password():
             if line.startswith("DEV_USER_PASSWORD="):
                 return line.split("=", 1)[1].strip()
     sys.exit("set HOOPS_E2E_PASSWORD or DEV_USER_PASSWORD in .env")
-
-
-class WebDriver:
-    def __init__(self, port, headed):
-        self.base = f"http://127.0.0.1:{port}"
-        args = ["--window-size=390,844", "--no-first-run", "--lang=es"]
-        if not headed:
-            args += ["--headless=new", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
-        chrome_options = {"args": args}
-        if os.environ.get("CHROME"):  # binary to drive (CI: the pinned Chrome for Testing); default: chromedriver's lookup
-            chrome_options["binary"] = os.environ["CHROME"]
-        caps = {"capabilities": {"alwaysMatch": {"browserName": "chrome", "goog:chromeOptions": chrome_options}}}
-        self.session = self._call("POST", "/session", caps)["sessionId"]
-
-    def _call(self, method, path, body=None):
-        data = json.dumps(body).encode() if body is not None else None
-        req = urllib.request.Request(self.base + path, data=data, method=method,
-                                     headers={"Content-Type": "application/json"})
-        try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                return json.load(resp)["value"]
-        except urllib.error.HTTPError as err:
-            raise RuntimeError(f"webdriver {method} {path}: {err.read().decode()[:300]}") from None
-
-    def cmd(self, method, path, body=None):
-        return self._call(method, f"/session/{self.session}{path}", body)
-
-    def get(self, url):
-        self.cmd("POST", "/url", {"url": url})
-
-    def url(self):
-        return self.cmd("GET", "/url")
-
-    def js(self, script, *args):
-        return self.cmd("POST", "/execute/sync", {"script": script, "args": list(args)})
-
-    def save_screenshot(self, path):
-        import base64
-        with open(path, "wb") as out:
-            out.write(base64.b64decode(self.cmd("GET", "/screenshot")))
-
-    def quit(self):
-        try:
-            self._call("DELETE", f"/session/{self.session}")
-        except Exception:  # noqa: BLE001 - best effort
-            pass
-
-
-def wait_for(what, predicate, timeout, interval=1.0):
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        value = predicate()
-        if value:
-            return value
-        time.sleep(interval)
-    raise TimeoutError(what)
 
 
 CLICK_SIGN_IN = """
@@ -191,7 +134,7 @@ def main():
                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     wd = None
     try:
-        wait_for("chromedriver", lambda: _up(port), 15, 0.3)
+        wait_for("chromedriver", lambda: driver_up(port), 15, 0.3)
         wd = WebDriver(port, opts.headed)
 
         print(f"1/5 open {opts.app} and tap sign-in (boot timeout {opts.boot_timeout}s)")
@@ -298,14 +241,6 @@ def _save_evidence(wd):
             f.write(wd.url().split("?")[0] + "\n")
     except Exception as err:  # noqa: BLE001 - evidence is best effort
         print(f"    (no evidence saved: {err})")
-
-
-def _up(port):
-    try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/status", timeout=1) as r:
-            return json.load(r)["value"]["ready"]
-    except Exception:  # noqa: BLE001
-        return False
 
 
 if __name__ == "__main__":

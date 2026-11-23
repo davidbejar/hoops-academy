@@ -15,17 +15,16 @@ Usage: python3 -I tool/offline_cold_start.py --dir build/offline-check [--port 5
 Needs chromedriver matching Chrome's major version on PATH (or CHROMEDRIVER; CHROME = Chrome binary).
 """
 import argparse
-import functools
-import http.server
-import json
 import os
 import socket
 import subprocess
 import sys
-import threading
 import time
 import urllib.error
 import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # python3 -I does not add the script's folder
+from webdriver import WebDriver, click, driver_up, has, serve, texts, wait_for  # noqa: E402,F401
 
 LIVE_MATCH = "0190b6a0-0000-7000-8000-00000000c001"  # MockGameApi.liveMatchId
 SIGN_IN = ("Iniciar sesión", "Sign in", "Masuk")
@@ -33,24 +32,6 @@ SIGN_IN = ("Iniciar sesión", "Sign in", "Masuk")
 PICKER = ("Cambiar de contexto", "Cambiar de academia")
 OFFLINE_BANNER = ("sin conexión", "offline", "luring")
 
-SCREEN_TEXTS = """
-const p = document.querySelector('flt-semantics-placeholder');
-if (p) p.click();
-return [...document.querySelectorAll('flt-semantics')]
-  .filter(e => !e.querySelector('flt-semantics'))
-  .map(e => (e.getAttribute('aria-label') || e.textContent || '').trim())
-  .filter(Boolean);
-"""
-CLICK_LABEL = """
-const labels = arguments[0];
-const p = document.querySelector('flt-semantics-placeholder');
-if (p) { p.click(); return null; }
-for (const el of document.querySelectorAll('[role="button"]')) {
-  const t = (el.getAttribute('aria-label') || el.textContent || '').trim();
-  if (labels.some(l => t.includes(l))) { el.click(); return t; }
-}
-return null;
-"""
 SW_READY = """
 const done = arguments[arguments.length - 1];
 if (!navigator.serviceWorker) return done('no-sw');
@@ -61,77 +42,6 @@ navigator.serviceWorker.ready.then(async reg => {
   done({controlled: !!navigator.serviceWorker.controller, cached: n, script: reg.active && reg.active.scriptURL});
 });
 """
-
-
-class WebDriver:
-    def __init__(self, port, headed):
-        self.base = f"http://127.0.0.1:{port}"
-        args = ["--window-size=390,844", "--no-first-run", "--lang=es"]
-        if not headed:
-            args += ["--headless=new", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"]
-        opts = {"args": args}
-        if os.environ.get("CHROME"):
-            opts["binary"] = os.environ["CHROME"]
-        caps = {"capabilities": {"alwaysMatch": {"browserName": "chrome", "goog:chromeOptions": opts}}}
-        self.session = self._call("POST", "/session", caps)["sessionId"]
-
-    def _call(self, method, path, body=None):
-        data = json.dumps(body).encode() if body is not None else None
-        req = urllib.request.Request(self.base + path, data=data, method=method,
-                                     headers={"Content-Type": "application/json"})
-        try:
-            with urllib.request.urlopen(req, timeout=120) as resp:
-                return json.load(resp)["value"]
-        except urllib.error.HTTPError as err:
-            raise RuntimeError(f"webdriver {method} {path}: {err.read().decode()[:300]}") from None
-
-    def cmd(self, method, path, body=None):
-        return self._call(method, f"/session/{self.session}{path}", body)
-
-    def js(self, script, *args):
-        return self.cmd("POST", "/execute/sync", {"script": script, "args": list(args)})
-
-    def js_async(self, script, *args):
-        return self.cmd("POST", "/execute/async", {"script": script, "args": list(args)})
-
-    def quit(self):
-        try:
-            self._call("DELETE", f"/session/{self.session}")
-        except Exception:  # noqa: BLE001 - best effort
-            pass
-
-
-def wait_for(what, predicate, timeout, interval=1.0):
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        value = predicate()
-        if value:
-            return value
-        time.sleep(interval)
-    raise TimeoutError(what)
-
-
-def texts(wd):
-    return wd.js(SCREEN_TEXTS) or []
-
-
-def has(wd, labels):
-    return any(l.lower() in t.lower() for t in texts(wd) for l in labels)
-
-
-def click(wd, labels):
-    return wd.js(CLICK_LABEL, list(labels))
-
-
-def serve(directory, port):
-    class Quiet(http.server.SimpleHTTPRequestHandler):
-        def log_message(self, *args):
-            pass
-
-    handler = functools.partial(Quiet, directory=directory)
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", port), handler)
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    return server
 
 
 def main():
@@ -151,7 +61,7 @@ def main():
     server = serve(os.path.abspath(opts.dir), opts.port)
     wd = None
     try:
-        wait_for("chromedriver", lambda: _up(port), 15, 0.3)
+        wait_for("chromedriver", lambda: driver_up(port), 15, 0.3)
         wd = WebDriver(port, opts.headed)
 
         print("1/4 online: load the app, wait for the service worker to control the page and fill its cache")
@@ -207,14 +117,6 @@ def main():
 
 def _sw(wd):
     return wd.js_async(SW_READY)
-
-
-def _up(port):
-    try:
-        urllib.request.urlopen(f"http://127.0.0.1:{port}/status", timeout=1)
-        return True
-    except OSError:
-        return False
 
 
 if __name__ == "__main__":

@@ -25,7 +25,7 @@ server = o.serve(build, 5175)
 wd = None
 RES = "return performance.getEntriesByType('resource').map(r => r.name).filter(n => n.includes('.part.js'));"
 try:
-    o.wait_for('chromedriver', lambda: o._up(port), 15, 0.3)
+    o.wait_for('chromedriver', lambda: o.driver_up(port), 15, 0.3)
     wd = o.WebDriver(port, False)
     wd.cmd('POST', '/url', {'url': 'http://localhost:5175/'})
     o.wait_for('landing', lambda: o.has(wd, o.SIGN_IN), 120)
