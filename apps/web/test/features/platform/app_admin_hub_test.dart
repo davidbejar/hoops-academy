@@ -21,15 +21,13 @@ Future<Harness> _pump(
   Size size = const Size(360, 780),
   String location = '/app-admin',
 }) async {
-  final h = Harness(
-    me: FakeMeRepository(userWith(const [], superAdmin: true)),
-    core: FakeCore(),
-    platform: FakePlatform(repo: repo ?? FakePlatformRepository()),
-    academyRequests: requests,
+  return pumpAsSuperAdmin(
+    tester,
+    platform: repo,
+    requests: requests,
+    size: size,
+    location: location == '/app-admin' ? null : location,
   );
-  await h.pump(tester, size: size);
-  if (location != '/app-admin') await h.go(tester, location);
-  return h;
 }
 
 void main() {

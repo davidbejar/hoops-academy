@@ -1,20 +1,16 @@
-import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_localizations/flutter_localizations.dart'
-    show GlobalWidgetsLocalizations;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hoops_app/app/theme.dart';
 import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/features/health/presentation/charts.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/features/training/application/training_providers.dart';
-import 'package:hoops_app/l10n/gen/app_localizations.dart';
 
 import '../support/athlete_scenarios.dart';
 import '../support/core_fixtures.dart';
 import '../support/fake_repos.dart';
 import '../support/fake_athlete.dart';
 import '../support/pump_helpers.dart';
+import '../support/kit_harness.dart';
 
 /// The training week and the player health screens are two of the four
 /// screens showcased on the landing page (`assets/landing/training_week.png`,
@@ -195,17 +191,7 @@ void main() {
         ChartPoint(DateTime.utc(2026, m, 10), w),
     ];
     await tester.pumpWidget(
-      MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: buildTheme(Brightness.light),
-        locale: const Locale('es'),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
+      localizedApp(
         home: Scaffold(
           appBar: AppBar(title: const Text('Ana Ruiz')),
           body: ListView(

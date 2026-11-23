@@ -13,6 +13,7 @@ import '../../support/fake_platform.dart';
 import '../../support/fake_repos.dart';
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
+import '../../support/pump_helpers.dart';
 
 FakePlatformRepository _repo() => FakePlatformRepository(
   tenants: [
@@ -29,14 +30,13 @@ Future<Harness> _pumpPlatform(
   bool settle = true,
   Size? size,
 }) async {
-  final h = Harness(
-    me: FakeMeRepository(userWith(const [], superAdmin: true)),
-    core: FakeCore(),
-    platform: FakePlatform(repo: repo),
+  return pumpAsSuperAdmin(
+    tester,
+    platform: repo,
+    location: location,
+    size: size ?? const Size(360, 1200),
+    settle: settle,
   );
-  await h.pump(tester, size: size ?? const Size(360, 1200));
-  settle ? await h.go(tester, location) : await h.goAndPump(tester, location);
-  return h;
 }
 
 api.TenantUsage _usage({

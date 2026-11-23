@@ -10,7 +10,6 @@ import '../../support/fake_audit.dart';
 import '../../support/fake_export.dart';
 import '../../support/fake_platform.dart';
 import '../../support/fake_repos.dart';
-import '../../support/fixtures.dart';
 import '../../support/harness.dart';
 import '../../support/pump_helpers.dart';
 
@@ -38,17 +37,13 @@ Future<Harness> _platform(
   FakeFileDownloader downloader,
   String location,
 ) async {
-  final h = Harness(
-    me: FakeMeRepository(userWith(const [], superAdmin: true)),
-    core: FakeCore(),
-    platform: FakePlatform(
-      repo: FakePlatformRepository(tenants: [tenantOf('t-a', 'Club Norte')]),
-    ),
-    extraOverrides: [...repo.overrides, ...exportOverrides(downloader)],
+  return pumpAsSuperAdmin(
+    tester,
+    platform: FakePlatformRepository(tenants: [tenantOf('t-a', 'Club Norte')]),
+    location: location,
+    size: const Size(1024, 900),
+    overrides: [...repo.overrides, ...exportOverrides(downloader)],
   );
-  await h.pump(tester, size: const Size(1024, 900));
-  await h.go(tester, location);
-  return h;
 }
 
 void main() {

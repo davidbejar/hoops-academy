@@ -6,6 +6,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/app/theme.dart';
 import 'package:hoops_app/l10n/gen/app_localizations.dart';
 
+/// A [MaterialApp] with the app's theme and the four localisation delegates
+/// (Spanish, like the app's default, unless [locale] says otherwise): what
+/// every test that pumps a widget outside the router needs.
+MaterialApp localizedApp({
+  required Widget home,
+  String locale = 'es',
+  Brightness brightness = Brightness.light,
+}) => MaterialApp(
+  debugShowCheckedModeBanner: false,
+  theme: buildTheme(brightness),
+  locale: Locale(locale),
+  supportedLocales: AppLocalizations.supportedLocales,
+  localizationsDelegates: const [
+    AppLocalizations.delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+  ],
+  home: home,
+);
+
 /// Pumps a kit widget alone in the app theme (Spanish, like the app's
 /// default), on a [size] surface, centred in a page with the canvas colour.
 Future<void> pumpKit(
@@ -14,22 +35,15 @@ Future<void> pumpKit(
   Brightness brightness = Brightness.light,
   Size size = const Size(360, 240),
   bool scaffold = true,
+  String locale = 'es',
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
   await tester.pumpWidget(
-    MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: buildTheme(brightness),
-      locale: const Locale('es'),
-      supportedLocales: AppLocalizations.supportedLocales,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+    localizedApp(
+      brightness: brightness,
+      locale: locale,
       home: scaffold
           ? Scaffold(
               body: Padding(

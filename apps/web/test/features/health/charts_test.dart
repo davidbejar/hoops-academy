@@ -1,29 +1,19 @@
-import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:flutter_localizations/flutter_localizations.dart'
-    show GlobalWidgetsLocalizations;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hoops_app/app/theme.dart';
 import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/core/ui/chart_tokens.dart';
 import 'package:hoops_app/features/health/presentation/charts.dart';
-import 'package:hoops_app/l10n/gen/app_localizations.dart';
+
+import '../../support/kit_harness.dart';
 
 Widget _host(
   Widget child, {
   Brightness brightness = Brightness.light,
   String locale = 'es',
-}) => MaterialApp(
-  theme: buildTheme(brightness),
-  locale: Locale(locale),
-  localizationsDelegates: const [
-    AppLocalizations.delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-  ],
-  supportedLocales: AppLocalizations.supportedLocales,
+}) => localizedApp(
+  brightness: brightness,
+  locale: locale,
   home: Scaffold(body: SingleChildScrollView(child: child)),
 );
 

@@ -3,10 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 
 import '../support/fake_academy_requests.dart';
-import '../support/fake_platform.dart';
-import '../support/fake_repos.dart';
-import '../support/fixtures.dart';
-import '../support/harness.dart';
+import '../support/pump_helpers.dart';
 
 /// The academy requests workbench (WP90). Regenerate with
 /// `flutter test --update-goldens test/golden/platform_requests_golden_test.dart`.
@@ -29,14 +26,12 @@ void main() {
         locale: api.ApiLocale.id,
       ),
     ]);
-    final h = Harness(
-      me: FakeMeRepository(userWith(const [], superAdmin: true)),
-      core: FakeCore(),
-      platform: FakePlatform(repo: FakePlatformRepository()),
-      academyRequests: repo,
+    await pumpAsSuperAdmin(
+      tester,
+      requests: repo,
+      size: size,
+      location: '/platform/requests',
     );
-    await h.pump(tester, size: size);
-    await h.go(tester, '/platform/requests');
   }
 
   testWidgets('academy requests, 360x780', (tester) async {

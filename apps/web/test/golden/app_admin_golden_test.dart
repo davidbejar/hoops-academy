@@ -8,6 +8,7 @@ import '../support/fake_platform.dart';
 import '../support/fake_repos.dart';
 import '../support/fixtures.dart';
 import '../support/harness.dart';
+import '../support/pump_helpers.dart';
 
 /// The application admin hub, the Users area and the context switcher (WP99).
 /// Regenerate with
@@ -87,19 +88,17 @@ Future<Harness> _pumpApplicationAdmin(
     ),
     platformUserOf('u-3', 'nuevo@example.org'),
   ]);
-  final h = Harness(
-    me: FakeMeRepository(userWith(const [], superAdmin: true)),
-    core: FakeCore(),
-    platform: FakePlatform(repo: platform),
-    academyRequests: FakeAcademyRequestRepository([
+  return pumpAsSuperAdmin(
+    tester,
+    platform: platform,
+    requests: FakeAcademyRequestRepository([
       academyRequestOf('r-1', 'Escuela de Baloncesto Valle'),
       academyRequestOf('r-2', 'Hoops Bali'),
       academyRequestOf('r-3', 'Canasta Club'),
     ]),
+    size: size,
+    location: location == '/app-admin' ? null : location,
   );
-  await h.pump(tester, size: size);
-  if (location != '/app-admin') await h.go(tester, location);
-  return h;
 }
 
 void main() {
