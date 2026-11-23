@@ -519,6 +519,56 @@ void main() {
     });
   });
 
+  group('leaving the live match (WEB-01)', () {
+    /// Fires every periodic timer still registered, as 30 s of fake time would
+    /// (twice the 15 s cadence), and lets the pulls run.
+    Future<void> thirtySecondsLater(WidgetTester tester, FakeGame game) async {
+      for (var i = 0; i < 2; i++) {
+        await tester.runAsync(() async {
+          for (final t in [...game.timers.periodic]) {
+            await t.tick();
+          }
+        });
+        await tester.pumpAndSettle();
+      }
+    }
+
+    testWidgets('COACH: the match is no longer pulled', (tester) async {
+      final game = gameWith();
+      final h = await pumpCoach(tester, game, '/matches/$live');
+      expect(game.timers.periodic, hasLength(1), reason: 'the worker pull');
+
+      await h.go(tester, '/matches');
+      final feeds = game.server.feedCalls;
+      await thirtySecondsLater(tester, game);
+      expect(game.timers.periodic, isEmpty);
+      expect(game.server.feedCalls, feeds);
+    });
+
+    testWidgets('PARENT: neither the feed nor the box score is polled', (
+      tester,
+    ) async {
+      final game = gameWith();
+      final h = await pumpParent(tester, game, '/matches/$live');
+      expect(
+        game.timers.periodic,
+        hasLength(2),
+        reason: 'the worker pull and the box-score poll',
+      );
+
+      await h.go(tester, '/matches');
+      final feeds = game.server.feedCalls;
+      final boxScores = game.matches.calls.where((c) => c == 'boxScore').length;
+      await thirtySecondsLater(tester, game);
+      expect(game.timers.periodic, isEmpty);
+      expect(game.server.feedCalls, feeds);
+      expect(
+        game.matches.calls.where((c) => c == 'boxScore'),
+        hasLength(boxScores),
+      );
+    });
+  });
+
   group('filtered feed (ADR-0030)', () {
     FakeGame coachScored() {
       final game = gameWith()..server.visiblePlayers = {'p1'};

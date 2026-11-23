@@ -334,7 +334,7 @@ void main() {
       expect((await store.syncedEvents(matchId)).map((e) => e.event.id), [
         otherMeta.id,
       ]);
-      worker.unwatch();
+      worker.unwatch(matchId);
       expect(timers.periodic, isEmpty);
     },
   );
@@ -544,6 +544,19 @@ void main() {
       expect(timers.periodic, hasLength(1));
     });
 
+    test(
+      'unwatching a match no longer watched leaves the watched one',
+      () async {
+        worker.watch(matchId);
+        worker.watch('m2');
+        await pumpEventQueue();
+        worker.unwatch(matchId);
+        expect(timers.periodic, hasLength(1), reason: 'm2 is still open');
+        worker.unwatch('m2');
+        expect(timers.periodic, isEmpty);
+      },
+    );
+
     test('the watched match is pulled by every pass, whatever triggered it; '
         'not any more after unwatch', () async {
       worker.watch(matchId);
@@ -552,7 +565,7 @@ void main() {
       await worker.onResumed();
       expect((await store.syncedEvents(matchId)).length, 1);
 
-      worker.unwatch();
+      worker.unwatch(matchId);
       final calls = server.feedCalls;
       await worker.onResumed();
       expect(server.feedCalls, calls);
