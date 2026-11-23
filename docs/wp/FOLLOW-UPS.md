@@ -459,10 +459,10 @@ compose, chart, properties and scripts and runs alone.
 | 1 | WP127 | Athlete: roster reads per request, tenant zone from the context, the 90 % domain gate, one test group | Opus · high | Done (ADR-0059; migration V11; 90 % domain gate; athlete 1023 tests, mutation 671/671; Monday-dependent test fixed; reactor verify green) |
 | 1 | WP128 | Core: guardian-link N+1, outbox sends, one paged-query builder, dead code, test profiles and helpers | Opus · high | Done (ADR-0060; migrations V20, V21; core 1256 tests, mutation 941/942; Quarkus boots 6 → 4; CORE-02 locking, CORE-20, CORET-08 left with reasons) |
 | 1 | WP129 | Web: lists read every page (`fetchAll`, one `Pager`), live match stops polling, dead keys | Opus · high | Done (ADR-0061, ADR-0040 amendment; `fetchAll` + one `Pager`; live match disposes; web 1861 tests) |
-| 2 | WP130 | Roster replica pipeline once in `common-quarkus` (decoder, consumer, history store) | Opus · high | After wave 1 |
-| 2 | WP131 | Finance: test support once, one Postgres per test run, `applied_event` retention, small clean-ups | Opus · medium | After wave 1 |
-| 2 | WP132 | pdf-service: test helpers and contract cache, `tower` to dev, token leeway and Problem names aligned | Sonnet · medium | After wave 1 |
-| 2 | WP133 | CI and scripts: concurrency groups, gates run once, pins, composite actions, generator version | Sonnet · high | After wave 1 |
+| 2 | WP130 | Roster replica pipeline once in `common-quarkus` (decoder, consumer, history store) | Opus · high | Running |
+| 2 | WP131 | Finance: test support once, one Postgres per test run, `applied_event` retention, small clean-ups | Opus · medium | Running |
+| 2 | WP132 | pdf-service: test helpers and contract cache, `tower` to dev, token leeway and Problem names aligned | Sonnet · medium | Running |
+| 2 | WP133 | CI and scripts: concurrency groups, gates run once, pins, composite actions, generator version | Sonnet · high | Running |
 | 3 | WP134 | Replica authorisation rule once in `common-quarkus`, under mutation testing | Opus · high | After wave 2 |
 | 3 | WP135 | Web: one home for dates, validators, export buttons, error messages, section states | Sonnet · high | After wave 2 |
 | 3 | WP136 | Chart: library chart for the service sub-charts; one source for the kind and cloud install pins | Opus · high | After wave 2 |
