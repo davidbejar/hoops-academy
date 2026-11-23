@@ -106,12 +106,6 @@ class JpaMatchEventRepository extends JdbcRepository implements MatchEventReposi
     }
 
     @Override
-    public long lastServerSeq(MatchId matchId) {
-        return query("select coalesce(max(server_seq), 0) from game.match_event where match_id = ?",
-                s -> s.setObject(1, matchId.value()), row -> row.getLong(1)).get(0);
-    }
-
-    @Override
     public OptionalLong append(MatchId matchId, MatchEvent event, Recorder recorder) {
         List<Long> seq = query("""
                 insert into game.match_event (id, tenant_id, match_id, device_id, client_seq, type, player_id, period,

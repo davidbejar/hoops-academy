@@ -44,10 +44,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 /**
- * A feed page costs the same four statements whatever the size of the match and whoever asks (WP60, decision 42 of
- * 2026-11-06): the match lookup ({@code em.find} of an entity without associations plus its projected score), the
- * page and the match's last sequence number. A filtered caller no longer reads the whole match. Statements are counted
- * on the repositories' JDBC funnel ({@code JdbcRepository.query/update/batch}), which the spies record.
+ * A feed page costs the same three statements whatever the size of the match and whoever asks (WP60, decision 42 of
+ * 2026-11-06): the match lookup ({@code em.find} of an entity without associations plus its projected score, which
+ * also holds the match's last sequence number, WP126) and the page. A filtered caller no longer reads the whole match.
+ * Statements are counted on the repositories' JDBC funnel ({@code JdbcRepository.query/update/batch}), which the spies
+ * record.
  */
 @QuarkusTest
 @WithTestResource(value = PostgresRlsResource.class, initArgs = @ResourceArg(name = "service", value = "game"))
@@ -103,7 +104,7 @@ class FeedPageStatementCountTest {
 
     @ParameterizedTest(name = "staff {0}, {1} rounds")
     @CsvSource({"false, 1", "false, 20", "true, 1", "true, 20"})
-    void aFeedPageIsFourStatementsWhateverTheMatchSize(boolean staff, int rounds) {
+    void aFeedPageIsThreeStatementsWhateverTheMatchSize(boolean staff, int rounds) {
         UUID match = seedMatch(rounds);
         TenantUserRegistry.register(caller(staff));
         clearInvocations(events, matches);
@@ -116,9 +117,8 @@ class FeedPageStatementCountTest {
         verify(matches, times(1)).findById(MatchId.of(match));
         verify(matches, times(1)).query(anyString(), any(), any());
         verify(events, times(1)).after(eq(MatchId.of(match)), any(), anyLong(), anyInt());
-        verify(events, times(1)).lastServerSeq(MatchId.of(match));
         verify(events, never()).findByMatch(any());
-        verify(events, times(2)).query(anyString(), any(), any());
+        verify(events, times(1)).query(anyString(), any(), any());
         verify(events, never()).update(anyString(), any());
         verify(events, never()).batch(anyString(), any());
     }

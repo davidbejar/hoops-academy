@@ -122,6 +122,10 @@ class ConcurrentIngestTest {
                 assertThat(outcomes.values()).allSatisfy(statuses ->
                         assertThat(statuses.stream().filter("ACCEPTED"::equals).count()).isEqualTo(1));
                 assertThat(boxScoreWithoutIdentity(match)).as("round " + round).isEqualTo(expected);
+                assertThat(given().header("X-Tenant-Id", A).get("/api/game/matches/" + match).jsonPath()
+                        .getLong("lastServerSeq"))
+                        .as("the summary holds the highest sequence number, the feed's cursor (GAME-04)")
+                        .isEqualTo(seqs.values().stream().mapToLong(Integer::longValue).max().orElseThrow());
             }
         } finally {
             pool.shutdownNow();

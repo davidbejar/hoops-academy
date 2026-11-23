@@ -22,9 +22,6 @@ public interface MatchEventRepository {
      */
     List<StoredEvent> after(MatchId matchId, PlayerVisibility viewer, long after, int limit);
 
-    /** Highest server sequence number of the match, 0 without events. */
-    long lastServerSeq(MatchId matchId);
-
     /**
      * Stores a new event and returns its server sequence number; empty when the id (or device sequence) is already
      * taken by another row, e.g. the same id in another match.
