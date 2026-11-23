@@ -1,49 +1,65 @@
 package com.hoopsacademy.core.application.authz;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hoopsacademy.common.tenancy.TenantId;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
  * Short-lived cache of membership lookups per (subject, tenant), so the tenant filter does not hit the database on
  * every request. Writes in this instance invalidate the tenant at once; other replicas converge within the TTL.
+ * Expired entries are evicted, and at most {@value #MAX_ENTRIES} are kept (Caffeine, timed by the injected clock).
  */
 @ApplicationScoped
 public class AuthzCache {
 
+    static final int MAX_ENTRIES = 10_000;
+
     private record Key(String subject, TenantId tenant) {}
 
-    private record Entry(Optional<MemberAuthz> value, Instant expiresAt) {}
+    private final Cache<Key, Optional<MemberAuthz>> entries;
 
-    private final Map<Key, Entry> entries = new ConcurrentHashMap<>();
-    private final Duration ttl;
-    private final Clock clock;
-
+    @Inject
     public AuthzCache(@ConfigProperty(name = "hoops.authz.cache-ttl", defaultValue = "PT10S") Duration ttl, Clock clock) {
-        this.ttl = ttl;
-        this.clock = clock;
+        this(ttl, clock, MAX_ENTRIES);
     }
 
+    AuthzCache(Duration ttl, Clock clock, int maxEntries) {
+        this.entries = Caffeine.newBuilder()
+                .expireAfterWrite(ttl)
+                .maximumSize(maxEntries)
+                .ticker(() -> ChronoUnit.NANOS.between(Instant.EPOCH, clock.instant()))
+                .executor(Runnable::run)
+                .build();
+    }
+
+    /** The loader runs outside the cache's locks; a concurrent miss may load twice, as before. */
     public Optional<MemberAuthz> get(String subject, TenantId tenant, Supplier<Optional<MemberAuthz>> loader) {
         Key key = new Key(subject, tenant);
-        Instant now = clock.instant();
-        Entry cached = entries.get(key);
-        if (cached != null && now.isBefore(cached.expiresAt())) {
-            return cached.value();
+        Optional<MemberAuthz> cached = entries.getIfPresent(key);
+        if (cached != null) {
+            return cached;
         }
         Optional<MemberAuthz> loaded = loader.get();
-        entries.put(key, new Entry(loaded, now.plus(ttl)));
+        entries.put(key, loaded);
         return loaded;
     }
 
     public void invalidate(TenantId tenant) {
-        entries.keySet().removeIf(key -> key.tenant().equals(tenant));
+        entries.asMap().keySet().removeIf(key -> key.tenant().equals(tenant));
+    }
+
+    /** Live entries, after evicting the expired ones. */
+    long size() {
+        entries.cleanUp();
+        return entries.estimatedSize();
     }
 }
