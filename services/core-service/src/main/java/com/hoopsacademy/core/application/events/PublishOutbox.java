@@ -12,6 +12,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +23,8 @@ import org.jboss.logging.Logger;
 /**
  * One run of the outbox publisher (WP67): for each tenant with a backlog (oldest first), in that tenant's own
  * transaction as core_app, it locks the next batch, sends each event to its topic (a removal is followed by a
- * tombstone for the same key), waits for every acknowledgement and only then marks the batch published. At least
+ * tombstone for the same key) — the whole batch at once — waits for every acknowledgement and only then marks the
+ * batch published. At least
  * once: a crash or a broker failure after a send and before the commit leaves the rows unpublished, and the next run
  * sends them again with the same {@code eventId}. Several replicas can run it at the same time without a cluster lock:
  * the row locks ({@code FOR UPDATE SKIP LOCKED}) give each row to one publisher, and a publisher never sends an
@@ -106,16 +108,18 @@ public class PublishOutbox {
     /** Runs in the tenant's transaction: the batch is marked published only after every send was acknowledged. */
     private Map<String, Integer> publishBatch() {
         List<PendingEvent> batch = queue.lockNext(batchSize);
+        List<EventBroker.Message> messages = new ArrayList<>();
         Map<String, Integer> sent = new HashMap<>();
         for (PendingEvent event : batch) {
             String key = EventEnvelopes.key(event);
-            broker.send(event.topic(), key, envelopes.value(event));
+            messages.add(new EventBroker.Message(event.topic(), key, envelopes.value(event)));
             if (EventTopic.ofTopic(event.topic()).isRemovedType(event.type())) {
-                broker.send(event.topic(), key, null);
+                messages.add(new EventBroker.Message(event.topic(), key, null));
             }
             sent.merge(event.topic(), 1, Integer::sum);
         }
         if (!batch.isEmpty()) {
+            broker.sendAll(messages);
             queue.markPublished(batch.stream().map(PendingEvent::eventId).toList());
         }
         return sent;

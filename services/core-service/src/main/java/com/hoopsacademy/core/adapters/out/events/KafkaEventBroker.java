@@ -9,9 +9,12 @@ import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
@@ -19,19 +22,21 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
  * The Kafka producer of the outbox publisher: the topic is set per record, the key is the record's key, a null value
- * is a tombstone. Each send waits for the broker's acknowledgement (acks=all, idempotent producer) at most
- * {@code hoops.outbox.send-timeout}. The client settings are the {@code kafka.*} configuration (bootstrap, SASL,
+ * is a tombstone. A batch is handed to the producer whole and then waits for the broker's acknowledgements (acks=all,
+ * idempotent producer, so the order per partition holds with several records in flight) at most
+ * {@code hoops.outbox.send-timeout} altogether (CORE-04: no longer one round trip per record). The client settings are the {@code kafka.*} configuration (bootstrap, SASL,
  * timeouts; Dev Services in tests); acks, idempotence and the serializers are fixed here.
  *
  * <p>Recovery (WP81, ADR-0008 amendment): an idempotent producer whose first producer-id request failed (core started
  * before its broker user existed, WP71) never asks again and lets every record expire, even once the login works.
- * After {@code hoops.outbox.producer-reset-after} consecutive failed sends the producer is closed and a new one is
+ * After {@code hoops.outbox.producer-reset-after} consecutive failed batches the producer is closed and a new one is
  * created at the next send ({@code hoops_outbox_producer_resets_total}). A broker that is merely down costs one new
  * producer per that many failed runs; the outbox keeps the events either way.
  *
@@ -86,21 +91,41 @@ class KafkaEventBroker implements EventBroker {
                 .register(registry);
     }
 
+    /**
+     * Hands every record to the producer first, then waits for their acknowledgements, all of them within one
+     * {@code hoops.outbox.send-timeout}. A failed or late record fails the whole call and counts as one failure.
+     */
     @Override
-    public synchronized void send(String topic, String key, String value) {
-        if (!enabled) {
-            throw new UnavailableException("Events are off (" + ENABLED + "=false): nothing is sent to " + topic, null);
+    public synchronized void sendAll(List<Message> messages) {
+        if (messages.isEmpty()) {
+            return;
         }
+        if (!enabled) {
+            throw new UnavailableException("Events are off (" + ENABLED + "=false): nothing is sent to "
+                    + messages.getFirst().topic(), null);
+        }
+        Message pending = messages.getFirst();
         try {
-            current().send(new ProducerRecord<>(topic, key, value)).get(timeout.toMillis(), TimeUnit.MILLISECONDS);
+            Producer<String, String> producer = current();
+            List<Future<RecordMetadata>> acknowledgements = new ArrayList<>(messages.size());
+            for (Message message : messages) {
+                pending = message;
+                acknowledgements.add(producer.send(new ProducerRecord<>(message.topic(), message.key(),
+                        message.value())));
+            }
+            long deadline = System.nanoTime() + timeout.toNanos();
+            for (int i = 0; i < messages.size(); i++) {
+                pending = messages.get(i);
+                acknowledgements.get(i).get(Math.max(0, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
+            }
             consecutiveFailures = 0;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw failed(topic, e);
+            throw failed(pending.topic(), e);
         } catch (ExecutionException e) {
-            throw failed(topic, e.getCause());
+            throw failed(pending.topic(), e.getCause());
         } catch (TimeoutException | RuntimeException e) {
-            throw failed(topic, e);
+            throw failed(pending.topic(), e);
         }
     }
 
