@@ -51,6 +51,42 @@ class AuthzCacheTest {
         assertThat(loads).hasValue(3);
     }
 
+    @Test
+    void anExpiredEntryIsDroppedNotOnlyIgnored() {
+        // CORE-17 (audit 2026-11-23): every (login, academy) pair seen used to stay in memory until its academy changed
+        load();
+        cache.get("other", tenant, Optional::empty);
+        assertThat(cache.size()).isEqualTo(2);
+
+        clock.advance(Duration.ofSeconds(10));
+
+        assertThat(cache.size()).isZero();
+    }
+
+    @Test
+    void keepsAtMostTheConfiguredNumberOfEntries() {
+        AuthzCache small = new AuthzCache(Duration.ofSeconds(10), clock, 2);
+        for (int i = 0; i < 5; i++) {
+            small.get("sub-" + i, tenant, Optional::empty);
+        }
+
+        assertThat(small.size()).isEqualTo(2);
+    }
+
+    @Test
+    void anAbsentMembershipIsCachedForTheTtlToo() {
+        cache.get("nobody", tenant, () -> {
+            loads.incrementAndGet();
+            return Optional.empty();
+        });
+
+        assertThat(cache.get("nobody", tenant, () -> {
+            loads.incrementAndGet();
+            return Optional.empty();
+        })).isEmpty();
+        assertThat(loads).hasValue(1);
+    }
+
     private Optional<MemberAuthz> load() {
         return cache.get("sub", tenant, () -> {
             loads.incrementAndGet();
