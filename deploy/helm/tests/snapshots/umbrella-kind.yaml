@@ -13589,7 +13589,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: mailpit
-          image: "docker.io/axllent/mailpit:v1.32.0"
+          image: "docker.io/axllent/mailpit:v1.33.1"
           imagePullPolicy: IfNotPresent
           env:
             - {name: MP_MAX_MESSAGES, value: "500"}
@@ -13914,7 +13914,7 @@ spec:
         app.kubernetes.io/part-of: hoops-academy
       annotations:
         # Node configuration and bootstrap properties change -> restart (they are read at start).
-        checksum/config: "1e5f79be201d0e60"
+        checksum/config: "5fcda0b3fe8ad249"
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -13928,7 +13928,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: redpanda
-          image: "docker.io/redpandadata/redpanda:v26.2.6@sha256:8b1076e0d61bfceb66594dc01536427ce0b529f8ead35fdab9763ab6085891ce"
+          image: "docker.io/redpandadata/redpanda:v26.2.7@sha256:43545ee03966431f5451e0b3c1e651b39fbe3eb383360220311021f50133b649"
           imagePullPolicy: IfNotPresent
           # The redpanda binary itself (not `rpk redpanda start`, which rewrites redpanda.yaml): one shard, a fixed
           # Seastar memory below the container limit, overprovisioned (no CPU pinning on a shared node).
@@ -15335,7 +15335,7 @@ spec:
         app.kubernetes.io/name: redpanda-bootstrap
         app.kubernetes.io/part-of: hoops-academy
       annotations:
-        checksum/config: "8e8a7093704d2cd6"
+        checksum/config: "43d44f22dcc5eb9c"
     spec:
       restartPolicy: Never
       automountServiceAccountToken: false
@@ -15348,7 +15348,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: bootstrap
-          image: "docker.io/redpandadata/redpanda:v26.2.6@sha256:8b1076e0d61bfceb66594dc01536427ce0b529f8ead35fdab9763ab6085891ce"
+          image: "docker.io/redpandadata/redpanda:v26.2.7@sha256:43545ee03966431f5451e0b3c1e651b39fbe3eb383360220311021f50133b649"
           imagePullPolicy: IfNotPresent
           command: [bash, /bootstrap/bootstrap.sh]
           env:

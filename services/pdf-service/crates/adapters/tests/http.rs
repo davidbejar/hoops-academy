@@ -94,9 +94,9 @@ async fn a_web_client_token_is_refused() {
 #[tokio::test]
 async fn tokens_that_fail_verification_are_401() {
     let mut expired = core_service_claims();
-    expired["exp"] = json!(chrono::Utc::now().timestamp() - 120);
+    expired["exp"] = json!(jiff::Timestamp::now().as_second() - 120);
     let mut early = core_service_claims();
-    early["nbf"] = json!(chrono::Utc::now().timestamp() + 600);
+    early["nbf"] = json!(jiff::Timestamp::now().as_second() + 600);
     let mut other_issuer = core_service_claims();
     other_issuer["iss"] = json!("http://evil.example/realms/academy");
     let mut no_sub = core_service_claims();
@@ -207,6 +207,53 @@ async fn validation_failures_name_the_field_never_the_value() {
             .await;
     assert_eq!(answer.status, StatusCode::BAD_REQUEST);
     assert_eq!(problem(&answer)["violations"][0]["field"], "players[0].stats.points");
+}
+
+/// What a date, an instant and a zone id may look like does not depend on the date-time crate: ISO 8601 with an
+/// offset for an instant, `yyyy-MM-dd` for a day, the exact IANA id for a zone.
+#[tokio::test]
+async fn instants_days_and_zone_ids_are_strict() {
+    let service = service();
+    let accepted: Vec<(&str, &str, Value)> = vec![
+        (MATCH_SHEET, "/match/scheduledAt", json!("2026-11-14T09:00:00Z")),
+        (MATCH_SHEET, "/match/scheduledAt", json!("2026-11-14T10:00:00+01:00")),
+        (MATCH_SHEET, "/match/scheduledAt", json!("2026-11-14T09:00:00.250Z")),
+        (MATCH_SHEET, "/academy/timeZone", json!("UTC")),
+        (TEAM_ROSTER, "/academy/timeZone", json!("America/Argentina/Buenos_Aires")),
+        (TEAM_ROSTER, "/players/0/joinedOn", json!("2024-02-29")),
+    ];
+    let refused: Vec<(&str, &str, Value)> = vec![
+        (MATCH_SHEET, "/match/scheduledAt", json!("2026-11-14T09:00:00")),
+        (MATCH_SHEET, "/match/scheduledAt", json!("2026-11-14")),
+        (MATCH_SHEET, "/match/scheduledAt", json!("2026-11-14T09:00:00+01:00[Europe/Madrid]")),
+        (MATCH_SHEET, "/match/scheduledAt", json!("2026-11-14T09:00Z")),
+        (MATCH_SHEET, "/match/scheduledAt", json!("20261114T090000Z")),
+        (MATCH_SHEET, "/match/scheduledAt", json!(1_794_646_800)),
+        (MATCH_SHEET, "/academy/timeZone", json!("europe/madrid")),
+        (MATCH_SHEET, "/academy/timeZone", json!("+01:00")),
+        (MATCH_SHEET, "/academy/timeZone", json!("")),
+        (TEAM_ROSTER, "/players/0/joinedOn", json!("2026-02-30")),
+        (TEAM_ROSTER, "/players/0/joinedOn", json!("2026-11-14T00:00:00")),
+        (TEAM_ROSTER, "/players/0/joinedOn", json!("20261114")),
+        (TEAM_ROSTER, "/players/0/joinedOn", json!("2026-W46-6")),
+        (TEAM_ROSTER, "/players/0/birthDate", json!("14/03/2014")),
+    ];
+    let body_for = |path: &str, pointer: &str, value: &Value| {
+        with(
+            &fixture(if path == MATCH_SHEET { "match-sheet.json" } else { "team-roster.json" }),
+            pointer,
+            value.clone(),
+        )
+    };
+    for (path, pointer, value) in accepted {
+        let answer = post(&service.router, path, &body_for(path, pointer, &value)).await;
+        assert_eq!(answer.status, StatusCode::OK, "{pointer} = {value}");
+    }
+    for (path, pointer, value) in refused {
+        let answer = post(&service.router, path, &body_for(path, pointer, &value)).await;
+        assert_eq!(answer.status, StatusCode::BAD_REQUEST, "{pointer} = {value}");
+        assert_eq!(problem(&answer)["code"], "VALIDATION_FAILED", "{pointer} = {value}");
+    }
 }
 
 #[tokio::test]

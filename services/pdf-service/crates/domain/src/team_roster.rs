@@ -2,7 +2,8 @@
 //! assignments with their natural category, eligibility, jersey, contact and active guardians, then the staff), as
 //! core has already authorised and loaded it, printed with the academy's name and zone.
 
-use chrono::{DateTime, NaiveDate, Utc};
+use jiff::Timestamp;
+use jiff::civil::Date;
 
 use crate::academy::Academy;
 use crate::document::{Block, Column, Fact, Orientation, PrintDocument, Row, RowStyle, Table};
@@ -63,13 +64,13 @@ pub struct Guardian {
 pub struct RosterPlayer {
     pub given_name: String,
     pub family_name: String,
-    pub birth_date: Option<NaiveDate>,
+    pub birth_date: Option<Date>,
     pub gender: Option<Gender>,
     pub age_category: Option<String>,
     pub eligibility: Eligibility,
     pub play_up_levels: u32,
     pub jersey_number: Option<String>,
-    pub joined_on: NaiveDate,
+    pub joined_on: Date,
     pub email: Option<String>,
     pub phone: Option<String>,
     pub guardians: Vec<Guardian>,
@@ -80,7 +81,7 @@ pub struct StaffMember {
     pub role: StaffRole,
     pub given_name: String,
     pub family_name: String,
-    pub since: NaiveDate,
+    pub since: Date,
     pub email: Option<String>,
     pub phone: Option<String>,
 }
@@ -119,7 +120,7 @@ impl TeamRoster {
     }
 
     /// The sheet as printed on `printed_at` (the footer's date, in the academy's zone).
-    pub fn document(&self, printed_at: DateTime<Utc>) -> PrintDocument {
+    pub fn document(&self, printed_at: Timestamp) -> PrintDocument {
         let t = |label| self.locale.text(label);
         let mut team = vec![Fact::new(t(Label::Team), self.team.name.clone())];
         team.extend(self.team.season.iter().map(|season| Fact::new(t(Label::Season), season.clone())));
@@ -137,7 +138,7 @@ impl TeamRoster {
     }
 
     /// `hoops-<academy>-roster-<team>-<yyyyMMdd>.pdf`, today in the academy's zone (as core's CSV, with `.pdf`).
-    pub fn file_name(&self, printed_at: DateTime<Utc>) -> String {
+    pub fn file_name(&self, printed_at: Timestamp) -> String {
         file_name::pdf(&self.academy.name, self.academy.day(printed_at), &["roster", &self.team.name])
     }
 
@@ -267,17 +268,18 @@ fn full_name(given: &str, family: &str) -> String {
     format!("{family}, {given}")
 }
 
-fn iso(day: NaiveDate) -> String {
-    day.format("%Y-%m-%d").to_string()
+fn iso(day: Date) -> String {
+    day.to_string()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::TimeZone;
+    use jiff::civil::date;
+    use jiff::tz::TimeZone;
 
-    fn day(m: u32, d: u32) -> NaiveDate {
-        NaiveDate::from_ymd_opt(2026, m, d).unwrap()
+    fn day(m: i8, d: i8) -> Date {
+        date(2026, m, d)
     }
 
     fn guardian(name: &str) -> Guardian {
@@ -293,7 +295,7 @@ mod tests {
         RosterPlayer {
             given_name: "Budi".into(),
             family_name: "Santoso".into(),
-            birth_date: Some(NaiveDate::from_ymd_opt(2014, 3, 9).unwrap()),
+            birth_date: Some(date(2014, 3, 9)),
             gender: Some(Gender::Male),
             age_category: Some("U12".into()),
             eligibility: Eligibility::PlayUp,
@@ -309,7 +311,7 @@ mod tests {
     pub(crate) fn roster() -> TeamRoster {
         TeamRoster {
             locale: Locale::Id,
-            academy: Academy { name: "Garuda Hoops".into(), time_zone: chrono_tz::Asia::Jakarta },
+            academy: Academy { name: "Garuda Hoops".into(), time_zone: TimeZone::get("Asia/Jakarta").unwrap() },
             team: TeamInfo { name: "U12 Elang".into(), season: Some("2026/27".into()), category: Some("U12".into()) },
             players: vec![player()],
             staff: vec![StaffMember {
@@ -323,8 +325,8 @@ mod tests {
         }
     }
 
-    fn printed() -> DateTime<Utc> {
-        Utc.with_ymd_and_hms(2026, 11, 15, 18, 0, 0).unwrap()
+    fn printed() -> Timestamp {
+        "2026-11-15T18:00:00Z".parse::<Timestamp>().unwrap()
     }
 
     fn tables(d: &PrintDocument) -> Vec<&Table> {

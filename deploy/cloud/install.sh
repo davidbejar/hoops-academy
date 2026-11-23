@@ -21,9 +21,10 @@ ENVOY_GATEWAY_VERSION="v1.10.0"
 GATEWAY_API_VERSION="v1.6.1"
 CNPG_VERSION="1.30.1"
 CNPG_BRANCH="release-${CNPG_VERSION%.*}"
-RELOADER_CHART_VERSION="2.2.19"
-RELOADER_CHART_DIGEST="sha256:dfa9fd167fc7ea3a2542de23f8d23c961d79407929f38c985d5cecfa74316142"
-RELOADER_IMAGE_DIGEST="sha256:82c80a15fdba22f738642553159f9fb37baf9e4d1edfeb798e8c48d87767f410"
+# Stakater Reloader: chart version + digest and image digest (v1.4.24).
+RELOADER_CHART_VERSION="2.2.20"
+RELOADER_CHART_DIGEST="sha256:065ab124e7e704a43465fad9b71363563157312e8ee410db30c4da83c5ac131b"
+RELOADER_IMAGE_DIGEST="sha256:3ab43d3eb96c59798644bf826b0444a846c0197d22ab4b6c101c4da3e1d6ef23"
 # Envoy Gateway's rate limit service with the chart's Redis (ADR-0033), as on kind.
 EG_VALUES=(
   --set config.envoyGateway.rateLimit.backend.type=Redis

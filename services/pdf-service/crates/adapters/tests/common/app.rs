@@ -8,8 +8,8 @@ use axum::body::Body;
 use axum::http::{HeaderMap, Method, Request, StatusCode};
 use base64::Engine as _;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-use chrono::{DateTime, Utc};
 use http_body_util::BodyExt as _;
+use jiff::Timestamp;
 use jsonwebtoken::{Algorithm, EncodingKey, Header};
 use pdf_adapters::auth::TokenVerifier;
 use pdf_adapters::http::{AppState, router};
@@ -27,7 +27,7 @@ pub const KID: &str = "test-key";
 struct FixedClock;
 
 impl Clock for FixedClock {
-    fn now(&self) -> DateTime<Utc> {
+    fn now(&self) -> Timestamp {
         super::printed_at()
     }
 }
@@ -74,7 +74,7 @@ pub fn service() -> Service {
 
 /// Claims of a client-credentials token of core-service as Keycloak issues it (ADR-0034 mappers).
 pub fn core_service_claims() -> Value {
-    let now = Utc::now().timestamp();
+    let now = Timestamp::now().as_second();
     json!({
         "iss": ISSUER, "sub": "5b1f0c2e-service-account-core", "azp": "core-service", "typ": "Bearer",
         "aud": ["game-service", "athlete-service", "pdf-service", "realm-management", "account"],
@@ -84,7 +84,7 @@ pub fn core_service_claims() -> Value {
 
 /// Claims of a token of the web client: its audiences are core, game and athlete, never pdf-service.
 pub fn web_claims() -> Value {
-    let now = Utc::now().timestamp();
+    let now = Timestamp::now().as_second();
     json!({
         "iss": ISSUER, "sub": "user-1", "azp": "web", "typ": "Bearer",
         "aud": ["core-service", "game-service", "athlete-service"], "exp": now + 300, "iat": now,

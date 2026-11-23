@@ -67,6 +67,19 @@ jobs:
             echo "the Gateway API version of its compatibility matrix (ADR-0031)."
           } > "$RUNNER_TEMP/body.md"
 
+      # What is recorded from the pins moves in the same PR: the ExternalSecret schema of the ESO version and the chart
+      # snapshots. Without this the PR fails helm-chart-tests on arrival (PR #6, 2026-11-22). run.sh --update still runs
+      # every other chart assertion, so a bump that breaks one fails here and opens no PR.
+      - uses: azure/setup-helm@2f5e7bc67f1f9972ab16657bb795f36d8f04de0e # v5.1.0
+        if: steps.check.outputs.outdated == '1'
+      - name: Re-record the ESO schema and the chart snapshots
+        if: steps.check.outputs.outdated == '1'
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz | sudo tar -xz -C /usr/local/bin kubeconform
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz | sudo tar -xz -C /usr/local/bin gitleaks
+          deploy/helm/tests/schemas/update-eso.sh
+          deploy/helm/tests/run.sh --update
+
       - name: Open the pull request
         if: steps.check.outputs.outdated == '1'
         uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8.1.3

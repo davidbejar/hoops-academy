@@ -18,8 +18,9 @@ publish = false
 [workspace.dependencies]
 pdf-domain = { path = "crates/domain" }
 pdf-application = { path = "crates/application" }
-chrono = { version = "0.4.45", default-features = false, features = ["std", "clock"] }
-chrono-tz = { version = "0.10.4", default-features = false }
+# The IANA database is compiled in (tzdb-bundle-always) and nothing else is read: the distroless image has no
+# /usr/share/zoneinfo, and a sheet must not depend on the host it is rendered on.
+jiff = { version = "1.0.2", default-features = false, features = ["std", "tzdb-bundle-always"] }
 unicode-normalization = { version = "0.1.26", default-features = false, features = ["std"] }
 
 [workspace.lints.rust]

@@ -17,8 +17,8 @@ Decision 90: the first two sheets are the match sheet / box score and the team r
 ## Decision
 ### Service
 - **Cargo workspace** `services/pdf-service`, outside the Maven reactor, three crates = three layers:
-  `pdf-domain` (sheets, limits, labels, file names, the print document; depends on `chrono`, `chrono-tz`,
-  `unicode-normalization` only), `pdf-application` (use cases `PrintSheets`, ports `PdfRenderer` and `Clock`; depends on
+  `pdf-domain` (sheets, limits, labels, file names, the print document; depends on `jiff` and
+  `unicode-normalization` only; `chrono` and `chrono-tz` until the amendment of 2026-11-22), `pdf-application` (use cases `PrintSheets`, ports `PdfRenderer` and `Clock`; depends on
   the domain only), `pdf-adapters` (everything else and the binary). A crate can only use what its manifest lists, so a
   wrong import does not compile; `tests/layering.rs` pins the manifests (the counterpart of ArchUnit).
 - **HTTP**: axum 0.8 on tokio (HTTP/1 only). `POST /internal/pdf/match-sheet`, `POST /internal/pdf/team-roster`
@@ -100,3 +100,22 @@ Decision 90: the first two sheets are the match sheet / box score and the team r
 - `finance-service` (Go, WP118) can copy the wiring: a per-service `scripts/check.sh` called from `just test-<lang>`,
   the coverage gate script, the doctor and bootstrap lines, the CI job with pinned tool downloads, the image job,
   the sub-chart and Tilt pattern.
+
+## Amendment 2026-11-22: jiff replaces chrono and chrono-tz
+**Why.** RustSec flagged both crates as unmaintained (RUSTSEC-2026-0543, RUSTSEC-2026-0555: no vulnerability, no fixed
+version, alternatives `jiff` and `time`). `deny.toml` fails on an unmaintained direct dependency, so the `rust` job was
+red on main. The owner chose the migration over a dated exception in `deny.toml`.
+
+**Decision.** `jiff` 1.0 in the three crates: `Timestamp` for an instant, `civil::Date` for a day, `tz::TimeZone` for
+the academy's zone. `jiff` over `time` because it carries the IANA database and zone-aware arithmetic itself, as
+`chrono-tz` did; `time` needs a second crate for zones.
+- Features `std` and `tzdb-bundle-always` only: the database is compiled in and nothing is read from the host (the
+  distroless image has no `/usr/share/zoneinfo`; a sheet does not depend on where it is rendered).
+- **What a request may contain did not change**, and `tests/http.rs` (`instants_days_and_zone_ids_are_strict`) pins it:
+  an instant is RFC 3339 with an offset, a day is `yyyy-MM-dd`, a zone is the exact IANA id. jiff alone reads more
+  (the test first failed on `2026-11-14T09:00:00+01:00[Europe/Madrid]`), so `dto::wire` checks the shape before jiff
+  parses and `Academy::time_zone` compares the id it gets back with the one it was given. jiff's `serde` feature is not used.
+- `tests/layering.rs` lists `jiff` for the domain and the application; the application has no dev-dependency any more.
+
+**Consequences.** `cargo deny check` passes with an empty `ignore` list. The binary carries jiff's bundled database
+instead of chrono-tz's; a zone the IANA database adds reaches the service with a `jiff-tzdb` bump (Dependabot, cargo).

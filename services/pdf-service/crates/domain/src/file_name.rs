@@ -2,18 +2,18 @@
 //! lower-case ASCII words joined by `-` (accents dropped, anything else a separator, at most 40 characters), a part
 //! with nothing left is left out. The day is today in the academy's time zone.
 
-use chrono::NaiveDate;
+use jiff::civil::Date;
 use unicode_normalization::UnicodeNormalization;
 use unicode_normalization::char::is_combining_mark;
 
 const MAX_PART: usize = 40;
 
 /// The file name of a PDF for `academy`, describing `what` (e.g. `["roster", "U12 Lions"]`), printed on `day`.
-pub fn pdf(academy: &str, day: NaiveDate, what: &[&str]) -> String {
+pub fn pdf(academy: &str, day: Date, what: &[&str]) -> String {
     let parts: Vec<String> =
         std::iter::once("hoops").chain(std::iter::once(academy)).chain(what.iter().copied()).map(ascii).collect();
     let words: Vec<&str> = parts.iter().map(String::as_str).filter(|part| !part.is_empty()).collect();
-    format!("{}-{}.pdf", words.join("-"), day.format("%Y%m%d"))
+    format!("{}-{}.pdf", words.join("-"), day.strftime("%Y%m%d"))
 }
 
 /// Lower-case ASCII letters and digits, runs of anything else as one `-`, trimmed, at most 40 characters.
@@ -35,8 +35,9 @@ pub fn ascii(text: &str) -> String {
 mod tests {
     use super::*;
 
-    fn day() -> NaiveDate {
-        NaiveDate::from_ymd_opt(2026, 11, 5).unwrap()
+    fn day() -> Date {
+        use jiff::civil::date;
+        date(2026, 11, 5)
     }
 
     #[test]

@@ -10,7 +10,7 @@ pub mod render;
 pub mod security;
 pub mod telemetry;
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 use pdf_application::Clock;
 
 /// The wall clock (driven adapter of [`Clock`]).
@@ -18,7 +18,7 @@ use pdf_application::Clock;
 pub struct SystemClock;
 
 impl Clock for SystemClock {
-    fn now(&self) -> DateTime<Utc> {
-        Utc::now()
+    fn now(&self) -> Timestamp {
+        Timestamp::now()
     }
 }

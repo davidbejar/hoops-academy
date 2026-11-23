@@ -1,4 +1,4 @@
-//! Use cases of pdf-service and their ports (ADR-0052). Depends on `pdf-domain` only (and `chrono` for the clock).
+//! Use cases of pdf-service and their ports (ADR-0052). Depends on `pdf-domain` only (and `jiff` for the clock).
 //!
 //! A use case checks the sheet (limits, then field rules), builds its print document for "now" in the academy's
 //! zone, has the renderer draw it and names the file. Nothing is stored and nothing is logged here.
@@ -6,7 +6,7 @@
 use std::fmt;
 use std::sync::Arc;
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 use pdf_domain::{MatchSheet, PrintDocument, SheetError, TeamRoster};
 
 /// Draws a print document as PDF bytes (driven adapter: the krilla renderer).
@@ -16,7 +16,7 @@ pub trait PdfRenderer: Send + Sync {
 
 /// Now (driven adapter: the system clock; tests fix it, which makes the output deterministic).
 pub trait Clock: Send + Sync {
-    fn now(&self) -> DateTime<Utc>;
+    fn now(&self) -> Timestamp;
 }
 
 /// The renderer failed; the reason is for the service log, never for the caller.
@@ -96,7 +96,8 @@ impl PrintSheets {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{NaiveDate, TimeZone};
+    use jiff::civil::date;
+    use jiff::tz::TimeZone;
     use pdf_domain::{Academy, Eligibility, HomeAway, Locale, MatchStatus, RosterPlayer, Score, StatLine, TeamInfo};
     use std::sync::Mutex;
 
@@ -117,13 +118,13 @@ mod tests {
     struct FixedClock;
 
     impl Clock for FixedClock {
-        fn now(&self) -> DateTime<Utc> {
-            Utc.with_ymd_and_hms(2026, 11, 15, 12, 0, 0).unwrap()
+        fn now(&self) -> Timestamp {
+            "2026-11-15T12:00:00Z".parse::<Timestamp>().unwrap()
         }
     }
 
     fn academy() -> Academy {
-        Academy { name: "Hoops Sur".into(), time_zone: chrono_tz::Europe::Madrid }
+        Academy { name: "Hoops Sur".into(), time_zone: TimeZone::get("Europe/Madrid").unwrap() }
     }
 
     fn sheet() -> MatchSheet {
@@ -133,7 +134,7 @@ mod tests {
             team_name: "Leones".into(),
             opponent_name: "Halcones".into(),
             home_away: HomeAway::Away,
-            scheduled_at: Utc.with_ymd_and_hms(2026, 11, 14, 9, 0, 0).unwrap(),
+            scheduled_at: "2026-11-14T09:00:00Z".parse::<Timestamp>().unwrap(),
             venue: None,
             status: MatchStatus::Finished,
             period_count: 4,
@@ -159,7 +160,7 @@ mod tests {
                 eligibility: Eligibility::Eligible,
                 play_up_levels: 0,
                 jersey_number: None,
-                joined_on: NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(),
+                joined_on: date(2026, 9, 1),
                 email: None,
                 phone: None,
                 guardians: vec![],

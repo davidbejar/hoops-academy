@@ -29,8 +29,21 @@ LABEL org.opencontainers.image.title="hoops-web" \
       org.opencontainers.image.source="${SOURCE_URL}" \
       org.opencontainers.image.description="Hoops Academy Flutter Web PWA on nginx-unprivileged"
 # Apply Alpine security updates on top of the pinned base (the Trivy gate fails on fixable HIGH/CRITICAL CVEs).
+# `apk upgrade` leaves nginx alone (the base pins it in /etc/apk/world), so a base that is older than NGINX_MIN_VERSION
+# gets that nginx.org package (the base already trusts its signing key) and loses the four dynamic modules nothing loads.
+# 1.30.7-r1 fixes CVE-2026-113425, -121810, -123007, -123633, -118899 and -123634; nginx-unprivileged:1.30-alpine was
+# still 1.30.6 on 2026-11-22. A newer base skips the step: delete it (and this ARG) once the base has caught up.
+ARG NGINX_MIN_VERSION=1.30.7-r1
 USER root
-RUN apk upgrade --no-cache
+RUN apk upgrade --no-cache \
+ && cur=$(apk list --installed nginx 2>/dev/null | sed -n 's/^nginx-\([0-9][^ ]*\) .*/\1/p') \
+ && if [ "$(apk version -t "$cur" "$NGINX_MIN_VERSION")" = "<" ]; then \
+      apk del --no-cache nginx-module-geoip nginx-module-image-filter nginx-module-njs nginx-module-xslt \
+      && apk add --no-cache -X "https://nginx.org/packages/alpine/v$(cut -d. -f1,2 /etc/alpine-release)/main" \
+           "nginx=$NGINX_MIN_VERSION" \
+      && rm -f /etc/nginx/*.apk-new; \
+    fi \
+ && nginx -v
 COPY --chown=101:0 deploy/containers/web-nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=web --chown=101:0 /out/web /usr/share/nginx/html
 USER 101

@@ -1,14 +1,16 @@
 //! Shared by the adapters' integration tests: sample sheets, the text of a PDF, the contract.
 #![allow(dead_code, clippy::unwrap_used, clippy::expect_used)] // each test binary uses a part; tests fail loudly
 
-use chrono::{DateTime, NaiveDate, TimeZone, Utc};
+use jiff::Timestamp;
+use jiff::civil::date;
+use jiff::tz::TimeZone;
 use pdf_domain::{
     Academy, Eligibility, Gender, Guardian, HomeAway, Locale, MatchSheet, MatchStatus, PeriodScore, PlayerLine,
     RosterPlayer, Score, StaffMember, StaffRole, StatLine, TeamInfo, TeamRoster,
 };
 
-pub fn printed_at() -> DateTime<Utc> {
-    Utc.with_ymd_and_hms(2026, 11, 15, 9, 41, 0).unwrap()
+pub fn printed_at() -> Timestamp {
+    "2026-11-15T09:41:00Z".parse::<Timestamp>().unwrap()
 }
 
 fn stats(points: u32) -> StatLine {
@@ -18,11 +20,11 @@ fn stats(points: u32) -> StatLine {
 pub fn match_sheet(locale: Locale) -> MatchSheet {
     MatchSheet {
         locale,
-        academy: Academy { name: "Academia Ñandú".into(), time_zone: chrono_tz::Europe::Madrid },
+        academy: Academy { name: "Academia Ñandú".into(), time_zone: TimeZone::get("Europe/Madrid").unwrap() },
         team_name: "U12 Leones".into(),
         opponent_name: "CB Halcones".into(),
         home_away: HomeAway::Home,
-        scheduled_at: Utc.with_ymd_and_hms(2026, 11, 14, 9, 0, 0).unwrap(),
+        scheduled_at: "2026-11-14T09:00:00Z".parse::<Timestamp>().unwrap(),
         venue: Some("Pabellón Norte".into()),
         status: MatchStatus::Finished,
         period_count: 4,
@@ -51,13 +53,13 @@ pub fn player(given: &str, guardians: usize) -> RosterPlayer {
     RosterPlayer {
         given_name: given.into(),
         family_name: "Santoso".into(),
-        birth_date: NaiveDate::from_ymd_opt(2014, 3, 9),
+        birth_date: Some(date(2014, 3, 9)),
         gender: Some(Gender::Female),
         age_category: Some("U12".into()),
         eligibility: Eligibility::Eligible,
         play_up_levels: 0,
         jersey_number: Some("10".into()),
-        joined_on: NaiveDate::from_ymd_opt(2026, 9, 1).unwrap(),
+        joined_on: date(2026, 9, 1),
         email: Some("pemain@example.test".into()),
         phone: None,
         guardians: (0..guardians)
@@ -74,14 +76,14 @@ pub fn player(given: &str, guardians: usize) -> RosterPlayer {
 pub fn team_roster(locale: Locale) -> TeamRoster {
     TeamRoster {
         locale,
-        academy: Academy { name: "Garuda Hoops".into(), time_zone: chrono_tz::Asia::Jakarta },
+        academy: Academy { name: "Garuda Hoops".into(), time_zone: TimeZone::get("Asia/Jakarta").unwrap() },
         team: TeamInfo { name: "U12 Elang".into(), season: Some("2026/27".into()), category: Some("U12".into()) },
         players: vec![player("Sari", 1)],
         staff: vec![StaffMember {
             role: StaffRole::Coach,
             given_name: "Dewi".into(),
             family_name: "Lestari".into(),
-            since: NaiveDate::from_ymd_opt(2026, 8, 15).unwrap(),
+            since: date(2026, 8, 15),
             email: None,
             phone: None,
         }],

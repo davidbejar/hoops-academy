@@ -31,7 +31,7 @@ source scripts/env.sh
 just kind-up          # cluster "hoops" (kindest/node v1.36.4) + Envoy Gateway v1.10.0 (Gateway API v1.6.1 CRDs) with its
                       # rate limit service (Redis backend ratelimit-redis.hoops:6379) + CNPG 1.30.1 (no leader election, WP86)
                       # + ns hoops + Secrets from .env + self-signed TLS Secret hoops-gateway-tls
-                      # + Stakater Reloader 2.2.19 (v1.4.23, namespace hoops-reloader, WP87)
+                      # + Stakater Reloader 2.2.20 (v1.4.24, namespace hoops-reloader, WP87)
 just tilt             # = tilt up: builds 4 images with Podman, kind-loads them, deploys the chart, port-forwards
 deploy/kind/seed-users.sh   # dev users <name>@hoops-academy.com (superadmin, admin1, coach1, assistant1, parent1, player1)
 ```
@@ -159,7 +159,7 @@ re-applies role passwords automatically. The Keycloak admin and client secrets o
 import/bootstrap — for an existing DB change them in Keycloak too (`rotate-secrets.md` section E).
 
 ### Secrets from the External Secrets Operator (`--eso`, WP65)
-`deploy/kind/up.sh --eso` replaces the `secrets.sh` step: it installs ESO (`ESO_VERSION`, v2.14.0, Helm release
+`deploy/kind/up.sh --eso` replaces the `secrets.sh` step: it installs ESO (`ESO_VERSION`, v2.15.0, Helm release
 `external-secrets` in namespace `external-secrets`), then applies `deploy/kind/eso-store.sh`: the stand-in for a cloud
 secret manager, one Secret `hoops-secret-store/hoops` with a key per `.env` value (not `DEV_USER_PASSWORD`), a reader
 ServiceAccount allowed only `get secrets` there, and the `ClusterSecretStore` `hoops` (Kubernetes provider) that only the
