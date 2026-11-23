@@ -83,8 +83,9 @@ class RequestMemoRosterPortTest {
         RosterPort port = new RequestMemoRosterPort(source, Optional::empty);
 
         port.teamRoster(TENANT, TEAM);
-        port.teamRoster(TENANT, TEAM);
+        TeamRoster again = port.teamRoster(TENANT, TEAM);
 
+        assertThat(again.teamId()).isEqualTo(TEAM);
         assertThat(source.rosterReads).isEqualTo(2);
         assertThat(request).isEmpty();
     }
