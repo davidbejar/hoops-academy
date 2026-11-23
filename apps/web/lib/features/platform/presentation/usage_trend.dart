@@ -52,23 +52,13 @@ class _UsageTrendState extends ConsumerState<UsageTrend> {
       children: [
         Text(l.usageTrendTitle, style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: HoopsSpace.sm),
-        history.when(
-          data: (h) => _body(context, l, h.snapshots.toList()),
-          loading: () => const SizedBox(
-            key: Key('usage-trend-loading'),
-            height: 120,
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (e, _) => SizedBox(
-            key: const Key('usage-trend-error'),
-            height: 300,
-            child: AsyncBody<void>(
-              value: AsyncError<void>(e, StackTrace.empty),
-              builder: (_, _) => const SizedBox.shrink(),
-              onRetry: () =>
-                  ref.invalidate(tenantUsageHistoryProvider(widget.tenantId)),
-            ),
-          ),
+        AsyncSection<api.TenantUsageHistory>(
+          value: history,
+          loadingKey: const Key('usage-trend-loading'),
+          errorKey: const Key('usage-trend-error'),
+          onRetry: () =>
+              ref.invalidate(tenantUsageHistoryProvider(widget.tenantId)),
+          builder: (context, h) => _body(context, l, h.snapshots.toList()),
         ),
       ],
     );

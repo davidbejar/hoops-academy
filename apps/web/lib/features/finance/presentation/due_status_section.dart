@@ -2,10 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/ui/async_body.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/errors/app_error.dart';
 import '../../../core/session/capabilities.dart';
-import '../../../core/ui/app_error_view.dart';
 import '../../../core/ui/kit.dart';
 import '../../../l10n/gen/app_localizations.dart';
 import '../application/finance_providers.dart';
@@ -32,35 +32,19 @@ class DueStatusSection extends ConsumerWidget {
     }
     final l = AppLocalizations.of(context);
     final status = ref.watch(teamDueStatusProvider(teamId));
-    if (status.value == null && status.hasError) {
-      final error = AppError.of(status.error!);
-      if (error.kind == AppErrorKind.forbidden) return const SizedBox.shrink();
-      return SectionCard(
-        key: const Key('due-status'),
-        title: l.financeCoachTitle,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: HoopsSpace.sm,
-          children: [
-            Text(
-              error.status == 501 ? l.financeNotYetAvailable : error.message(l),
-            ),
-            TextButton(
-              key: const Key('due-status-retry'),
-              onPressed: () => ref.invalidate(teamDueStatusProvider(teamId)),
-              child: Text(l.retry),
-            ),
-          ],
-        ),
-      );
+    if (status.value == null &&
+        status.hasError &&
+        AppError.of(status.error!).kind == AppErrorKind.forbidden) {
+      return const SizedBox.shrink();
     }
     return SectionCard(
       key: const Key('due-status'),
       title: l.financeCoachTitle,
-      child: status.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, _) => const SizedBox.shrink(),
-        data: (data) => _Players(status: data),
+      child: AsyncSection<fin.TeamDueStatus>(
+        value: status,
+        retryKey: const Key('due-status-retry'),
+        onRetry: () => ref.invalidate(teamDueStatusProvider(teamId)),
+        builder: (context, data) => _Players(status: data),
       ),
     );
   }

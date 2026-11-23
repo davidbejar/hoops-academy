@@ -465,7 +465,7 @@ class GuardianLinksEditor extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AsyncBodyInline<List<api.GuardianLink>>(
+        AsyncSection<List<api.GuardianLink>>(
           value: links,
           onRetry: () =>
               ref.invalidate(guardianLinksProvider(guardianPersonId)),
@@ -527,36 +527,6 @@ class GuardianLinksEditor extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Like [AsyncBody] but sized for embedding in a scrolling column.
-class AsyncBodyInline<T> extends StatelessWidget {
-  const AsyncBodyInline({
-    super.key,
-    required this.value,
-    required this.builder,
-    required this.onRetry,
-  });
-
-  final AsyncValue<T> value;
-  final Widget Function(BuildContext, T) builder;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final data = value.value;
-    if (data != null) return builder(context, data);
-    if (value.hasError) {
-      return TextButton(
-        onPressed: onRetry,
-        child: Text(AppLocalizations.of(context).retry),
-      );
-    }
-    return const Padding(
-      padding: EdgeInsets.all(HoopsSpace.md),
-      child: Center(child: CircularProgressIndicator()),
     );
   }
 }

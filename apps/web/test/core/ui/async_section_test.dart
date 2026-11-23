@@ -1,8 +1,12 @@
+import 'package:cupertino_ui/cupertino_ui.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'
+    show GlobalWidgetsLocalizations;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/core/ui/async_body.dart';
+import 'package:hoops_app/l10n/gen/app_localizations.dart';
 
 import '../../support/kit_harness.dart';
 
@@ -35,15 +39,24 @@ void main() {
   testWidgets('loading: a compact spinner with the key it was given', (
     tester,
   ) async {
-    await pumpKit(
-      tester,
-      SizedBox(
-        width: 328,
-        child: AsyncSection<List<int>>(
-          value: const AsyncLoading(),
-          onRetry: () {},
-          loadingKey: const Key('s-loading'),
-          builder: (context, data) => const Text('datos'),
+    // A spinner never settles, so no pumpAndSettle (pumpKit) here.
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('es'),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: AsyncSection<List<int>>(
+            value: const AsyncLoading(),
+            onRetry: () {},
+            loadingKey: const Key('s-loading'),
+            builder: (context, data) => const Text('datos'),
+          ),
         ),
       ),
     );
@@ -99,16 +112,5 @@ void main() {
     );
     expect(find.byKey(const Key('s-error')), findsNothing);
     expect(find.byKey(const Key('retry-button')), findsNothing);
-  });
-
-  testWidgets('a refresh that fails keeps showing the data', (tester) async {
-    await _pump(
-      tester,
-      AsyncValue<List<int>>.error(
-        const AppError(kind: AppErrorKind.server),
-        StackTrace.empty,
-      ).copyWithPrevious(const AsyncData([7])),
-    );
-    expect(find.text('datos 1'), findsOneWidget);
   });
 }

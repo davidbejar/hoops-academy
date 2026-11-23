@@ -1,10 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/ui/async_body.dart';
 import '../../../core/api/api.dart' as api;
-import '../../../core/errors/app_error.dart';
 import '../../../core/ui/actions.dart';
-import '../../../core/ui/app_error_view.dart';
 import '../../../core/ui/kit.dart';
 import '../../../core/ui/labels.dart';
 import '../../../core/ui/temporary_password_dialog.dart';
@@ -59,21 +58,16 @@ class TenantAdminsSection extends ConsumerWidget {
                   icon: Icons.block,
                   text: l.adminsWithdrawn,
                 )
-              : admins.value != null
-              ? _AdminList(tenantId: tenant.id, admins: admins.value!)
-              : admins.hasError
-              ? _LoadError(
-                  error: admins.error!,
+              : AsyncSection<List<api.TenantAdmin>>(
+                  value: admins,
+                  failedLabel: l.adminsLoadFailed,
+                  loadingKey: const Key('admins-loading'),
+                  errorKey: const Key('admins-error'),
+                  retryKey: const Key('admins-retry'),
                   onRetry: () =>
                       ref.invalidate(tenantAdminsProvider(tenant.id)),
-                )
-              : const Padding(
-                  padding: EdgeInsets.all(HoopsSpace.md),
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      key: Key('admins-loading'),
-                    ),
-                  ),
+                  builder: (context, list) =>
+                      _AdminList(tenantId: tenant.id, admins: list),
                 ),
         ],
       ),
@@ -289,30 +283,6 @@ class _Note extends StatelessWidget {
         Icon(icon, size: 18, color: HoopsTokens.colorsOf(context).inkMuted),
         const SizedBox(width: HoopsSpace.sm),
         Expanded(child: Text(text, style: theme.textTheme.bodySmall)),
-      ],
-    );
-  }
-}
-
-class _LoadError extends StatelessWidget {
-  const _LoadError({required this.error, required this.onRetry});
-  final Object error;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context);
-    return Column(
-      key: const Key('admins-error'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: HoopsSpace.sm,
-      children: [
-        Text('${l.adminsLoadFailed} · ${AppError.of(error).message(l)}'),
-        OutlinedButton(
-          key: const Key('admins-retry'),
-          onPressed: onRetry,
-          child: Text(l.retry),
-        ),
       ],
     );
   }

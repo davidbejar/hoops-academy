@@ -2,8 +2,6 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/ui/app_error_view.dart';
-import '../../../core/errors/app_error.dart';
 import '../../../core/time/dates.dart';
 import '../../../core/api/api.dart' as api;
 import '../../../core/session/capabilities.dart';
@@ -453,37 +451,35 @@ class _PlayerDetailBody extends ConsumerWidget {
                     },
                   ),
                 ],
-                child: ref
-                    .watch(_guardiansOfPlayerProvider(player.id))
-                    .when(
-                      data: (links) => links.isEmpty
-                          ? Text(
-                              l.playerNoGuardians,
-                              key: const Key('player-no-guardians'),
-                              style: muted,
-                            )
-                          : Column(
-                              spacing: HoopsSpace.sm,
-                              children: [
-                                for (final g in links)
-                                  ListRow(
-                                    key: Key('guardian-${g.id}'),
-                                    leading: const IconTile(
-                                      Icons.family_restroom_outlined,
-                                      tone: HoopsTone.info,
-                                    ),
-                                    title: g.guardian.displayName,
-                                    trailing: GuardianLoginButton(
-                                      personId: g.guardian.personId,
-                                      name: g.guardian.displayName,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (e, _) => Text(AppError.of(e).message(l)),
-                    ),
+                child: AsyncSection<List<api.GuardianLink>>(
+                  value: ref.watch(_guardiansOfPlayerProvider(player.id)),
+                  onRetry: () =>
+                      ref.invalidate(_guardiansOfPlayerProvider(player.id)),
+                  builder: (context, links) => links.isEmpty
+                      ? Text(
+                          l.playerNoGuardians,
+                          key: const Key('player-no-guardians'),
+                          style: muted,
+                        )
+                      : Column(
+                          spacing: HoopsSpace.sm,
+                          children: [
+                            for (final g in links)
+                              ListRow(
+                                key: Key('guardian-${g.id}'),
+                                leading: const IconTile(
+                                  Icons.family_restroom_outlined,
+                                  tone: HoopsTone.info,
+                                ),
+                                title: g.guardian.displayName,
+                                trailing: GuardianLoginButton(
+                                  personId: g.guardian.personId,
+                                  name: g.guardian.displayName,
+                                ),
+                              ),
+                          ],
+                        ),
+                ),
               ),
             if (canWithdraw)
               Align(
