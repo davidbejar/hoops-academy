@@ -114,7 +114,7 @@ journey: run `just seed-users` or re-import the realm (`docs/runbooks/local-stac
 ## Known limits
 - The realm must be the current `infra/keycloak/realm-academy.json` (every client has the Keycloak 25+ `basic` scope, so
   access tokens carry `sub`; fixed in WP17, finding F-21). The suite fails fast if a token has no `sub`, and the services
-  answer 401 for a JWT without `sub`. Compose imports the realm only on an empty volume. Reset: `just down && podman volume rm hoops_pgdata && just up && just seed-users`.
+  answer 401 for a JWT without `sub`. Compose imports the realm only on an empty volume. Reset: `just down && podman volume rm hoops_pgdata-19 && just up && just seed-users`.
 - The Admin API of the master realm must be reachable: set `HOOPS_EXPOSE_KC_ADMIN=true` in `.env` (compose) and restart nginx
   (`just down && just up`); on kind use the port-forward and `KEYCLOAK_ADMIN_URL`.
 - A full run takes about 70 s, of which ~60 s are the 30 s membership caches of game/athlete expiring after suspend and after reactivate; no rate limit (429) was hit.

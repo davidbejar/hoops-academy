@@ -7,13 +7,16 @@ source scripts/env.sh
 just up                         # postgres, keycloak, mailhog, nginx; --wait until healthy
 just seed-users                 # e-mail logins <name>@hoops-academy.com: superadmin, admin1, coach1, assistant1, parent1, player1 (password $DEV_USER_PASSWORD)
 just logs keycloak              # follow logs
-just down                       # stop (data kept in volume hoops_pgdata)
+just down                       # stop (data kept in volume hoops_pgdata-19)
 ```
-Reset everything: `just down && podman volume rm hoops_pgdata` (needed after changing the realm JSON or DB init scripts).
+Reset everything: `just down && podman volume rm hoops_pgdata-19` (needed after changing the realm JSON or DB init scripts).
 
 **Realm changes.** Keycloak imports `infra/keycloak/realm-academy.json` only into an empty database, so an existing stack
 keeps the realm it was first started with. After a realm change re-import it:
-`just down && podman volume rm hoops_pgdata && just up && just seed-users` (this also drops the services' data).
+`just down && podman volume rm hoops_pgdata-19 && just up && just seed-users` (this also drops the services' data).
+
+**PostgreSQL major.** The volume carries the major (ADR-0073). A stack still on PostgreSQL 17 (`hoops_pgdata`) moves
+with `scripts/pg-major-move.sh`: [a new PostgreSQL major](postgresql-major.md).
 `just seed-users` brings an old realm partly up to date without the reset (login theme, e-mail as username, and since
 WP56 the token audiences and refresh-token rotation of ADR-0034); anything else in the realm file needs the re-import.
 Symptom of a realm from before WP56: every API call of the signed-in app answers 401 (`aud` lacks the service).

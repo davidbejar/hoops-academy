@@ -1,6 +1,6 @@
 # Local stack (compose)
 
-Services: `postgres` (17, db `hoops` + db `keycloak`), `keycloak` (26.8.2, `start-dev --import-realm`),
+Services: `postgres` (19, db `hoops` + db `keycloak`; volume `hoops_pgdata-19`, ADR-0073), `keycloak` (26.8.2, `start-dev --import-realm`),
 `mailhog` (SMTP 1025, UI 8025), `nginx` (:8080, the only public entry point), `redpanda` (event broker, WP66, Kafka API
 `localhost:19092`, admin API `localhost:19644`, no auth). Container names: `hoops-<service>`.
 
@@ -8,7 +8,7 @@ Services: `postgres` (17, db `hoops` + db `keycloak`), `keycloak` (26.8.2, `star
 cp .env.example .env     # then replace every change-me-* value (git-ignored)
 source scripts/env.sh && just up      # waits for healthchecks (first run pulls images)
 just seed-users                       # dev users, idempotent
-just down                             # stop; add `-v` via podman compose to also drop the pgdata volume
+just down                             # stop; add `-v` via podman compose to also drop the pgdata-19 volume
 ```
 
 ## Files
@@ -40,4 +40,6 @@ just down                             # stop; add `-v` via podman compose to als
 - MailHog is amd64-only and runs under emulation on Apple Silicon; if it misbehaves swap in `axllent/mailpit`
   (same ports 1025/8025).
 - The realm is imported only when it does not exist yet. After editing `realm-academy.json`, drop Keycloak state:
-  `just down` then `podman volume rm hoops_pgdata` (this wipes all local data).
+  `just down` then `podman volume rm hoops_pgdata-19` (this wipes all local data).
+- A new PostgreSQL major gets a new volume (`pgdata-<major>`); a stack on an older major moves with
+  `scripts/pg-major-move.sh` (`docs/runbooks/postgresql-major.md`).

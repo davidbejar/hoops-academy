@@ -16,9 +16,10 @@ is `docs/SPEC.md` (verbatim), the plan `docs/PLAN.md` (see its implementation no
   (`internal/domain` → `application` → `adapters`, checked by `internal/archtest`), Go pinned by go.mod's `toolchain`
   line, schema `finance` (`finance_app` / `finance_migrator`), `/api/finance/**`, contract `finance.yaml`.
   Skill `go-hexagonal-service`.
-- PostgreSQL 17, one database, schema per service, `tenant_id` + Row-Level Security (RLS). App roles are
-  NON-OWNER roles (`core_app`, `game_app`, `athlete_app`, `finance_app`); Flyway (finance: its Go runner) runs as
-  `*_migrator`. The roles are listed once, in `infra/db/init/01_roles_schemas.sql` (ADR-0006 amendment).
+- PostgreSQL 19 (ADR-0073: one minor in compose, chart and test harnesses), one database, schema per service,
+  `tenant_id` + Row-Level Security (RLS). App roles are NON-OWNER roles (`core_app`, `game_app`, `athlete_app`,
+  `finance_app`); Flyway (finance: its Go runner) runs as `*_migrator`. The roles are listed once, in
+  `infra/db/init/01_roles_schemas.sql` (ADR-0006 amendment).
 - Keycloak = authentication only (realm `academy`). Tenant roles (`ADMIN`, `COACH`, `ASSISTANT_COACH`,
   `PARENT`, `PLAYER`) live in `core.membership_role`. Platform `super_admin` is a Keycloak realm role. The realm URL
   is `OIDC_AUTH_SERVER_URL` everywhere, the Admin API base `KEYCLOAK_ADMIN_URL` (ADR-0071).

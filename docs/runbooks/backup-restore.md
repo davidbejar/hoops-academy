@@ -2,7 +2,7 @@
 
 Status: **design only.** No backup or restore has been run on this project, no object store is configured, and the kind
 cluster has no backup section. Every command here is a plan to be verified when a non-local environment exists. What is
-established fact is the layout: one PostgreSQL 17 database `hoops` (schemas `core`, `billing`, `game`, `athlete`), a
+established fact is the layout: one PostgreSQL 19 database `hoops` (schemas `core`, `billing`, `game`, `athlete`), a
 separate database `keycloak`, and on Kubernetes two CloudNativePG clusters (`hoops-db`, `keycloak-db`).
 
 ## What must be backed up
@@ -44,7 +44,7 @@ podman cp hoops-postgres:/tmp/hoops.dump ./hoops-$(date +%F).dump
 Encrypt the file at rest and
 copy it off the machine. Restore into an **empty** volume so that `infra/db/init` creates the roles and schemas first:
 ```bash
-just down && podman volume rm hoops_pgdata && just up
+just down && podman volume rm hoops_pgdata-19 && just up
 podman cp ./hoops-YYYY-MM-DD.dump hoops-postgres:/tmp/hoops.dump
 podman exec -e PGPASSWORD="$POSTGRES_SUPERUSER_PASSWORD" hoops-postgres \
   pg_restore -U postgres -d hoops --clean --if-exists --no-owner /tmp/hoops.dump
