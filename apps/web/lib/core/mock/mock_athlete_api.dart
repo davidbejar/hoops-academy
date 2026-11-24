@@ -1841,16 +1841,20 @@ class MockAthleteApi {
             : 0);
   }
 
+  /// The tenant rows and the global rows no tenant row of the same test and gender overlaps in age (athlete-service's
+  /// `BandResolver.effective`).
   List<Map<String, Object?>> _effectiveNorms() {
-    final tenantKeys = {
-      for (final n in _norms.where((n) => n['global'] != true))
-        '${n['testTypeId']}/${n['gender']}',
-    };
+    final tenant = _norms.where((n) => n['global'] != true).toList();
+    bool replaced(Map<String, Object?> g) => tenant.any(
+      (t) =>
+          t['testTypeId'] == g['testTypeId'] &&
+          t['gender'] == g['gender'] &&
+          (t['minAge']! as int) <= (g['maxAge']! as int) &&
+          (g['minAge']! as int) <= (t['maxAge']! as int),
+    );
     return [
       for (final n in _norms)
-        if (n['global'] != true ||
-            !tenantKeys.contains('${n['testTypeId']}/${n['gender']}'))
-          n,
+        if (n['global'] != true || !replaced(n)) n,
     ];
   }
 
