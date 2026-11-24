@@ -11,8 +11,6 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 [ -f scripts/env.sh ] && . scripts/env.sh
 set -a; [ -f .env ] && . ./.env; set +a
-export KEYCLOAK_URL="${KEYCLOAK_URL:-http://localhost:8080/auth}"
-export OIDC_AUTH_SERVER_URL="${OIDC_AUTH_SERVER_URL:-http://localhost:8080/auth/realms/academy}"
 export PDF_SERVICE_URL="${PDF_SERVICE_URL:-http://localhost:8084}"   # pdf-service (`just pdf-up`), core and game
 OUT="$ROOT/e2e/target/services"; mkdir -p "$OUT"
 build=1; [ "${1:-}" = "--no-build" ] && build=0

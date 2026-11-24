@@ -17,9 +17,12 @@ import java.util.Map;
  */
 public final class KeycloakAdmin {
     private static final String REALM = "academy";
-    /** Admin API base. On kind the ingress only exposes realm `academy`: port-forward Keycloak and set E2E_KEYCLOAK_ADMIN_URL. */
-    private final String kc = System.getenv("E2E_KEYCLOAK_ADMIN_URL") != null && !System.getenv("E2E_KEYCLOAK_ADMIN_URL").isBlank()
-            ? System.getenv("E2E_KEYCLOAK_ADMIN_URL").replaceAll("/+$", "")
+    /**
+     * Admin API base, KEYCLOAK_ADMIN_URL as core's admin client reads it (ADR-0071), else {@code <base>/auth}. On kind the
+     * gateway only exposes realm `academy`: port-forward Keycloak and set KEYCLOAK_ADMIN_URL.
+     */
+    private final String kc = System.getenv("KEYCLOAK_ADMIN_URL") != null && !System.getenv("KEYCLOAK_ADMIN_URL").isBlank()
+            ? System.getenv("KEYCLOAK_ADMIN_URL").replaceAll("/+$", "")
             : E2eEnv.baseUrl() + "/auth";
     private final HttpClient http = Http.client(null);
 

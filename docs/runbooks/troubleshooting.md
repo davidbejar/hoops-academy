@@ -53,7 +53,7 @@ marked (unverified). Kind-specific problems are in `kind.md`, stack basics in `l
 ## Keycloak issuer mismatch
 - **Symptom:** services reject every token (401) or fail at startup discovering the issuer; the browser login loops.
 - **Cause:** the `iss` claim must equal the configured issuer exactly. Compose: `http://localhost:8080/auth/realms/academy`
-  (`OIDC_AUTH_SERVER_URL`). kind: `http://localhost:8090/auth/realms/academy` (Keycloak `KC_HOSTNAME`; pods use the
+  (`OIDC_AUTH_SERVER_URL`, the default; ADR-0071). kind: `http://localhost:8090/auth/realms/academy` (Keycloak `KC_HOSTNAME`; pods use the
   back-channel `http://keycloak:8080/auth` with `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true` so the issuer stays public).
   Opening the app at `127.0.0.1` instead of `localhost`, or on 8090 against compose settings, changes the issuer.
 - **Fix:** use `localhost` and the right port. Check: `curl -s localhost:8080/auth/realms/academy/.well-known/openid-configuration | jq -r .issuer`.

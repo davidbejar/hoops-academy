@@ -26,7 +26,7 @@ roles first; `E2E_WITHOUT_PDF_FINANCE=1` skips them), and polls `/q/health/ready
 Needs: the compose stack (Postgres, Keycloak, MailHog, nginx), `DEV_USER_PASSWORD` (the seeded `superadmin@hoops-academy.com` is the
 platform super admin), `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` and `CORE_SERVICE_CLIENT_SECRET` in `.env`.
 Settings: `E2E_MAILHOG_URL` (default `http://localhost:8025`; the SMTP sink the journey asks whether an e-mail was sent. `MailSink` detects the API: MailHog `/api/v2/messages` on compose, Mailpit `/api/v1/messages` on kind. Required: the journey fails if the sink is unreachable),
-`E2E_REDIRECT_URI` (default `<base>/redirect.html`, must match client `web`), `E2E_KEYCLOAK_ADMIN_URL` (default `<base>/auth`).
+`E2E_REDIRECT_URI` (default `<base>/redirect.html`, must match client `web`), `KEYCLOAK_ADMIN_URL` (default `<base>/auth`; the same variable as core's admin client, ADR-0071).
 
 ## Run on kind
 ```bash
@@ -37,7 +37,7 @@ deploy/kind/smoke.sh core game athlete   # pods, gateway, issuer, /internal 403,
 # the gateway exposes only realm `academy` (the Admin API of the master realm answers 403): port-forward Keycloak and MailHog
 kubectl --context kind-hoops -n hoops port-forward svc/keycloak 18080:8080 &
 kubectl --context kind-hoops -n hoops port-forward svc/mailhog 18025:8025 &
-E2E_KEYCLOAK_ADMIN_URL=http://localhost:18080/auth E2E_MAILHOG_URL=http://localhost:18025 \
+KEYCLOAK_ADMIN_URL=http://localhost:18080/auth E2E_MAILHOG_URL=http://localhost:18025 \
   ./mvnw -pl e2e test -De2e.baseUrl=http://localhost:8090
 deploy/kind/ratelimit-check.sh           # optional, afterwards: burst -> 429 (limits this client for up to a minute)
 just kind-down
@@ -116,7 +116,7 @@ journey: run `just seed-users` or re-import the realm (`docs/runbooks/local-stac
   access tokens carry `sub`; fixed in WP17, finding F-21). The suite fails fast if a token has no `sub`, and the services
   answer 401 for a JWT without `sub`. Compose imports the realm only on an empty volume. Reset: `just down && podman volume rm hoops_pgdata && just up && just seed-users`.
 - The Admin API of the master realm must be reachable: set `HOOPS_EXPOSE_KC_ADMIN=true` in `.env` (compose) and restart nginx
-  (`just down && just up`); on kind use the port-forward and `E2E_KEYCLOAK_ADMIN_URL`.
+  (`just down && just up`); on kind use the port-forward and `KEYCLOAK_ADMIN_URL`.
 - A full run takes about 70 s, of which ~60 s are the 30 s membership caches of game/athlete expiring after suspend and after reactivate; no rate limit (429) was hit.
 
 ## Browser smoke (Flutter)
