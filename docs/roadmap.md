@@ -126,8 +126,8 @@ service worker exists since WP14b.)
 - **Web test base:** since WP138 every widget and provider test runs the real repositories against the demo mock,
   seeded per test, with no repository fake (ADR-0070). Left from it: the mock answers 403 to a parent's or player's
   read of attendance, computes the age at measurement from a fixed birthday, and `FakeCore` / `FakeAthlete` keep
-  their names as data bundles. The season rollover wizard sends the opened season as source and target, which core
-  refuses: it needs a target-season choice (owner's call).
+  their names as data bundles. The season rollover wizard, which sent the opened season as source and target,
+  asks for a target season since WP141 (ADR-0072); the mock still ignores `cloneStaff` / `clonePlayers`.
 - **Demo mock depth (WP47, WP53).** Role-filtered core reads, the demo user on the staff list and persistence across
   reloads are done; members stay ADMIN-only, replay re-stamps timestamps, no suspended-tenant behaviour.
 - **Lint**: `curly_braces_in_flow_control_structures` is disabled since the `dart format` pass (WP49); re-enable it

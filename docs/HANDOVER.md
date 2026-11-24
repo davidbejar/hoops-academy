@@ -139,9 +139,9 @@ project, not a commercial product (ADR-0025).
    (`ALIBABA_CLOUD_ACCESS_KEY_ID` / `_SECRET`) or an aliyun profile; `TF_VAR_state_passphrase` (16+ characters, backed
    up); `terraform.tfvars` with their IP as /32 and their public key; a `main` commit whose images are on ghcr.io; strong
    fresh values everywhere in `.env` (`install.sh` refuses `change-me`), including the finance keys.
-2. **Season rollover wizard** (owner decision; WP138 part 2): the web wizard sends the season it was opened on as both
-   the target (path) and `fromSeasonId`; core refuses that (`ROLLOVER_SAME_SEASON`), so the wizard works only against
-   the demo mock. Not checked on the real stack. A fix makes the wizard offer a target season.
+2. **Season rollover wizard**: fixed after the round (WP141, ADR-0072, 2026-11-24): the opened season is the
+   source, the wizard asks for a later target season, the demo mock refuses what core refuses. Left for the
+   owner: one rollover in a real browser against the stack (in the demo, create the next season first).
 3. **Audit files**: deleted on 2026-11-24 with the owner's agreement (decision 111). Nothing in the repository
    linked to them.
 4. **IDR minor digits** (owner decision, WP121 / WP124): finance stores IDR with 2 minor digits (ISO 4217) and the web
@@ -297,8 +297,8 @@ project, not a commercial product (ADR-0025).
 - **First candidate: the real `tofu apply` on Alibaba Cloud** once the owner has prepared the account and key
   (Pending 1): plan, apply, kubeconfig, `install.sh`, seed and smoke through `with-cloud.sh`, destroy, each step of
   `docs/runbooks/cloud.md` marked NOT YET RUN today; then narrow the RAM policy.
-- **The rollover wizard** once the owner decides (Pending 2): offer a target season, then a check against the real
-  stack.
+- **The rollover wizard in a real browser** (Pending 2): WP141's fix is proven by widget tests on the mock and
+  by core's own tests of the request shape, not on the stack.
 - **The rounds on a real stack**: `just up` on a fresh `hoops_pgdata` volume (the one role list has not run there), the
   owner's browser walk-through (Pending 5), the Keycloak volume rebuilt from the current realm file so the INF-07
   retrofit can go; then the journey on kind, `tilt ci` on 0.15.0, ESO and Reloader with the finance Secrets, and a

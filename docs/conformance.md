@@ -65,8 +65,8 @@ sub-charts from a library chart (ADR-0068) and was proven on kind with `smoke.sh
 URL (ADR-0071). Bugs fixed on the way: game's feed cursor race and a record parked twice (WP126), athlete's tenant zone
 from a stale registry and a Monday-dependent test (WP127), a 500 in game on a replica team without a season end
 (WP134), finance's contract guard that let undeclared statuses pass (WP131), a measurement shown with 0, 1 or 2
-decimals (WP135), the web lists cut at the first page (WP129). Found and not fixed: the web's season rollover wizard
-sends the opened season as source and target, which core refuses (`ROLLOVER_SAME_SEASON`; WP138, FOLLOW-UPS). The S-09
+decimals (WP135), the web lists cut at the first page (WP129). Found by WP138 and fixed after the round (WP141, ADR-0072): the web's season rollover
+wizard sent the opened season as source and target, which core refuses (`ROLLOVER_SAME_SEASON`). The S-09
 evidence "domain ≥ 90 %" was not true for athlete until WP127 added its domain rule (since WP137 the rule is in the
 root pom for every Java service).
 

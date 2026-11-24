@@ -473,6 +473,7 @@ under "Resolved", "Ninth round".
 | 4 | WP138 | Web: the tests run against the demo mock; the separate test fakes go | Opus · high | Done (ADR-0070; five parts; test fakes 3,565 → 0 lines, only the sync worker's contract fake stays; 18 mock/contract differences decided; web 1954 tests) |
 | 5 | WP139 | One name for the realm URL everywhere; one login helper for the scripts; database roles from one list | Opus · high | Done (ADR-0071; `OIDC_AUTH_SERVER_URL` + `KEYCLOAK_ADMIN_URL`; kind smoke 57 checks; e2e 38 on compose) |
 | 6 | WP140 | Docs pass | Opus · medium | Done (HANDOVER, FOLLOW-UPS, README, conformance, roadmap, architecture, ADR index, mutation page, skills (X-14), web README; CI observed) |
+| 7 | WP141 | Web: the season rollover wizard asks for a target season; the demo mock refuses what core refuses | Opus | Done (ADR-0072; web 1958 tests; added after the round with the owner, 2026-11-24) |
 
 ### Decisions of 2026-11-23, eighth interview (product owner)
 104. **Scope of the round → WP126–WP140**: everything the audit confirmed: the bugs and gaps found on the way, the hot
@@ -524,10 +525,6 @@ under "Resolved", "Ninth round".
   (`hoops-lib.*` since WP136). The owner's `.env` was checked at the WP139 merge and needed no change.
 - **Audit files deleted** (decision 111, 2026-11-24): the owner agreed; the audit files of 2026-11-23 are gone from
   the main checkout. The briefs and handovers (finding IDs, ID-by-ID tables) are the record.
-- **Season rollover wizard** (WP138 part 2; owner decision open): the web wizard calls `rolloverSeason` with the season
-  it was opened on as both the path's target and `fromSeasonId`; `core.yaml` and core-service (`RolloverSeason`)
-  treat the path as the target and refuse the same season (`ROLLOVER_SAME_SEASON`), so the wizard works only against
-  the demo mock (which accepts it). Not checked against the real stack. A fix makes the wizard offer a target season.
 - **Other stacks after the round** (WP117, WP119, WP123 handovers): the owner's compose stack is done (the orchestrator
   ran `just events-backfill force` and `just seed-academy` after 9bb4bdb2: "7 things created", then "nothing to
   create", `just events-drift` equal). Any other stack (another machine, kind, the cloud): `just finance-up` (roles,
@@ -1020,6 +1017,14 @@ package's handover ends with an ID-by-ID table of its findings):
     `podman compose` uses on the owner's Mac refuses `up --no-deps --build`); then `just e2e` on compose after the
     WP139 merge: 38 tests green. The owner's `.env` was checked for WP139's renames and needed no change.
   - The `ci` `backend` red on 7f2a75a7 was the Monday-dependent athlete test (fixed by WP127).
+
+- **Season rollover wizard** (WP141, ADR-0072; found by WP138 part 2): the wizard sent the opened season as both
+  the path's target and `fromSeasonId`, which core refuses (`ROLLOVER_SAME_SEASON`). The opened season is now the
+  source and the wizard asks for a target among the seasons that start later (the next one by default; without
+  one the run button is off); a target that already has teams has its own message (es / en / id). The demo mock
+  follows core: path = target, body = source, the same refusals, no season created. Web 1958 tests (WP141's run).
+  Not checked in a browser. Left in the mock: it ignores `cloneStaff` / `clonePlayers`, and its eligibility case
+  points at the source team where core's points at the copy.
 
 Eighth round (WP111–WP124, 2026-11-15 and 2026-11-16; each line names the open item it closed):
 - WP114 (decision 87): **`images` red on `main`** (14 HIGH `krb5-libs` in the UBI runtime): the three Java services
