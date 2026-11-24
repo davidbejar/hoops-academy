@@ -11,42 +11,44 @@ done
 
 C="${KEYCLOAK_CONTAINER:-hoops-keycloak}"
 REALM=academy
-# Secrets are passed via the container environment of this exec, never on a command line.
-kc() { podman exec -e KCADM_PW="$KEYCLOAK_ADMIN_PASSWORD" -e DEV_PW="$DEV_USER_PASSWORD" "$C" /opt/keycloak/bin/kcadm.sh "$@"; }
 
+# The dev users (INF-04: infra/keycloak/dev-users.sh, shared with deploy/kind/seed-users.sh); secrets on stdin.
+printf '%s\n%s\n%s\n' "$KEYCLOAK_ADMIN" "$KEYCLOAK_ADMIN_PASSWORD" "$DEV_USER_PASSWORD" |
+  podman exec -i "$C" bash -c "$(cat infra/keycloak/dev-users.sh)"
+
+# kcadm for the realm retrofit below; the admin password reaches the container as environment of this exec, never on a
+# command line.
+kc() { podman exec "$C" /opt/keycloak/bin/kcadm.sh "$@"; }
 podman exec -e KCADM_PW="$KEYCLOAK_ADMIN_PASSWORD" "$C" bash -c \
   '/opt/keycloak/bin/kcadm.sh config credentials --server http://localhost:8080/auth --realm master --user "$0" --password "$KCADM_PW" >/dev/null' "$KEYCLOAK_ADMIN"
-
-# Username = e-mail (as core-service creates users). A legacy user with the bare name is deleted first: dev data only.
-ensure_user() { # name first last
-  local n="$1" f="$2" l="$3" u="$1@hoops-academy.com" id legacy
-  legacy=$(kc get users -r "$REALM" -q "username=$n" -q exact=true --fields id --format csv --noquotes | head -n1 | tr -d '\r')
-  if [ -n "$legacy" ]; then
-    kc delete "users/$legacy" -r "$REALM"
-    echo "migrated $n -> $u"
-  fi
-  id=$(kc get users -r "$REALM" -q "username=$u" -q exact=true --fields id --format csv --noquotes | head -n1 | tr -d '\r')
-  if [ -z "$id" ]; then
-    kc create users -r "$REALM" -s "username=$u" -s "email=$u" -s "firstName=$f" -s "lastName=$l" \
-       -s enabled=true -s emailVerified=true >/dev/null
-    echo "created $u"
-  else
-    kc update "users/$id" -r "$REALM" -s "email=$u" -s enabled=true -s emailVerified=true >/dev/null
-    echo "exists  $u"
-  fi
-  # Always (re)set the password from the environment; temporary=false.
-  podman exec -e KCADM_PW="$KEYCLOAK_ADMIN_PASSWORD" -e DEV_PW="$DEV_USER_PASSWORD" "$C" bash -c \
-    '/opt/keycloak/bin/kcadm.sh set-password -r "$0" --username "$1" --new-password "$DEV_PW"' "$REALM" "$u"
+# client_id_of CLIENT_ID: Keycloak's internal id of a client of the realm (empty when there is none)
+client_id_of() { kc get clients -r "$REALM" -q "clientId=$1" --fields id --format csv --noquotes | head -n1 | tr -d '\r'; }
+# realm_file PART: what the retrofit needs of infra/keycloak/realm-academy.json, the source of truth (INF-07: one reader)
+#   bearer-only  the bearer-only clients            audiences  client, mapper name, audience of each audience mapper
+#   admin-scope  clients with scope kc-admin-api    hardening  the login hardening and security-event settings as JSON
+realm_file() {
+  python3 -I - infra/keycloak/realm-academy.json "$1" <<'PY'
+import json, sys
+realm, part = json.load(open(sys.argv[1])), sys.argv[2]
+clients = realm["clients"]
+if part == "bearer-only":
+    print("\n".join(c["clientId"] for c in clients if c.get("bearerOnly")))
+elif part == "audiences":
+    for c in clients:
+        for m in c.get("protocolMappers", []):
+            if m["protocolMapper"] == "oidc-audience-mapper":
+                print(c["clientId"], m["name"], m["config"]["included.client.audience"], sep="\t")
+elif part == "admin-scope":
+    print("\n".join(c["clientId"] for c in clients if "kc-admin-api" in c.get("defaultClientScopes", [])))
+elif part == "hardening":
+    keys = ["browserSecurityHeaders", "passwordPolicy"] + [k for k in realm if k.startswith("otpPolicy")]
+    keys += ["eventsEnabled", "eventsExpiration", "eventsListeners", "enabledEventTypes", "adminEventsEnabled",
+             "adminEventsDetailsEnabled", "attributes"]
+    print(json.dumps({k: realm[k] for k in keys}))
+else:
+    sys.exit("realm_file: unknown part " + part)
+PY
 }
-
-ensure_user superadmin Super Admin
-ensure_user admin1 Alex Admin
-ensure_user coach1 Casey Coach
-ensure_user assistant1 Sam Assistant
-ensure_user parent1 Pat Parent
-ensure_user player1 Jordan Player
-
-kc add-roles -r "$REALM" --uusername superadmin@hoops-academy.com --rolename super_admin
 
 # The realm JSON is imported only into an empty volume: bring an existing realm up to date with its login theme
 # (ADR-0022) and e-mail-as-username (ADR-0023: an e-mail change moves the username, which Keycloak refuses with
@@ -56,28 +58,15 @@ kc update "realms/$REALM" -s loginTheme=hoops -s registrationEmailAsUsername=tru
 # audience mappers of each client, read from the realm file (the source of truth; existing mappers are kept).
 kc update "realms/$REALM" -s revokeRefreshToken=true -s refreshTokenMaxReuse=0 >/dev/null
 # Bearer-only clients added to the realm file after an import (pdf-service, ADR-0052): an audience, no flow, no secret.
-python3 -I - infra/keycloak/realm-academy.json <<'PY' |
-import json, sys
-for client in json.load(open(sys.argv[1]))["clients"]:
-    if client.get("bearerOnly"):
-        print(client["clientId"])
-PY
-while read -r client; do
-  if [ -z "$(kc get clients -r "$REALM" -q "clientId=$client" --fields id --format csv --noquotes | head -n1 | tr -d '\r')" ]; then
+realm_file bearer-only | while read -r client; do
+  if [ -z "$(client_id_of "$client")" ]; then
     kc create clients -r "$REALM" -s "clientId=$client" -s bearerOnly=true -s publicClient=false \
       -s standardFlowEnabled=false -s directAccessGrantsEnabled=false -s serviceAccountsEnabled=false >/dev/null
     echo "added bearer-only client $client"
   fi
 done
-python3 -I - infra/keycloak/realm-academy.json <<'PY' |
-import json, sys
-for client in json.load(open(sys.argv[1]))["clients"]:
-    for m in client.get("protocolMappers", []):
-        if m["protocolMapper"] == "oidc-audience-mapper":
-            print(client["clientId"], m["name"], m["config"]["included.client.audience"], sep="\t")
-PY
-while IFS=$'\t' read -r client mapper audience; do
-  cid=$(kc get clients -r "$REALM" -q "clientId=$client" --fields id --format csv --noquotes | head -n1 | tr -d '\r')
+realm_file audiences | while IFS=$'\t' read -r client mapper audience; do
+  cid=$(client_id_of "$client")
   [ -n "$cid" ] || { echo "seed-users: realm has no client $client" >&2; exit 1; }
   if ! kc get "clients/$cid/protocol-mappers/models" -r "$REALM" --fields name --format csv --noquotes | tr -d '\r' \
       | grep -qxF "$mapper"; then
@@ -91,16 +80,10 @@ done
 # Keycloak 26.8.2 and later: the Admin REST API only accepts tokens issued for it, which the built-in client scope
 # kc-admin-api provides. A realm imported before the realm file had it on core-service gets it here (clients read from
 # the realm file); without it every admin call of the service account returns 401.
-python3 -I - infra/keycloak/realm-academy.json <<'PY' |
-import json, sys
-for client in json.load(open(sys.argv[1]))["clients"]:
-    if "kc-admin-api" in client.get("defaultClientScopes", []):
-        print(client["clientId"])
-PY
-while read -r client; do
+realm_file admin-scope | while read -r client; do
   sid=$(kc get client-scopes -r "$REALM" --fields id,name --format csv --noquotes | tr -d '\r' | awk -F, '$2 == "kc-admin-api" {print $1}')
   [ -n "$sid" ] || { echo "seed-users: realm has no client scope kc-admin-api (Keycloak older than 26.8.2?)" >&2; exit 1; }
-  cid=$(kc get clients -r "$REALM" -q "clientId=$client" --fields id --format csv --noquotes | head -n1 | tr -d '\r')
+  cid=$(client_id_of "$client")
   [ -n "$cid" ] || { echo "seed-users: realm has no client $client" >&2; exit 1; }
   if ! kc get "clients/$cid/default-client-scopes" -r "$REALM" --fields name --format csv --noquotes | tr -d '\r' \
       | grep -qxF kc-admin-api; then
@@ -112,13 +95,6 @@ done
 # blocklist and the OTP policy, read from the realm file. Keycloak's built-in browser flow already asks for the OTP only
 # when a login set one up, so no flow changes. Security events of ADR-0043 the same way: user events stored for 30 days
 # and logged by jboss-logging, admin events without representation, their expiry (realm attribute; others are kept).
-python3 -I - infra/keycloak/realm-academy.json <<'PY' |
-import json, sys
-realm = json.load(open(sys.argv[1]))
-keys = ["browserSecurityHeaders", "passwordPolicy"] + [k for k in realm if k.startswith("otpPolicy")]
-keys += ["eventsEnabled", "eventsExpiration", "eventsListeners", "enabledEventTypes", "adminEventsEnabled",
-         "adminEventsDetailsEnabled", "attributes"]
-print(json.dumps({k: realm[k] for k in keys}))
-PY
+realm_file hardening |
   podman exec -i "$C" bash -c 'f=$(mktemp) && cat > "$f" && /opt/keycloak/bin/kcadm.sh update "realms/$0" -f "$f"; rc=$?; rm -f "$f"; exit $rc' "$REALM"
 echo "seed-users: done (superadmin has super_admin; login theme hoops; e-mail as username; token audiences, rotation; kc-admin-api scope; CSP, password blocklist, OTP policy; security events)"
