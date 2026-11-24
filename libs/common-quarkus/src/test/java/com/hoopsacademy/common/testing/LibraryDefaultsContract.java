@@ -25,6 +25,8 @@ public abstract class LibraryDefaultsContract {
 
     private static final String LIBRARY_FILE = "META-INF/microprofile-config.properties";
     private static final String LIBRARY_MARKER = "common-quarkus";
+    /** Where {@code just up} serves the realm (ADR-0071): {@code quarkus:dev} needs no variable against compose. */
+    private static final String REALM_DEFAULT = "http://localhost:8080/auth/realms/academy";
 
     /** The keys moved out of the three services' files, with the value each service must see in production. */
     private static final Map<String, String> SHARED_IN_PRODUCTION = Map.ofEntries(
@@ -32,6 +34,8 @@ public abstract class LibraryDefaultsContract {
             Map.entry("quarkus.flyway.create-schemas", "false"),
             Map.entry("quarkus.hibernate-orm.schema-management.strategy", "none"),
             Map.entry("quarkus.oidc.roles.role-claim-path", "realm_access/roles"),
+            Map.entry("quarkus.oidc.auth-server-url", REALM_DEFAULT),
+            Map.entry("quarkus.oidc-client.auth-server-url", REALM_DEFAULT),
             Map.entry("quarkus.oidc-client.early-tokens-acquisition", "false"),
             Map.entry("kafka.bootstrap.servers", "localhost:19092"),
             Map.entry("kafka.security.protocol", "PLAINTEXT"),
@@ -53,6 +57,16 @@ public abstract class LibraryDefaultsContract {
         ShippedConfig prod = ShippedConfig.load("prod", Map.of());
 
         SHARED_IN_PRODUCTION.forEach((key, value) -> assertThat(prod.value(key)).as(key).contains(value));
+    }
+
+    @Test
+    void oneVariableNamesTheRealmForTokenValidationAndServiceTokens() {
+        String realm = "https://sso.example/auth/realms/academy";
+        ShippedConfig prod = ShippedConfig.load("prod",
+                Map.of("OIDC_AUTH_SERVER_URL", realm, "KEYCLOAK_URL", "http://retired.example"));
+
+        assertThat(prod.value("quarkus.oidc.auth-server-url")).contains(realm);
+        assertThat(prod.value("quarkus.oidc-client.auth-server-url")).contains(realm);
     }
 
     @Test
