@@ -5,25 +5,25 @@ import 'package:hoops_app/features/training/application/exercise_providers.dart'
 import 'package:hoops_app/features/training/application/training_providers.dart';
 import 'package:hoops_app/features/training/domain/exercise_filter.dart';
 
+import '../../support/athlete_seed.dart';
 import '../../support/fake_athlete.dart';
+import '../../support/mock_backend.dart';
 
 /// The catalogue's state (WP92): what is asked for, paging and the commands.
 void main() {
-  late FakeExercisesRepository repo;
+  late ExercisesData repo;
   late ProviderContainer container;
 
   setUp(() {
-    repo = FakeExercisesRepository(
-      exercises: [
-        exercise('g-cooper', 'Test de Cooper (12 min)', global: true),
-        exercise('g-ft', 'Tiros libres', global: true),
-        exercise('own-1', 'Rueda de pases', minutes: 8),
-        exercise('own-old', 'Zona 2-3', archived: true),
-      ],
-    );
+    repo = ExercisesData([
+      exercise('g-cooper', 'Test de Cooper (12 min)', global: true),
+      exercise('g-ft', 'Tiros libres', global: true),
+      exercise('own-1', 'Rueda de pases', minutes: 8),
+      exercise('own-old', 'Zona 2-3', archived: true),
+    ])..seedInto(MockBackend());
     container = ProviderContainer(
       overrides: [
-        exercisesRepositoryProvider.overrideWithValue(repo),
+        ...repo.overrides,
         uiLanguageProvider.overrideWithValue('id'),
       ],
     );
@@ -87,12 +87,10 @@ void main() {
   });
 
   test('more pages are appended until the last one', () async {
-    repo.exerciseList
-      ..clear()
-      ..addAll([
-        for (var i = 0; i < ExerciseCatalogueNotifier.pageSize + 2; i++)
-          exercise('e${i.toString().padLeft(3, '0')}', 'Ejercicio $i'),
-      ]);
+    repo.exerciseList = [
+      for (var i = 0; i < ExerciseCatalogueNotifier.pageSize + 2; i++)
+        exercise('e${i.toString().padLeft(3, '0')}', 'Ejercicio $i'),
+    ];
     await shown();
     expect(container.read(exerciseCatalogueProvider).value!.hasMore, isTrue);
 
@@ -111,19 +109,23 @@ void main() {
 
     await catalogue.create(ath.ExerciseInput((b) => b..title = 'Abanico'));
     expect(repo.created!.title, 'Abanico');
-    expect(await shown(), ['own-4', 'own-1', 'g-cooper', 'g-ft']);
+    final made = repo.createdId;
+    expect(await shown(), [made, 'own-1', 'g-cooper', 'g-ft']);
 
     await catalogue.edit(
       'own-1',
       ath.UpdateExerciseRequest((b) => b..title = 'Rueda larga'),
     );
-    expect(repo.exerciseList[2].title, 'Rueda larga');
+    expect(
+      repo.exerciseList.firstWhere((e) => e.id == 'own-1').title,
+      'Rueda larga',
+    );
 
     await catalogue.archive('own-1');
-    expect(await shown(), ['own-4', 'g-cooper', 'g-ft']);
+    expect(await shown(), [made, 'g-cooper', 'g-ft']);
     await catalogue.unarchive('own-1');
-    expect(await shown(), ['own-4', 'own-1', 'g-cooper', 'g-ft']);
-    expect(repo.calls, containsAllInOrder(['create', 'update', 'archive']));
+    expect(await shown(), [made, 'own-1', 'g-cooper', 'g-ft']);
+    expect(repo.writes, containsAllInOrder(['create', 'update', 'archive']));
   });
 
   test('the quick-add search: both scopes, never archived ones', () async {

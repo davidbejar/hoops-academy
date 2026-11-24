@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../support/athlete_scenarios.dart';
+import '../support/athlete_seed.dart';
 import '../support/fake_athlete.dart';
 import '../support/pump_helpers.dart';
 
@@ -21,9 +22,7 @@ void main() {
       roles: {TenantRole.coach},
       staffTeamIds: {'t1'},
       core: athleteCore(),
-      athlete: FakeAthlete(
-        exercises: FakeExercisesRepository(exercises: catalogueExercises()),
-      ),
+      athlete: FakeAthlete(exercises: ExercisesData(catalogueExercises())),
       size: size,
       location: '/training/plans',
     );
@@ -53,9 +52,7 @@ void main() {
       roles: {TenantRole.parent},
       linkedPlayerIds: {'p1'},
       core: athleteCore(),
-      athlete: FakeAthlete(
-        exercises: FakeExercisesRepository(exercises: catalogueExercises()),
-      ),
+      athlete: FakeAthlete(exercises: ExercisesData(catalogueExercises())),
       size: const Size(360, 780),
       location: '/training/exercises',
     );

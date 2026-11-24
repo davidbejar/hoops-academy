@@ -138,6 +138,7 @@ class Harness {
       this.backend.seedMembership(first);
     }
     this.game.seedInto(this.backend);
+    this.athlete.seedInto(this.backend);
   }
 
   final FakeMeRepository me;

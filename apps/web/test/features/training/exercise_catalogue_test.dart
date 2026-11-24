@@ -5,6 +5,7 @@ import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
+import '../../support/athlete_seed.dart';
 import '../../support/fake_athlete.dart';
 import '../../support/pump_helpers.dart';
 
@@ -13,9 +14,7 @@ import '../../support/pump_helpers.dart';
 /// created, edited and archived by staff.
 FakeAthlete catalogueAthlete({List<ath.Exercise>? exercises}) => FakeAthlete(
   plans: weekAthlete().plans,
-  exercises: FakeExercisesRepository(
-    exercises: exercises ?? catalogueExercises(),
-  ),
+  exercises: ExercisesData(exercises ?? catalogueExercises()),
 );
 
 /// Opens the plan library on its exercise tab, on a phone tall enough to
@@ -155,7 +154,7 @@ void main() {
       ('Tres hombres', 'Contraataque', 10, 3, null, 'https://v.example/3h'),
     );
     expect(find.text('Ejercicio creado'), findsOneWidget);
-    expect(row('own-4'), findsOneWidget);
+    expect(row(athlete.exercises.createdId), findsOneWidget);
   });
 
   testWidgets('a title is required', (tester) async {
@@ -165,7 +164,7 @@ void main() {
     await tapKey(tester, 'form-submit');
 
     expect(find.text('Campo obligatorio'), findsOneWidget);
-    expect(athlete.exercises.calls, isNot(contains('create')));
+    expect(athlete.exercises.writes, isNot(contains('create')));
   });
 
   testWidgets('staff edit one of the academy: emptied fields are cleared', (
@@ -212,7 +211,7 @@ void main() {
     expect(find.text('Ejercicio restaurado'), findsOneWidget);
     expect(find.byKey(const Key('exercise-archived-own-1')), findsNothing);
     expect(
-      athlete.exercises.calls,
+      athlete.exercises.writes,
       containsAllInOrder(['archive', 'unarchive']),
     );
   });
@@ -291,6 +290,8 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(row('g-cooper'), findsNothing);
+    athlete.exercises.hang = false;
+    await tester.pumpAndSettle();
   });
 
   testWidgets('long catalogues load page by page', (tester) async {

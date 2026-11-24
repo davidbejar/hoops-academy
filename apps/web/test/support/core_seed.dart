@@ -326,8 +326,9 @@ class MembersData {
   ];
 }
 
-/// Turns a fake's `failWith` / `hang` into a fault of [backend] on [path].
-void _injectInto(MockBackend backend, Object error, Pattern path) {
+/// Turns a test's `failWith` (an [AppError] or a [DioException]) into a
+/// fault of [backend] on [path].
+void injectInto(MockBackend backend, Object error, Pattern path) {
   if (error is AppError) {
     if (error.kind == AppErrorKind.network) {
       return backend.networkDown(path);
@@ -390,7 +391,7 @@ class TeamsData {
     }
     if (_hang) backend.hang(_api);
     for (final (error, path) in _pending) {
-      _injectInto(backend, error, path);
+      injectInto(backend, error, path);
     }
   }
 
@@ -402,7 +403,7 @@ class TeamsData {
     }
     _backend == null
         ? _pending.add((error, path))
-        : _injectInto(_b, error, path);
+        : injectInto(_b, error, path);
   }
 
   List<api.Team> get teams => _backend == null
@@ -550,7 +551,7 @@ class PlayersData {
     backend.seedPlayers(_players);
     if (_hang) backend.hang(_api);
     for (final e in _pending) {
-      _injectInto(backend, e, _api);
+      injectInto(backend, e, _api);
     }
   }
 
@@ -569,7 +570,7 @@ class PlayersData {
       _pending.clear();
       _backend?.heal();
     } else {
-      _backend == null ? _pending.add(error) : _injectInto(_b, error, _api);
+      _backend == null ? _pending.add(error) : injectInto(_b, error, _api);
     }
   }
 

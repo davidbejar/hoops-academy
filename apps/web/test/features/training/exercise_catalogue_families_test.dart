@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
+import '../../support/athlete_seed.dart';
 import '../../support/fake_athlete.dart';
 import '../../support/pump_helpers.dart';
 
@@ -10,7 +11,7 @@ import '../../support/pump_helpers.dart';
 /// the training area, read-only; staff keep the plan library's tab.
 FakeAthlete _athlete() => FakeAthlete(
   plans: weekAthlete().plans,
-  exercises: FakeExercisesRepository(exercises: catalogueExercises()),
+  exercises: ExercisesData(catalogueExercises()),
 );
 
 Future<void> _pump(

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import '../time/dates.dart';
 import '../time/tenant_zone.dart';
 import 'mock_authz.dart';
@@ -51,6 +53,11 @@ class MockAthleteApi {
 
   /// Catalogue rows: a global one keeps its texts per language in `texts`.
   final _exercises = <Map<String, Object?>>[];
+
+  /// The catalogue, for the widget tests to seed (ADR-0070): a row without
+  /// `texts` is shown as stored.
+  @visibleForTesting
+  List<Map<String, Object?>> get exercises => _exercises;
   final _assignments = <Map<String, Object?>>[];
   final _completions = <Map<String, Object?>>[];
   final _injuries = <Map<String, Object?>>[];

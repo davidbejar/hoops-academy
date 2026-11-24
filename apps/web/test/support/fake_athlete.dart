@@ -4,13 +4,13 @@ import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/features/health/application/health_providers.dart';
 import 'package:hoops_app/features/health/data/fitness_repository.dart';
 import 'package:hoops_app/features/health/data/health_repository.dart';
-import 'package:hoops_app/features/training/application/exercise_providers.dart';
 import 'package:hoops_app/features/training/application/training_providers.dart';
-import 'package:hoops_app/features/training/data/exercises_repository.dart';
 import 'package:hoops_app/features/training/data/plans_repository.dart';
 import 'package:hoops_app/features/training/data/training_repository.dart';
 
+import 'athlete_seed.dart';
 import 'fake_repos.dart' show Faulty;
+import 'mock_backend.dart';
 
 /// An update field as the server applies it (ADR-0032): named in `clear` = null, null = unchanged.
 T? patched<T, E>(BuiltSet<E>? clear, E name, T? value, T? current) =>
@@ -355,7 +355,7 @@ class FakeTrainingRepository with Faulty implements TrainingRepository {
   FakePlansRepository? plans;
 
   /// The catalogue quick-adds copy exercises from (set by [FakeAthlete]).
-  FakeExercisesRepository? exercises;
+  ExercisesData? exercises;
   final List<List<ath.PlanItemSource>> quickAdded = [];
 
   /// Fails quick-adds only (a session is still created).
@@ -687,7 +687,7 @@ class FakePlansRepository with Faulty implements PlansRepository {
   String? lastQuery;
 
   /// The catalogue quick-adds copy exercises from (set by [FakeAthlete]).
-  FakeExercisesRepository? exercises;
+  ExercisesData? exercises;
 
   /// The sources of every quick-add into a plan, per call.
   final List<List<ath.PlanItemSource>> quickAdded = [];
@@ -1350,161 +1350,18 @@ class FakeFitnessRepository with Faulty implements FitnessRepository {
 }
 
 /// One `listExercises` call as the server gets it.
-typedef ExerciseQuery = ({
-  String? query,
-  ath.ExerciseScope? scope,
-  bool includeArchived,
-  int page,
-  int size,
-  String? language,
-});
-
-/// The catalogue order: the shown title, case-insensitive, then the id.
-int byTitleThenId(ath.Exercise a, ath.Exercise b) {
-  final byTitle = a.title.toLowerCase().compareTo(b.title.toLowerCase());
-  return byTitle != 0 ? byTitle : a.id.compareTo(b.id);
-}
-
-/// The exercise catalogue like athlete 3.0.0: ordered by title (then id),
-/// `query` a part of the title, archived ones only on request, paged.
-class FakeExercisesRepository with Faulty implements ExercisesRepository {
-  FakeExercisesRepository({List<ath.Exercise>? exercises})
-    : exerciseList = exercises ?? [];
-
-  final List<ath.Exercise> exerciseList;
-  final List<ExerciseQuery> queries = [];
-  ath.ExerciseInput? created;
-  ath.UpdateExerciseRequest? updated;
-
-  @override
-  Future<ath.ExercisePage> exercises({
-    String? query,
-    ath.ExerciseScope? scope,
-    bool includeArchived = false,
-    int page = 0,
-    int size = 50,
-    String? language,
-  }) => run('exercises', () {
-    queries.add((
-      query: query,
-      scope: scope,
-      includeArchived: includeArchived,
-      page: page,
-      size: size,
-      language: language,
-    ));
-    final q = query?.toLowerCase();
-    final found = [
-      for (final e in exerciseList)
-        if ((includeArchived || !e.archived) &&
-            (scope == null ||
-                e.global == (scope == ath.ExerciseScope.GLOBAL)) &&
-            (q == null || e.title.toLowerCase().contains(q)))
-          e,
-    ]..sort(byTitleThenId);
-    final from = (page * size).clamp(0, found.length);
-    final to = (from + size).clamp(0, found.length);
-    return ath.ExercisePage(
-      (b) => b
-        ..items.replace(found.sublist(from, to))
-        ..page.page = page
-        ..page.size = size
-        ..page.totalElements = found.length
-        ..page.totalPages = (found.length + size - 1) ~/ size,
-    );
-  });
-
-  ath.Exercise _put(String id, ath.Exercise Function(ath.Exercise) change) {
-    final i = exerciseList.indexWhere((e) => e.id == id);
-    return exerciseList[i] = change(exerciseList[i]);
-  }
-
-  @override
-  Future<ath.Exercise> create(ath.ExerciseInput input) => run('create', () {
-    created = input;
-    final e = exercise(
-      'own-${exerciseList.length}',
-      input.title,
-      description: input.description,
-      minutes: input.durationMinutes,
-      sets: input.sets,
-      reps: input.repetitions,
-      video: input.videoUrl,
-    );
-    exerciseList.add(e);
-    return e;
-  });
-
-  @override
-  Future<ath.Exercise> update(
-    String exerciseId,
-    ath.UpdateExerciseRequest request,
-  ) => run('update', () {
-    updated = request;
-    final clear = request.clear;
-    return _put(
-      exerciseId,
-      (e) => e.rebuild(
-        (b) => b
-          ..title = request.title ?? b.title
-          ..description = patched(
-            clear,
-            ath.UpdateExerciseRequestClearEnum.description,
-            request.description,
-            b.description,
-          )
-          ..durationMinutes = patched(
-            clear,
-            ath.UpdateExerciseRequestClearEnum.durationMinutes,
-            request.durationMinutes,
-            b.durationMinutes,
-          )
-          ..sets = patched(
-            clear,
-            ath.UpdateExerciseRequestClearEnum.sets,
-            request.sets,
-            b.sets,
-          )
-          ..repetitions = patched(
-            clear,
-            ath.UpdateExerciseRequestClearEnum.repetitions,
-            request.repetitions,
-            b.repetitions,
-          )
-          ..videoUrl = patched(
-            clear,
-            ath.UpdateExerciseRequestClearEnum.videoUrl,
-            request.videoUrl,
-            b.videoUrl,
-          ),
-      ),
-    );
-  });
-
-  @override
-  Future<ath.Exercise> archive(String exerciseId) => run(
-    'archive',
-    () => _put(exerciseId, (e) => e.rebuild((b) => b..archived = true)),
-  );
-
-  @override
-  Future<ath.Exercise> unarchive(String exerciseId) => run(
-    'unarchive',
-    () => _put(exerciseId, (e) => e.rebuild((b) => b..archived = false)),
-  );
-}
-
-/// All athlete-service fakes; plug into the Harness like `FakeGame`.
+/// The athlete-service side of a test: the fakes not moved yet and the
+/// exercise catalogue, which the backend's athlete mock serves (ADR-0070).
 class FakeAthlete {
   FakeAthlete({
     FakeTrainingRepository? training,
     FakePlansRepository? plans,
-    FakeExercisesRepository? exercises,
+    ExercisesData? exercises,
     FakeHealthRepository? health,
     FakeFitnessRepository? fitness,
   }) : training = training ?? FakeTrainingRepository(),
        plans = plans ?? FakePlansRepository(),
-       exercises = exercises ?? FakeExercisesRepository(),
+       exercises = exercises ?? ExercisesData(),
        health = health ?? FakeHealthRepository(),
        fitness = fitness ?? FakeFitnessRepository() {
     this.training
@@ -1515,14 +1372,16 @@ class FakeAthlete {
 
   final FakeTrainingRepository training;
   final FakePlansRepository plans;
-  final FakeExercisesRepository exercises;
+  final ExercisesData exercises;
   final FakeHealthRepository health;
   final FakeFitnessRepository fitness;
+
+  /// Seeds what the backend serves: the exercise catalogue.
+  void seedInto(MockBackend backend) => exercises.seedInto(backend);
 
   List<Override> get overrides => [
     trainingRepositoryProvider.overrideWithValue(training),
     plansRepositoryProvider.overrideWithValue(plans),
-    exercisesRepositoryProvider.overrideWithValue(exercises),
     healthRepositoryProvider.overrideWithValue(health),
     fitnessRepositoryProvider.overrideWithValue(fitness),
   ];
