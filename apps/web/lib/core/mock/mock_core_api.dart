@@ -960,7 +960,7 @@ class MockCoreApi {
           return MockResult.json(200, s);
         }
         if (id != null && sub == 'rollover' && is_('POST'))
-          return MockResult.json(200, _rollover(id));
+          return _rollover(id, b);
       case 'age-categories':
         if (id == null && is_('GET')) return MockResult.json(200, _categories);
         if (id == null && is_('POST')) {
@@ -1163,16 +1163,33 @@ class MockCoreApi {
     return const MockResult.empty(204);
   }
 
-  Map<String, Object?> _rollover(String fromId) {
-    final next = {
-      'id': _id('season'),
-      'name': 'Temporada siguiente',
-      'startsOn': '2027-09-01',
-      'endsOn': '2028-06-30',
-      'referenceYear': 2027,
-      'current': false,
-    };
-    _seasons.add(next);
+  /// `POST /seasons/{target}/rollover` (core.yaml, core's `RolloverSeason`):
+  /// the path is the target season, `fromSeasonId` the source; both must
+  /// exist (404), differ (422 `ROLLOVER_SAME_SEASON`), the source must start
+  /// before the target (422 `ROLLOVER_BACKWARDS`) and the target have no
+  /// teams yet (409 `ROLLOVER_TARGET_NOT_EMPTY`).
+  MockResult _rollover(String targetId, Map<String, Object?> b) {
+    final fromId = b['fromSeasonId'];
+    if (fromId is! String) return mockProblem(400, 'fromSeasonId is required');
+    Map<String, Object?>? find(String id) =>
+        _seasons.where((s) => s['id'] == id).firstOrNull;
+    final target = find(targetId);
+    final source = find(fromId);
+    if (target == null || source == null) {
+      return mockProblem(404, 'Season not found');
+    }
+    if (fromId == targetId) {
+      return mockProblem(422, 'Same season', code: 'ROLLOVER_SAME_SEASON');
+    }
+    if ((source['startsOn']! as String).compareTo(
+          target['startsOn']! as String,
+        ) >=
+        0) {
+      return mockProblem(422, 'Backwards', code: 'ROLLOVER_BACKWARDS');
+    }
+    if (_teams.any((t) => t['seasonId'] == targetId)) {
+      return mockProblem(409, 'Not empty', code: 'ROLLOVER_TARGET_NOT_EMPTY');
+    }
     final cloned = <Object?>[];
     final orphans = <Object?>[];
     final opened = <Object?>[];
@@ -1180,19 +1197,22 @@ class MockCoreApi {
       final copy = {
         ...t,
         'id': _id('team'),
-        'seasonId': next['id'],
+        'seasonId': targetId,
         'seasonEnded': false,
         'playerCount': 0,
       };
       _teams.add(copy);
       cloned.add({'id': copy['id'], 'name': copy['name']});
     }
-    // With the 2027 reference year the oldest players of a team outgrow it.
+    // With the target's reference year the oldest players of a source team
+    // outgrow it.
+    final year = target['referenceYear']! as int;
     for (final p in _players.where((p) => p['status'] == 'ACTIVE')) {
-      final age = 2027 - int.parse((p['birthDate']! as String).substring(0, 4));
+      final age = year - int.parse((p['birthDate']! as String).substring(0, 4));
       for (final a in (p['teams']! as List).cast<Map<String, Object?>>()) {
         final t = _teamById((a['team'] as Map)['id'] as String);
-        if (age > ((t['ageCategory']! as Map)['maxAge'] as int)) {
+        final maxAge = (t['ageCategory']! as Map)['maxAge'] as int?;
+        if (t['seasonId'] == fromId && maxAge != null && age > maxAge) {
           orphans.add({
             'player': _ref(p['id']! as String, p['displayName']! as String),
             'previousTeam': {'id': t['id'], 'name': t['name']},
@@ -1211,13 +1231,13 @@ class MockCoreApi {
         }
       }
     }
-    return {
+    return MockResult.json(200, {
       'fromSeasonId': fromId,
-      'toSeasonId': next['id'],
+      'toSeasonId': targetId,
       'clonedTeams': cloned,
       'orphans': orphans,
       'openedCaseIds': opened,
-    };
+    });
   }
 
   MockResult? _members_(
