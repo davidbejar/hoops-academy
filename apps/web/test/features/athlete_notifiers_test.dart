@@ -17,28 +17,43 @@ import 'package:hoops_app/features/training/application/training_providers.dart'
 import 'package:flutter_riverpod/misc.dart' show Override;
 
 import '../support/athlete_scenarios.dart';
+import '../support/athlete_seed.dart';
 import '../support/fake_athlete.dart';
 import '../support/mock_backend.dart';
 import '../support/platform_seed.dart';
 import '../support/fake_repos.dart';
+import '../support/core_seed.dart';
+import '../support/fixtures.dart';
 
+/// The providers on a backend seeded with [core] and [a], whose authz matches
+/// [caps] (ADR-0070).
 ProviderContainer _container(
   FakeAthlete a,
   Capabilities caps, {
   FakeCore? core,
   List<Override> more = const [],
 }) {
+  final backend = (core ?? athleteCore()).seededBackend(
+    MockBackend(roles: caps.roles),
+  );
+  backend.seedMembership(
+    membershipWithRoles(
+      caps.roles,
+      staffTeamIds: caps.staffTeamIds,
+      linkedPlayerIds: caps.linkedPlayerIds,
+      ownPlayerId: caps.ownPlayerId,
+    ),
+  );
+  a.seedInto(backend);
   final c = ProviderContainer(
     retry: (_, _) => null,
     overrides: [
       capabilitiesProvider.overrideWithValue(caps),
       effectiveLocaleProvider.overrideWithValue(const Locale('es')),
       ...a.overrides,
+      ...a.apiOverrides(backend),
       teamsRepositoryProvider.overrideWithValue(
-        ApiTeamsRepository(
-          (core ?? athleteCore()).seededBackend().coreApi(),
-          MockBackend.testTenantId,
-        ),
+        ApiTeamsRepository(backend.coreApi(), backend.tenantAId),
       ),
       ...more,
     ],
@@ -259,7 +274,7 @@ void main() {
 
   group('health', () {
     test('injuries newest first; recover refreshes the open-injury map used by the badge', () async {
-      final health = FakeHealthRepository(
+      final health = HealthData(
         injuries: [
           injury(
             'old',
@@ -277,6 +292,8 @@ void main() {
         FakeAthlete(health: health),
         const Capabilities(roles: {TenantRole.admin}),
       );
+      c.listen(injuriesProvider('p1'), (_, _) {}); // auto-dispose, as on screen
+      c.listen(openInjuriesProvider, (_, _) {});
       expect((await c.read(injuriesProvider('p1').future)).map((i) => i.id), [
         'open',
         'old',
@@ -289,7 +306,7 @@ void main() {
     });
 
     test('measurements are ordered oldest first for the chart', () async {
-      final health = FakeHealthRepository(
+      final health = HealthData(
         measurements: [
           measurement('b', 'p1', ath.Date(2026, 6, 1), height: 144),
           measurement('a', 'p1', ath.Date(2026, 1, 1), height: 140),
@@ -299,6 +316,7 @@ void main() {
         FakeAthlete(health: health),
         const Capabilities(roles: {TenantRole.admin}),
       );
+      c.listen(measurementsProvider('p1'), (_, _) {}); // auto-dispose
       expect(
         (await c.read(measurementsProvider('p1').future)).map((m) => m.id),
         ['a', 'b'],

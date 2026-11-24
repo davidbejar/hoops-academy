@@ -5,6 +5,7 @@ import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
+import '../../support/athlete_seed.dart';
 import '../../support/fake_athlete.dart';
 import '../../support/problems.dart';
 import '../../support/pump_helpers.dart';
@@ -13,7 +14,7 @@ final _jump = testType('ty-jump', 'VJ', 'Salto vertical', 'cm');
 final _sprint = testType('ty-sprint', 'S20', 'Sprint 20 m', 's', higher: false);
 
 FakeAthlete _athlete() => FakeAthlete(
-  health: FakeHealthRepository(
+  health: HealthData(
     injuries: [
       injury('inj-1', 'p1', part: 'Rodilla', expected: ath.Date(2026, 11, 30)),
       injury(
@@ -172,7 +173,7 @@ void main() {
       expect(find.text('Sin lesiones registradas'), findsOneWidget);
       await _staff(
         tester,
-        FakeAthlete(health: FakeHealthRepository()..failWith = StateError('x')),
+        FakeAthlete(health: HealthData()..failWith = StateError('x')),
       );
       expect(find.text('Reintentar'), findsWidgets);
     });

@@ -6,6 +6,7 @@ import 'package:hoops_app/core/session/session.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
+import '../../support/athlete_seed.dart';
 import '../../support/fake_athlete.dart';
 import '../../support/fixtures.dart';
 import '../../support/pump_helpers.dart';
@@ -51,9 +52,7 @@ FakeAthlete _athlete() {
       ],
     ),
     plans: plans,
-    health: FakeHealthRepository(
-      injuries: [injury('inj-1', 'p1', part: 'Rodilla')],
-    ),
+    health: HealthData(injuries: [injury('inj-1', 'p1', part: 'Rodilla')]),
   );
 }
 

@@ -6,6 +6,7 @@ import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:hoops_app/core/api/api.dart' as api;
+import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/core/http/dio_provider.dart';
 import 'package:hoops_app/core/http/mock_api_adapter.dart';
 import 'package:hoops_app/core/mock/mock_core_api.dart';
@@ -60,6 +61,10 @@ class MockBackend extends MockApiAdapter {
   /// The generated core client on [dio].
   api.HoopsCoreApi coreApi() =>
       api.HoopsCoreApi(dio: dio(), interceptors: const []);
+
+  /// The generated athlete client on [dio].
+  ath.HoopsAthleteApi athleteApi() =>
+      ath.HoopsAthleteApi(dio: dio(), interceptors: const []);
 
   /// Points the app's one Dio at this backend.
   List<Override> get overrides => [apiAdapterProvider.overrideWithValue(this)];

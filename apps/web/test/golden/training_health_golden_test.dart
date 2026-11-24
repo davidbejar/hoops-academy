@@ -9,6 +9,7 @@ import '../support/athlete_scenarios.dart';
 import '../support/core_fixtures.dart';
 import '../support/core_seed.dart';
 import '../support/fake_repos.dart';
+import '../support/athlete_seed.dart';
 import '../support/fake_athlete.dart';
 import '../support/pump_helpers.dart';
 import '../support/kit_harness.dart';
@@ -87,7 +88,7 @@ FakeAthlete _demoWeek() => FakeAthlete(
 );
 
 FakeAthlete _leoHealth() => FakeAthlete(
-  health: FakeHealthRepository(
+  health: HealthData(
     injuries: [
       injury(
         'inj-1',

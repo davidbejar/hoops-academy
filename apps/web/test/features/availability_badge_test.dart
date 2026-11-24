@@ -4,6 +4,7 @@ import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../support/core_fixtures.dart';
+import '../support/athlete_seed.dart';
 import '../support/fake_athlete.dart';
 import '../support/game_seed.dart' show teamA;
 import '../support/core_seed.dart';
@@ -13,7 +14,7 @@ import 'match/presentation/match_screens_test.dart'
     show coreWithTeam, gameWith, sched;
 
 FakeAthlete _withInjury() => FakeAthlete(
-  health: FakeHealthRepository(
+  health: HealthData(
     injuries: [
       injury('inj-1', 'p1', part: 'Rodilla', expected: ath.Date(2026, 11, 30)),
     ],

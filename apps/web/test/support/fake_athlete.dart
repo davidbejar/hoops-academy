@@ -1012,142 +1012,6 @@ class FakePlansRepository with Faulty implements PlansRepository {
   });
 }
 
-class FakeHealthRepository with Faulty implements HealthRepository {
-  FakeHealthRepository({
-    List<ath.Injury>? injuries,
-    List<ath.BodyMeasurement>? measurements,
-  }) : injuryList = injuries ?? [],
-       measurementList = measurements ?? [];
-
-  final List<ath.Injury> injuryList;
-  final List<ath.BodyMeasurement> measurementList;
-  ath.CreateInjuryRequest? createdInjury;
-  ath.UpdateInjuryRequest? lastInjuryUpdate;
-  ath.BodyMeasurementInput? createdMeasurement;
-  ath.UpdateBodyMeasurementRequest? updatedMeasurement;
-
-  @override
-  Future<List<ath.Injury>> injuries({
-    String? playerId,
-    String? teamId,
-    ath.InjuryStatus? status,
-  }) => run(
-    'injuries',
-    () => [
-      for (final i in injuryList)
-        if ((playerId == null || i.playerId == playerId) &&
-            (status == null || i.status == status))
-          i,
-    ],
-  );
-
-  @override
-  Future<ath.Injury> createInjury(ath.CreateInjuryRequest request) =>
-      run('createInjury', () {
-        createdInjury = request;
-        final i = injury(
-          'inj-${injuryList.length}',
-          request.playerId,
-          part: request.bodyPart,
-          severity: request.severity,
-          expected: request.expectedReturnOn,
-        );
-        injuryList.add(i);
-        return i;
-      });
-
-  @override
-  Future<ath.Injury> updateInjury(
-    String injuryId,
-    ath.UpdateInjuryRequest request,
-  ) => run('updateInjury', () {
-    lastInjuryUpdate = request;
-    final n = injuryList.indexWhere((i) => i.id == injuryId);
-    injuryList[n] = injuryList[n].rebuild((b) {
-      if (request.occurredOn != null) b.occurredOn = request.occurredOn;
-      if (request.bodyPart != null) b.bodyPart = request.bodyPart;
-      if (request.severity != null) b.severity = request.severity;
-      if (request.description != null) b.description = request.description;
-      if (request.status != null) b.status = request.status;
-      if (request.actualReturnOn != null)
-        b.actualReturnOn = request.actualReturnOn;
-      if (request.expectedReturnOn != null)
-        b.expectedReturnOn = request.expectedReturnOn;
-      final clear = request.clear?.toSet() ?? {};
-      if (clear.contains(ath.UpdateInjuryRequestClearEnum.description))
-        b.description = null;
-      if (clear.contains(ath.UpdateInjuryRequestClearEnum.expectedReturnOn))
-        b.expectedReturnOn = null;
-      if (clear.contains(ath.UpdateInjuryRequestClearEnum.actualReturnOn))
-        b.actualReturnOn = null;
-    });
-    return injuryList[n];
-  });
-
-  @override
-  Future<void> deleteInjury(String injuryId) => run(
-    'deleteInjury',
-    () => injuryList.removeWhere((i) => i.id == injuryId),
-  );
-
-  @override
-  Future<List<ath.BodyMeasurement>> measurements(String playerId) => run(
-    'measurements',
-    () => [
-      for (final m in measurementList)
-        if (m.playerId == playerId) m,
-    ],
-  );
-
-  @override
-  Future<ath.BodyMeasurement> createMeasurement(
-    ath.BodyMeasurementInput input,
-  ) => run('createMeasurement', () {
-    createdMeasurement = input;
-    final m = measurement(
-      'm-${measurementList.length}',
-      input.playerId,
-      input.measuredOn,
-      height: input.heightCm,
-      weight: input.weightKg,
-    );
-    measurementList.add(m);
-    return m;
-  });
-
-  @override
-  Future<ath.BodyMeasurement> updateMeasurement(
-    String id,
-    ath.UpdateBodyMeasurementRequest request,
-  ) => run('updateMeasurement', () {
-    updatedMeasurement = request;
-    final i = measurementList.indexWhere((m) => m.id == id);
-    measurementList[i] = measurementList[i].rebuild(
-      (b) => b
-        ..measuredOn = request.measuredOn ?? b.measuredOn
-        ..heightCm = patched(
-          request.clear,
-          ath.UpdateBodyMeasurementRequestClearEnum.heightCm,
-          request.heightCm,
-          b.heightCm,
-        )
-        ..weightKg = patched(
-          request.clear,
-          ath.UpdateBodyMeasurementRequestClearEnum.weightKg,
-          request.weightKg,
-          b.weightKg,
-        ),
-    );
-    return measurementList[i];
-  });
-
-  @override
-  Future<void> deleteMeasurement(String id) => run(
-    'deleteMeasurement',
-    () => measurementList.removeWhere((m) => m.id == id),
-  );
-}
-
 class FakeFitnessRepository with Faulty implements FitnessRepository {
   FakeFitnessRepository({
     List<ath.PhysicalTestType>? types,
@@ -1349,20 +1213,20 @@ class FakeFitnessRepository with Faulty implements FitnessRepository {
       run('deleteNorm', () => normList.removeWhere((n) => n.id == id));
 }
 
-/// One `listExercises` call as the server gets it.
-/// The athlete-service side of a test: the fakes not moved yet and the
-/// exercise catalogue, which the backend's athlete mock serves (ADR-0070).
+/// The athlete-service side of a test: the fakes not moved yet, and the data
+/// the backend's athlete mock serves (ADR-0070): the exercise catalogue and
+/// health.
 class FakeAthlete {
   FakeAthlete({
     FakeTrainingRepository? training,
     FakePlansRepository? plans,
     ExercisesData? exercises,
-    FakeHealthRepository? health,
+    HealthData? health,
     FakeFitnessRepository? fitness,
   }) : training = training ?? FakeTrainingRepository(),
        plans = plans ?? FakePlansRepository(),
        exercises = exercises ?? ExercisesData(),
-       health = health ?? FakeHealthRepository(),
+       health = health ?? HealthData(),
        fitness = fitness ?? FakeFitnessRepository() {
     this.training
       ..plans = this.plans
@@ -1373,16 +1237,27 @@ class FakeAthlete {
   final FakeTrainingRepository training;
   final FakePlansRepository plans;
   final ExercisesData exercises;
-  final FakeHealthRepository health;
+  final HealthData health;
   final FakeFitnessRepository fitness;
 
-  /// Seeds what the backend serves: the exercise catalogue.
-  void seedInto(MockBackend backend) => exercises.seedInto(backend);
+  /// Seeds what the backend serves: the exercise catalogue and health.
+  void seedInto(MockBackend backend) {
+    exercises.seedInto(backend);
+    health.seedInto(backend);
+  }
 
   List<Override> get overrides => [
     trainingRepositoryProvider.overrideWithValue(training),
     plansRepositoryProvider.overrideWithValue(plans),
-    healthRepositoryProvider.overrideWithValue(health),
     fitnessRepositoryProvider.overrideWithValue(fitness),
+  ];
+
+  /// The app's repositories of what [backend] serves, for tests of the
+  /// providers without the app (after [seedInto]).
+  List<Override> apiOverrides(MockBackend backend) => [
+    ...exercises.overrides,
+    healthRepositoryProvider.overrideWithValue(
+      ApiHealthRepository(backend.athleteApi(), backend.tenantAId),
+    ),
   ];
 }

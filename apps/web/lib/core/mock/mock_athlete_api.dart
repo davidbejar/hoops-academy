@@ -65,6 +65,38 @@ class MockAthleteApi {
   final _types = <Map<String, Object?>>[];
   final _results = <Map<String, Object?>>[];
   final _norms = <Map<String, Object?>>[];
+
+  // The collections, for the widget tests to seed and read back (ADR-0070).
+  @visibleForTesting
+  List<Map<String, Object?>> get schedules => _schedules;
+  @visibleForTesting
+  List<Map<String, Object?>> get sessions => _sessions;
+
+  /// Recorded attendance: session id → player id → entry.
+  @visibleForTesting
+  Map<String, Map<String, Map<String, Object?>>> get attendance => _attendance;
+  @visibleForTesting
+  List<Map<String, Object?>> get absences => _absences;
+
+  /// Plans keep their items in `items`.
+  @visibleForTesting
+  List<Map<String, Object?>> get plans => _plans;
+  @visibleForTesting
+  List<Map<String, Object?>> get assignments => _assignments;
+  @visibleForTesting
+  List<Map<String, Object?>> get completions => _completions;
+  @visibleForTesting
+  List<Map<String, Object?>> get injuries => _injuries;
+  @visibleForTesting
+  List<Map<String, Object?>> get measurements => _measurements;
+  @visibleForTesting
+  List<Map<String, Object?>> get testTypes => _types;
+
+  /// Results are stored without their computed band (`_resultView`).
+  @visibleForTesting
+  List<Map<String, Object?>> get results => _results;
+  @visibleForTesting
+  List<Map<String, Object?>> get norms => _norms;
   var _seq = 100;
 
   /// The language negotiated for the call being handled (athlete 2.2.0 rule).
