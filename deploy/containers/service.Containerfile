@@ -17,7 +17,7 @@ ARG MAVEN_IMAGE=docker.io/library/maven:3-eclipse-temurin-25
 # publishes floating tags only, so the pin is the digest (trivy DS-0001) of the multi-arch index of
 # `java25-debian13:nonroot`. The weekly scripts/bump-pins.sh moves the digest; a new JDK or Debian major changes the name
 # here and in scripts/bump_pins.py.
-ARG RUNTIME_IMAGE=gcr.io/distroless/java25-debian13:nonroot@sha256:b0a31b9a063a6fb8132ec93da4cfd8515421ad35e40d7ac79fbebbaaae98227f
+ARG RUNTIME_IMAGE=gcr.io/distroless/java25-debian13:nonroot@sha256:59bbb349c9752fc57b75744b41b1614c9dabe8bb4869523aabd5a4288f6c09a0
 
 # ---------- stage 1a: build with Maven ---------------------------------------------------------------------------
 FROM ${MAVEN_IMAGE} AS app-maven

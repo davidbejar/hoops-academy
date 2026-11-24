@@ -18,7 +18,7 @@ svc="${1:?usage: zap-api-scan.sh <core|game|athlete|finance> [base URL]}"
 base="${2:-http://localhost:8080}"
 case "$svc" in core|game|athlete|finance) ;; *) echo "zap-api-scan: unknown service $svc" >&2; exit 2 ;; esac
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-image="${ZAP_IMAGE:-ghcr.io/zaproxy/zaproxy:stable@sha256:030d3df57735dacbb83464854758e674dd9ad01d79d12a129a8e58b1fd384238}"
+image="${ZAP_IMAGE:-ghcr.io/zaproxy/zaproxy:stable@sha256:9624669db72f54d86c4b46a7064518bd9bf79d8c61a4c31befa9923489f328af}"
 engine="${ZAP_ENGINE:-podman}"
 work="${ZAP_WORK_DIR:-$ROOT/target/zap}/api-$svc"
 

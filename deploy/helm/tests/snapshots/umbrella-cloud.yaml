@@ -1710,7 +1710,7 @@ spec:
         app.kubernetes.io/part-of: hoops-academy
       annotations:
         # Node configuration and bootstrap properties change -> restart (they are read at start).
-        checksum/config: "1e660aebd4ab3c0e"
+        checksum/config: "7f2e3690d3b39557"
     spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
@@ -1724,7 +1724,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: redpanda
-          image: "docker.io/redpandadata/redpanda:v26.2.7@sha256:43545ee03966431f5451e0b3c1e651b39fbe3eb383360220311021f50133b649"
+          image: "docker.io/redpandadata/redpanda:v26.3.1@sha256:260532f70fd840bf2159106bd4ef900f199c1f5ca2a23cb362642320513b90f5"
           imagePullPolicy: IfNotPresent
           # The redpanda binary itself (not `rpk redpanda start`, which rewrites redpanda.yaml): one shard, a fixed
           # Seastar memory below the container limit, overprovisioned (no CPU pinning on a shared node).
@@ -2129,7 +2129,7 @@ spec:
         app.kubernetes.io/name: redpanda-bootstrap
         app.kubernetes.io/part-of: hoops-academy
       annotations:
-        checksum/config: "e768a2e1fe25445a"
+        checksum/config: "0f7330d97eabb5d2"
     spec:
       restartPolicy: Never
       automountServiceAccountToken: false
@@ -2142,7 +2142,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: bootstrap
-          image: "docker.io/redpandadata/redpanda:v26.2.7@sha256:43545ee03966431f5451e0b3c1e651b39fbe3eb383360220311021f50133b649"
+          image: "docker.io/redpandadata/redpanda:v26.3.1@sha256:260532f70fd840bf2159106bd4ef900f199c1f5ca2a23cb362642320513b90f5"
           imagePullPolicy: IfNotPresent
           command: [bash, /bootstrap/bootstrap.sh]
           env:

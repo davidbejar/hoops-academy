@@ -81,7 +81,7 @@ rateLimit:
     # is `url` (host:port, what the Envoy Gateway install must point at; the chart only reports it in NOTES).
     enabled: false
     url: ""
-    image: {repository: docker.io/library/redis, tag: 8.10.3-alpine, digest: ""}
+    image: {repository: docker.io/library/redis, tag: 8.12.0-alpine, digest: ""}
     runAsUser: 999              # user `redis` of the alpine image
     runAsGroup: 1000
     maxMemory: 24mb             # counters are tiny (one key per client IP, route and minute); LRU beyond that
@@ -117,8 +117,8 @@ events:
     # Same pin as infra/compose/compose.yaml and the Quarkus Dev Services (libs/common-quarkus); run.sh checks it.
     image:
       repository: docker.io/redpandadata/redpanda
-      tag: v26.2.7
-      digest: sha256:43545ee03966431f5451e0b3c1e651b39fbe3eb383360220311021f50133b649
+      tag: v26.3.1
+      digest: sha256:260532f70fd840bf2159106bd4ef900f199c1f5ca2a23cb362642320513b90f5
     runAsUser: 101              # user `redpanda` of the image
     runAsGroup: 101
     smp: 1                      # Seastar shards (cores); one is plenty for seven one-partition topics
@@ -254,8 +254,8 @@ observability:
     enabled: false
     image:
       repository: docker.io/grafana/otel-lgtm
-      tag: 0.41.0
-      digest: sha256:2e3290657f2f2a256c7a9175f097424a3ac5b54840741ace433e108e109348b6
+      tag: 0.41.1
+      digest: sha256:1b852b77d7bcadb7699bfe7c78a51d059dff85168de674728cf7abf4474645e5
     retention: 24h
     dataSizeLimit: 2Gi          # emptyDir /data (Loki chunks, Tempo blocks, Prometheus TSDB, Grafana's database)
     resources: {requests: {cpu: 100m, memory: 512Mi}, limits: {memory: 1280Mi}}
@@ -404,4 +404,4 @@ finance:
 # Local SMTP sink named `mailhog` (the realm's SMTP host). Enabled in values-kind.yaml only.
 mailpit:
   enabled: false
-  image: {repository: docker.io/axllent/mailpit, tag: v1.33.1}
+  image: {repository: docker.io/axllent/mailpit, tag: v1.34.0}
