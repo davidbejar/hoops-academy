@@ -265,6 +265,71 @@ Not yours: generated clients; goldens change only if the seeded data must differ
     move to `core_seed.dart`.
   - The rollover wizard is unchanged (part 2's finding stands).
 
+### Part 5 (2026-11-24)
+- **Built** (the rest of athlete; one commit per feature, fake deleted, suite green after each)
+  - **Health.** `HealthData` (`test/support/athlete_seed.dart`) seeds injuries and body measurements and reads back what
+    the app sent (`createdInjury`, `lastInjuryUpdate`, `createdMeasurement`, `updatedMeasurement`) and what the mock
+    holds (`injuryList`, `measurementList`). The athlete mock exposes all its collections `@visibleForTesting`
+    (sessions, schedules, attendance, absences, plans, assignments, completions, injuries, measurements, test types,
+    results, norms) and its answer views (`resultView`, `planView`, `assignmentView`). The data classes share one base
+    (seed once, failures and hangs on their own paths, sent bodies as models); `ExercisesData` moved onto it.
+    `MockBackend` gains `athleteApi()` and `heal(path)` (a data class heals only what it injected).
+  - **Fitness.** `FitnessData` seeds test types, norms and results; the mock computes each result's age, band and
+    reference flag, so the seeds carry norms that put each result where the test expects it (`norm()` derives
+    `referencePending` from the source, `testResult()` takes no band). "A type with results" is the mock's own 409
+    `TEST_TYPE_HAS_RESULTS` from a seeded result, no injected error.
+  - **Training and plans.** `TrainingData` and `PlansData` seed sessions, schedules, planned absences, recorded
+    attendance, plans, assignments and completions and read back session queries, the repository calls, quick-adds,
+    languages, the last order, assignment and completion. The cross-repository quick-add the fakes imitated (a session's
+    own plan) is the mock's. `FakeTrainingRepository`, `FakePlansRepository`, `FakeHealthRepository` and
+    `FakeFitnessRepository` go; the `Harness` no longer overrides any athlete repository, and the provider tests
+    (`athlete_notifiers_test`) build the app's `Api*Repository` on a backend whose authz matches the capabilities.
+  - **`fake_repos.dart` goes** with `Faulty`; `FakeCore` (a data bundle) moved to `core_seed.dart`, `FakeAthlete` (a
+    data bundle) to `athlete_seed.dart`; the model builders of `fake_athlete.dart` are now `athlete_fixtures.dart`.
+    ADR-0070 amended (status: migration complete).
+- **Mock and fake differed (decided against `athlete.yaml` and athlete-service):**
+  15. a tenant norm in the mock replaced every global row of the same test and gender; `athlete.yaml` and the service
+      (`BandResolver.effective`) replace only the global rows whose age range it overlaps. Mock fixed, red test first
+      (`mock_athlete_platform_api_test`);
+  16. the fake's effective layer kept global rows that a tenant row of the same test, gender and ages replaces (the
+      norms screen's `n1`/`n2`/`n3`, all boys 10-12; the notifier test's `g`/`t`): against the service only the
+      tenant row would be in force. The fake was wrong; the tenant rows are now for older players (15-16, 13-14) and
+      the results are graded by global rows (`_gradingNorms`);
+  17. the attendance sheet: the fake answered exactly the entries a test put in; `athlete.yaml` (and the mock) give one
+      entry per roster player, overlaid with planned absences and open injuries. The fake was wrong; two notifier
+      assertions read the roster's three entries / p1's entry, and `session_test` seeds an absence of p2 and an injury
+      of p3 instead of flags on entries;
+  18. result bands: the fake returned the band and pending flag each test gave (r3 = 36 without a band though a norm
+      covered it; a norm without a source not pending); the mock, like the service, computes both. The fake was
+      wrong; the seeds are coherent now (r3 = 18, below every band; `n1` has a source).
+- **Expectations that follow the mock where a fake made data up:** a session's own plan is found by its `sessionId`
+  (the fake named it `own-<session>`); a failure in a provider test is the generated client's error read with
+  `AppError.of` (the fake threw a `StateError`); provider tests listen to auto-dispose providers as the screens do
+  (the answers are asynchronous now). **No golden re-recorded:** `training_health_golden_test` and every other golden
+  pass as recorded.
+- **Verified** (fresh, 2026-11-24): `flutter analyze` no issues; `just web-format-check` 531 files, 0 changed;
+  `flutter test` **1954 passed, 0 failed** (after health 1953, after fitness, training/plans and the clean-up 1954 each);
+  `flutter test test/tool` 25 passed (`verify_no_mock_test` among them). Start: 1953 (my own baseline run was disturbed:
+  I edited a support file during it, so `season_history_test` (19 tests) failed to load and 1934 passed; 1934 + 19
+  agrees with part 4's 1953). +1 test (the norm overlap), none removed: every test file has the same number of test
+  declarations as at `f856d929` (grep of `test(` / `testWidgets(` per file, diffed), except
+  `mock_athlete_platform_api_test` 27 -> 28. Not run in full: the red-test commit (the new test alone, red) and the
+  mock fix commit (`test/core`, 492 passed).
+  - Fake lines: 1,473 at the start of part 5 -> **0** (no repository fake is left; over the WP 3,565 -> 0).
+    `fake_athlete.dart` 1,388 -> `athlete_fixtures.dart` 308 (model builders only); `fake_repos.dart` 85 deleted
+    (`FakeCore` moved); `athlete_seed.dart` 158 -> 690, `core_seed.dart` 618 -> 682. `FakeGameServer` (140, the sync
+    worker's contract fake) stays by design; `FakeMeRepository` / `FakeTenantRepository` in the harness stand for
+    `/me` and the logo cache, not one of the seven audited files.
+- **WEB-02 is done:** every widget and provider test of the app runs its real repositories on the seeded mock.
+- **Open points**
+  - The mock answers 403 when a PARENT or PLAYER reads a session's attendance; `athlete.yaml` allows the linked / own
+    entries. The app does not ask for it in those roles and no test needs it; not changed.
+  - The mock computes the age at measurement from a fixed birthday (12 April of the birth year), not the player's birth
+    date, so an age can be off by one between the two dates; no test depends on it.
+  - `FakeCore` / `FakeAthlete` keep their names (data bundles now) to avoid churn in 55 files; a rename is cosmetic.
+  - For `docs/HANDOVER.md` / `FOLLOW-UPS.md`: WEB-02 closed; the web tests run only on the seeded mock (ADR-0070).
+  - The rollover wizard is unchanged (part 2's finding stands).
+
 | ID | Done / Skipped | What changed or why not |
 |---|---|---|
-| WEB-02 | Done (part) | Tests on the seeded demo mock (ADR-0070). Part 1: audit, academy-request and platform fakes deleted. Part 2: academy, seasons, categories, approvals, cases; `MockAuthService` out of the release build. Part 3: members, guardians, teams and players: the whole core side runs on the mock. Part 4: finance, matches (real events remote on the mock) and the exercise catalogue. 14 mock/contract differences decided. Left: athlete health, fitness, training and plans fakes (1,473 fake lines with `fake_repos.dart`; see part 4) |
+| WEB-02 | Done | Tests on the seeded demo mock (ADR-0070). Part 1: audit, academy-request and platform fakes deleted. Part 2: academy, seasons, categories, approvals, cases; `MockAuthService` out of the release build. Part 3: members, guardians, teams and players. Part 4: finance, matches (real events remote on the mock) and the exercise catalogue. Part 5: health, fitness, training and plans; `fake_repos.dart` gone. 18 mock/contract differences decided. No repository fake left (3,565 -> 0 lines); `FakeGameServer` stays as the sync worker's contract fake |

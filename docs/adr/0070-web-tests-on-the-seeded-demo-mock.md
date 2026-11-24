@@ -1,7 +1,6 @@
 # ADR-0070: The web widget tests run against the demo mock, seeded per test
 
-- Status: Accepted (in progress: the core side, finance, matches and the exercise catalogue migrated; training, plans,
-  health and fitness still on their fakes; see WP138)
+- Status: Accepted (migration complete with WP138 part 5: no repository fake is left)
 - Date: 2026-11-24
 - Records: decision 108 of 2026-11-23 (audit finding WEB-02)
 - Amends: ADR-0030 (its last consequence: the test fakes no longer mirror the feed rule, they go)
@@ -64,3 +63,12 @@ app's real repositories, generated clients and error mapping, so a widget test n
   `ApiEventsRemote` on the mock, so the box score, the feed and the season statistics come from the same stored
   events; the Drift store and the sync timers stay in the test, and `FakeGameServer` stays as the sync worker's
   contract fake (it is not an imitation of the screens' backend).
+- *Amendment (WP138 part 5):* the athlete side is migrated too (training, plans, health, fitness): every widget and
+  provider test runs the app's real repositories on the mock, and the repository fakes are gone. The athlete mock
+  exposes its collections and its answer views (`resultView`, `planView`, `assignmentView`) for seeding and reading
+  back; the data classes of `athlete_seed.dart` share one base (seed once, failures and hangs on their own paths,
+  `MockBackend.heal(path)` heals only those). What the mock computes is seeded, not told: a result's band comes from
+  seeded norms, an attendance sheet from the roster, the planned absences and the open injuries. `FakeCore` and
+  `FakeAthlete` remain as plain data bundles (in `core_seed.dart` and `athlete_seed.dart`); `FakeGameServer` stays as
+  the sync worker's contract fake. A provider test listens to an auto-dispose provider as a screen does, because the
+  answers now arrive asynchronously.
