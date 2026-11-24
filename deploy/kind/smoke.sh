@@ -257,11 +257,17 @@ if [[ " ${SERVICES[*]} " == *" core "* ]] && [ -n "${utok:-}" ] && kubectl "${CT
       c=$(status "$(fin GET "/api/finance/fee-plans/$plan_id" "$atok" "$tenant")")
       [ "$c" = 200 ] && ok "finance: admin1 reads the plan (200)" || bad "finance: admin1 reads the plan -> $c"
       slug_b="smoke-b-$(date +%s)"
+      # Academy B's two events (tenant.changed, person.changed) must be published before the consumer lag means anything:
+      # core's outbox polls every second, and a lag of 0 before the publish let the checks below run ahead of the replica
+      # (WP144: 404 "no membership" 20 ms before finance applied the events, twice in a row).
+      published_b=$(metrics core-service | total hoops_outbox_published_total)
+      published_since() { [ "$(metrics core-service | total hoops_outbox_published_total)" -ge $(( $1 + 2 )) ]; }
       tenant_b=$(jq -n --arg s "$slug_b" '{slug: $s, name: ("Smoke " + $s), timezone: "Asia/Jakarta", defaultLocale: "id",
           firstAdmin: {email: "coach1@hoops-academy.com", givenName: "Casey", familyName: "Coach"}}' |
         curl -s -X POST "$BASE/platform/tenants" -H "Authorization: Bearer $utok" -H 'Content-Type: application/json' \
           --data-binary @- | jq -r '.id // empty')
       btok=$([ -n "$tenant_b" ] && user_token coach1@hoops-academy.com || true)
+      eventually published_since "$published_b" || true
       eventually caught_up finance || true
       in_b=$(status "$(fin GET /api/finance/fee-plans "$btok" "$tenant_b")")
       by_id=$(status "$(fin GET "/api/finance/fee-plans/$plan_id" "$btok" "$tenant_b")")
