@@ -525,7 +525,7 @@ d6539fc6); then the docs pass WP147. What the orchestrator ran at merge time is 
 | 2 | WP144 | Database: PostgreSQL 17 to 19 (18.7 if a dependency refuses 19) | Opus · high | Done (ADR-0073; PostgreSQL 19.0; kind smoke 57/57; local stack moved to a fresh volume `hoops_pgdata-19` and reseeded, e2e 38/38; the 17 volume and a dump are kept) |
 | 3 | WP145 | athlete: a trigram index for the exercise search | Opus · medium | Done (ADR-0075: no index; measured on 19.0 that under RLS the search cannot use a trigram index, and it runs in under 1 ms) |
 | 3 | WP146 | kind and CI: the install waits for Keycloak under load; the skipped shell tests run in CI | Opus · medium | Done (ADR-0076; the four shell tests run in CI; kind probes and waits hardened, smoke 57/57 on a quiet machine; a fresh install under heavy load still misses 15 min on the 2-vCPU VM) |
-| 4 | WP147 | Docs pass | Opus · medium | Running |
+| 4 | WP147 | Docs pass | Opus · medium | Done (HANDOVER, FOLLOW-UPS, README, conformance, roadmap, architecture, ADR index, release and SAST runbooks, skills; PostgreSQL 19 in the current docs; CI observed) |
 
 ### Decisions of 2026-11-24, ninth interview (product owner)
 114. **PostgreSQL version** → WP144: 19 (19.0 is published by Docker Hub and CloudNativePG). The package first checks
@@ -1059,7 +1059,8 @@ Tenth round (WP142–WP146, 2026-11-24 and 2026-11-25; decisions 114–118; each
 - WP146 (decision 116): **the shell tests outside CI**: `env-jdk.test.sh` and `tenancy-gate.test.sh` were test
   assumptions that failed on Linux (a stub JDK 25 on `PATH`; globs instead of byte cuts), and the `ci` job `scripts`
   now runs every tracked `*.test.sh` (`ShellTestsRunInCi` in `test_workflows.py`), with `events-drift.test.sh` and the
-  new `kind-cnpg-patch.test.sh`. Proven in an `ubuntu:24.04` container; on GitHub's runner from the d6539fc6 run on.
+  new `kind-cnpg-patch.test.sh`. Proven in an `ubuntu:24.04` container and on GitHub's runner (`ci` 45445935990 on
+  d6539fc6, every step of the `scripts` job green).
 - WP146 (decision 116): **Keycloak's start on kind under load** (WP139, kind install under VM load): on kind only,
   Keycloak, the five services and the CloudNativePG operator get 5 s probe answers, a kill after a minute and 5
   minutes to start; Keycloak's progress deadline equals helm's 15 minutes; `up.sh` waits for the operator before

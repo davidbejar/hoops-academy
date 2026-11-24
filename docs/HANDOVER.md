@@ -85,9 +85,10 @@ project, not a commercial product (ADR-0025).
   `codeql` 45398105483, `pages` 45398105603), on **c9daa73e** (`ci` 45389069608, `e2e` 45389069367, `images`
   45389069480, `semgrep` 45389069425, `codeql` 45389069423, `pages` 45389069424) and on 4ed1a1e4 (`ci` 45373700118,
   `e2e` 45373700129, `semgrep` 45373700085, `codeql` 45373700088, `pages` 45373700109). No red run on `main` in the
-  round. On **d6539fc6** (WP145, WP146: the first run of the four shell-test steps on GitHub's runner) `pages`
-  45445935890 and `semgrep` 45445936102 green; `ci` 45445935990, `e2e` 45445935916, `images` 45445936659 and `codeql`
-  45445935929 were still running. **Orchestrator to fill in:** the result of those four runs.
+  round. On **d6539fc6** (WP145, WP146) `ci` 45445935990 (its `scripts` job ran the env-jdk, tenancy-gate,
+  events-drift and kind-cnpg-patch steps green: the first run of WP146's shell tests on GitHub's runner), `images`
+  45445936659, `codeql` 45445935929, `semgrep` 45445936102 and `pages` 45445935890 green; `e2e` 45445935916 was still
+  running at WP147's last look. **Orchestrator to fill in:** the result of that `e2e` run.
 - GitHub: `davidbejar/hoops-academy` (public, AGPL-3.0), branch `main`. Open: Dependabot PR #22 (pub; `gh pr list` on
   2026-11-25); the stale `bump-pins` PR #21 was closed on 2026-11-24 and its pins applied by WP142. Repository variable
   `IMAGE_REGISTRY=ghcr.io/davidbejar/hoops-academy`; secrets `NVD_API_KEY` (repository and Dependabot). Images per
