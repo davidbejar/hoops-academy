@@ -21,8 +21,8 @@ source scripts/env.sh
 | `CORE_PLATFORM_PASSWORD` | – (required) | `platform` datasource, role `core_platform` (registry, usage, billing only) |
 | `CORE_MIGRATOR_PASSWORD` | – (required) | Flyway, role `core_migrator` (schema owner) |
 | `CORE_SERVICE_CLIENT_SECRET` | – (required) | OIDC token validation, service tokens, Keycloak Admin API |
-| `OIDC_AUTH_SERVER_URL` | `http://localhost:8080/auth/realms/academy` | issuer |
-| `KEYCLOAK_URL` | `http://localhost:8080/auth` | Keycloak Admin API base |
+| `OIDC_AUTH_SERVER_URL` | `http://localhost:8080/auth/realms/academy` | the realm (token validation, service tokens; common-quarkus key, ADR-0071) |
+| `KEYCLOAK_ADMIN_URL` | `http://localhost:8080/auth` | Keycloak Admin API base (ADR-0071) |
 | `GAME_SERVICE_URL` / `ATHLETE_SERVICE_URL` | `http://localhost:8082` / `:8083` | `/internal/usage` aggregation |
 | `CORE_ELIGIBILITY_CRON` | `0 15 * * * ?` (hourly) | eligibility sweep over ACTIVE tenants (`off` disables it) |
 

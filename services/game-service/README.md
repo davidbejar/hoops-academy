@@ -90,7 +90,7 @@ everything else works.
 |---|---|---|
 | `GAME_DB_URL` | `jdbc:postgresql://localhost:5432/hoops` | |
 | `GAME_APP_PASSWORD`, `GAME_MIGRATOR_PASSWORD` | none (required) | roles `game_app` (runtime), `game_migrator` (Flyway) |
-| `KEYCLOAK_URL` | `http://localhost:8180` | realm `academy` |
+| `OIDC_AUTH_SERVER_URL` | `http://localhost:8080/auth/realms/academy` | realm `academy` (common-quarkus key, ADR-0071) |
 | `GAME_SERVICE_CLIENT_SECRET` | none (required) | OIDC client `game-service` (also used for service tokens) |
 | `hoops.core.url` | `http://localhost:8081` | core-service base URL |
 | `GAME_ROSTER_SOURCE` (`hoops.roster.source`) | `replica` | `rest` reads core's `/internal` API instead |

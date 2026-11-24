@@ -43,7 +43,7 @@ source scripts/env.sh
 |---|---|---|
 | `quarkus.datasource.*` | user `athlete_app`, `ATHLETE_APP_PASSWORD`, `ATHLETE_DB_URL` | runtime datasource (non-owner role, RLS applies) |
 | `quarkus.flyway.*` | user `athlete_migrator`, `ATHLETE_MIGRATOR_PASSWORD` | migrations |
-| `quarkus.oidc.*` / `quarkus.oidc-client.*` | `KEYCLOAK_URL`, client `athlete-service`, `ATHLETE_SERVICE_CLIENT_SECRET` | end-user JWT validation / client credentials for `/internal` calls |
+| `quarkus.oidc.*` / `quarkus.oidc-client.*` | `OIDC_AUTH_SERVER_URL` (default `http://localhost:8080/auth/realms/academy`, ADR-0071), client `athlete-service`, `ATHLETE_SERVICE_CLIENT_SECRET` | end-user JWT validation / client credentials for `/internal` calls |
 | `hoops.core.url` | `http://localhost:8081` | core-service base URL |
 | `hoops.core.cache-ttl` | `30S` | cache of the shared core client (common-quarkus default) |
 | `hoops.athlete.default-timezone` | `Europe/Madrid` | last-resort tenant zone, only for a zone this JVM does not know (requests use the caller's `AuthzContext.timezone`, jobs the registry) |
