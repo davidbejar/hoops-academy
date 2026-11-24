@@ -55,6 +55,7 @@ void main() {
   test('the eligible teams are only those the player may join '
       '(listEligibleTeams)', () async {
     final admin = MockBackend()
+      ..seedCategories([u12, u14])
       ..seedTeams([team('t1', 'Mini A'), team('t2', 'Infantil', cat: u14)])
       ..seedPlayers([
         // 2013: an Infantil, too old for Mini A
@@ -71,8 +72,8 @@ void main() {
     expect(teams.map((e) => e.team.id), ['t2']);
   });
 
-  test('team staff list every player (listPlayers), also an assistant '
-      'without a team yet', () async {
+  test('team staff list and read every player (listPlayers, getPlayer), '
+      'also an assistant without a team yet', () async {
     final assistant = MockBackend(roles: {TenantRole.assistantCoach})
       ..seedTeams([team('t1', 'Mini A')])
       ..seedPlayers([
@@ -84,5 +85,6 @@ void main() {
       MockBackend.testTenantId,
     );
     expect((await players.list()).map((p) => p.id), ['p1', 'p2']);
+    expect((await players.get('p2')).displayName, 'Leo Gil');
   });
 }

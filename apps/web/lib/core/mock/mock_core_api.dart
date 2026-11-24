@@ -1077,6 +1077,20 @@ class MockCoreApi {
     'status': 404,
   });
 
+  /// `listPlayers`: admins and team staff list every player, a pending one only when they asked for it (admins:
+  /// all); a parent the linked players, a player himself.
+  bool _listsPlayer(Map<String, Object?> p) {
+    final a = authz;
+    if (a.admin) return true;
+    if (!a.coachRole) return a.canSeePlayer(p['id']! as String);
+    if (p['status'] != 'PENDING_APPROVAL') return true;
+    return _approvals.any(
+      (r) =>
+          (r['player']! as Map)['id'] == p['id'] &&
+          (r['requestedBy']! as Map)['personId'] == selfId,
+    );
+  }
+
   /// A coach reads the approval requests he asked for; the admin all of them.
   bool _mayReadApproval(Map<String, Object?> a) =>
       authz.admin || (a['requestedBy']! as Map)['personId'] == selfId;
@@ -1379,9 +1393,18 @@ class MockCoreApi {
       return MockResult.json(201, t);
     }
     final t = _teams.where((t) => t['id'] == id).firstOrNull;
-    // the roster export answers 403, not 404, to a member who may not export this team
+    // any member reads a team, its roster, staff and taken numbers (getTeam, listTeamPlayers, listTeamStaff,
+    // listTeamJerseyNumbers); the roster export answers 403, not 404, to a member who may not export this team
+    final anyMember =
+        sub == null ||
+        sub == 'staff' ||
+        sub == 'jersey-numbers' ||
+        (sub == 'players' && seg.length == 5);
     if (t == null ||
-        (method == 'GET' && sub != 'roster:export' && !authz.canSeeTeam(id!)))
+        (method == 'GET' &&
+            sub != 'roster:export' &&
+            !anyMember &&
+            !authz.canSeeTeam(id!)))
       return _notFound;
     if (sub == null && method == 'GET') return MockResult.json(200, t);
     if (sub == null && method == 'PATCH') {
@@ -1464,6 +1487,21 @@ class MockCoreApi {
       }
       if (playerId != null && method == 'PATCH') {
         final p = _playerById(playerId);
+        final number = b['jerseyNumber'];
+        final taken =
+            number != null &&
+            _takenNumbers(id!).any(
+              (t) =>
+                  t['jerseyNumber'] == number &&
+                  (t['player']! as Map)['id'] != playerId,
+            );
+        if (taken) {
+          return mockProblem(
+            409,
+            'Jersey number taken',
+            code: 'TEAM_PLAYER_CONFLICT',
+          );
+        }
         for (final a in (p['teams']! as List).cast<Map<String, Object?>>()) {
           if ((a['team'] as Map)['id'] != id) continue;
           final error = mockApplyUpdate(
@@ -1490,7 +1528,7 @@ class MockCoreApi {
       final text = (q['q'] as String?)?.toLowerCase();
       return MockQuery(q).page([
         for (final p in _players)
-          if (authz.canSeePlayer(p['id']! as String) &&
+          if (_listsPlayer(p) &&
               (q['status'] == null || p['status'] == q['status']) &&
               (q['teamId'] == null ||
                   (p['teams']! as List).any(
@@ -1541,8 +1579,9 @@ class MockCoreApi {
         'temporaryPassword': ?password,
       });
     }
+    if (id == null) return null;
     final p = _players.where((p) => p['id'] == id).firstOrNull;
-    if (p == null || !authz.canSeePlayer(id!)) return _notFound;
+    if (p == null || !_listsPlayer(p)) return _notFound;
     if (sub == null && method == 'GET')
       return MockResult.json(200, _playerJson(p));
     if (sub == null && method == 'PATCH') return _updatePlayer(p, b);
@@ -1550,7 +1589,8 @@ class MockCoreApi {
       return MockResult.json(200, [
         for (final t in _teams)
           if (t['seasonId'] == (q['seasonId'] ?? 'season-2026'))
-            {'team': t, 'eligibility': _check(t['id']! as String, id)},
+            if (_check(t['id']! as String, id)['result'] != 'INELIGIBLE')
+              {'team': t, 'eligibility': _check(t['id']! as String, id)},
       ]);
     }
     if (sub == 'withdraw' && method == 'POST') {

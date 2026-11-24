@@ -52,20 +52,21 @@ void main() {
     });
 
     for (final role in ['COACH', 'ASSISTANT_COACH']) {
-      test('$role: staff team only, other teams and players are 404', () async {
+      // core.yaml: any member reads a team and its roster (getTeam,
+      // listTeamPlayers); team staff see all players (listPlayers, getPlayer)
+      test('$role: the staff team in the list, every team and player '
+          'readable', () async {
         final d = asRoles([role]);
         // the staff team, and last season's team as read-only history (ADR-0042)
         expect(await teams(d), {mini, 'team-mini-a-2025'});
         final seen = await players(d);
-        expect(seen, containsAll(['p-ana', 'p-leo']));
-        expect(seen, isNot(contains('p-dan')));
-        expect(seen, isNot(contains('p-eva')));
-        expect((await get(d, '/api/core/teams/team-inf-a')).statusCode, 404);
-        expect((await get(d, '/api/core/players/p-dan')).statusCode, 404);
+        expect(seen, containsAll(['p-ana', 'p-leo', 'p-dan', 'p-eva']));
+        expect((await get(d, '/api/core/teams/team-inf-a')).statusCode, 200);
+        expect((await get(d, '/api/core/players/p-dan')).statusCode, 200);
         expect((await get(d, '/api/core/players/p-ana')).statusCode, 200);
         expect(
           (await get(d, '/api/core/teams/team-inf-a/players')).statusCode,
-          404,
+          200,
         );
         expect(ids(await get(d, '/api/core/teams/$mini/players'), 'teamId'), {
           mini,
@@ -102,7 +103,8 @@ void main() {
         (((await get(d, '/api/core/teams/$mini/players')).data) as List).length,
         1,
       );
-      expect((await get(d, '/api/core/teams/team-inf-a')).statusCode, 404);
+      // any member reads a team (getTeam)
+      expect((await get(d, '/api/core/teams/team-inf-a')).statusCode, 200);
       final links = await get(d, '/api/core/guardian-links');
       expect(ids(links), {'link-me'});
       expect((await get(d, '/api/core/approval-requests')).statusCode, 403);
@@ -321,7 +323,8 @@ void main() {
         await dioFor(MockApiAdapter(roles: ['ADMIN'], store: store))
             .post<dynamic>('/api/core/players', data: newPlayer('Nuevo'));
         final coach = dioFor(MockApiAdapter(roles: ['COACH'], store: store));
-        expect((await players(coach)).length, 7);
+        // team staff list every player of the seed, not the admin's new one
+        expect((await players(coach)).length, 10);
       },
     );
 
