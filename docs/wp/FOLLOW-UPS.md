@@ -906,8 +906,10 @@ under "Resolved", "Ninth round".
   (45297467783) and `e2e` "Build the services once" on 35e685d8 (surefire plugin, 45190316386); `ci` `trivy-fs` on
   393b5676 (45274489084) resolved the `dependency:` prefix to `org.codehaus.mojo:dependency-maven-plugin:1.0` ("Could
   not find goal 'go-offline'"), most likely after a failed metadata download; full plugin coordinates in `ci.yml` would
-  avoid the prefix lookup. The `e2e` ZAP step failed on 312cf764 (45273120302) and 0c1ac2ae (45289864232) in the game
-  scan, whose ZAP container failed with a netty bind error (no summary line); the next runs passed.
+  avoid the prefix lookup. The `e2e` ZAP step failed on 312cf764 (45273120302, the game scan) and 0c1ac2ae (45289864232,
+  the core scan): ZAP's daemon could not start its proxy ("BindException Address already in use"), terminated, and the
+  scan script gave up after 600 s; the other scans of the same runs passed, and so did the next runs. Probably a port
+  still held by the previous scan's container; not investigated.
 - **dependency-check flakes on the NVD API** (eighth round): the `ci` job `dependency-check (aggregate)` failed on
   54e7a2da (run 43741030041), on 2f51edb3 (run 43813211248) and on the first attempt of 7f7d4284 (run 43811663987)
   with "NVD API request failures" (an NVD 503, third-party outage) and passed on the next push or re-run. A re-run is the fix; no finding was involved.
