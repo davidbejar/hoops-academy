@@ -9,7 +9,7 @@ Findings are triaged into [`review-2026-11.md`](review-2026-11.md) ("Round 5 SAS
 |---|---|---|---|---|
 | SpotBugs 4.10.5 + find-sec-bugs 1.14.0 | `verify` of every module (root `pom.xml`), so `just test` and the `backend` job | main classes, effort Max, threshold Medium, all categories | any finding not excluded | `spotbugs-exclude.xml` (a comment per `<Match>`) |
 | CodeQL 2.27 (codeql-action v4.39.3) | `.github/workflows/codeql.yml`: push to main, PRs, weekly | Java main code, suite `security-extended` | `security-severity` >= 7.0 (High, Critical) | `.github/codeql/accepted.json` |
-| Semgrep 1.183.0 (image pinned by digest) | `.github/workflows/semgrep.yml`: push to main, PRs, weekly | whole repo minus `.semgrepignore` (tests, generated clients, build output, Helm templates); `p/java`, `p/owasp-top-ten`, `.semgrep/rules` | level `error` (rule severity ERROR) | `.semgrep/accepted.json` |
+| Semgrep (tag and digest pinned in `semgrep.yml`, bumped by `scripts/bump-pins.sh`; 1.186.0 since WP142) | `.github/workflows/semgrep.yml`: push to main, PRs, weekly | whole repo minus `.semgrepignore` (tests, generated clients, build output, Helm templates); `p/java`, `p/owasp-top-ten`, `.semgrep/rules` | level `error` (rule severity ERROR) | `.semgrep/accepted.json` |
 | ZAP baseline (passive) | `ci.yml` job `zap-baseline` | nginx + Keycloak + core on compose | High/Medium alert | `.zap/baseline.conf` |
 | ZAP API scan (active) | `e2e.yml` after the journeys | each service's OpenAPI contract through nginx, signed in as the super admin | High/Medium alert | `.zap/api-<service>.conf` |
 | ZAP full scan (spider + active) | by hand (below) | nginx, Keycloak pages, the web app | — (triaged into the review) | — |
@@ -46,7 +46,7 @@ except `target/` (git-ignored).
 
 **Semgrep** (about 30 s once the image is pulled):
 ```
-img=docker.io/semgrep/semgrep:1.183.0@sha256:2e45517a85e13a9cca14a2a00df6bb48affd66b8ebfae1b0991cd57578362fb0
+img=$(grep -oE 'docker.io/semgrep/semgrep:[^ ]+' .github/workflows/semgrep.yml)   # the pinned image
 python3 -m unittest discover -s scripts/tests                                  # gate scripts
 podman run --rm -v "$PWD:/src:ro" -w /src/.semgrep "$img" semgrep --test --metrics off --config rules tests
 mkdir -p target/semgrep && chmod 777 target/semgrep

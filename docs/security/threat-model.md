@@ -1,7 +1,7 @@
 # Threat model — Hoops Academy (STRIDE per trust boundary)
 
 Version 2026-11 (WP17; edge updated for Gateway API with Envoy Gateway, WP36 / ADR-0031). Scope: compose stack and kind/Helm deployment; three Quarkus services; Keycloak realm
-`academy`; PostgreSQL 17 with RLS; Flutter Web PWA. Companion documents: `review-2026-11.md` (findings),
+`academy`; PostgreSQL with RLS (17 when written, 19 since ADR-0073); Flutter Web PWA. Companion documents: `review-2026-11.md` (findings),
 `asvs-checklist.md` (controls with evidence), ADR-0005/0006/0011/0012/0013/0017.
 
 ## Assets

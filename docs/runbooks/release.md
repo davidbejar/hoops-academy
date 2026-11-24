@@ -273,6 +273,7 @@ Dependabot covers Maven, pub and GitHub Actions. Everything else that is pinned 
 | distroless java25-debian13:nonroot digest | `deploy/containers/service.Containerfile` | registry (skopeo, floating tag) |
 | nginx-unprivileged tag (even minors) | `deploy/containers/web.Containerfile` | registry |
 | redis, mailpit | `deploy/helm/hoops/values.yaml` | registry |
+| PostgreSQL minor (one pin, a flavour per registry; WP142, WP144) | `infra/compose/compose.yaml`, the `databases` sub-chart's `values.yaml`, `PostgresRlsResource` (common-quarkus test-jar), finance's `pgtest.go`, `images.yml` | Docker Hub `library/postgres`; a minor is applied only when Docker Hub (`-trixie`) and CloudNativePG (`-minimal-trixie`) both publish it, a new major only with `--major` and the runbook [a new PostgreSQL major](postgresql-major.md) (ADR-0073) |
 | redpanda tag + digest (one pin) | `values.yaml`, `infra/compose/compose.yaml`, finance-service's `consumer_test.go` | registry |
 | redpanda tag of the Dev Services | common-quarkus `microprofile-config.properties` | registry |
 | Trivy tag | `ci.yml`, `.github/actions/image-publish/action.yml`, `scripts/sbom.sh`, `infra/tofu/check.sh` | Docker Hub |

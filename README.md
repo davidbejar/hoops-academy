@@ -29,7 +29,7 @@ academy chooser offers both too. Every member who sees a match's box score can d
 
 ## Stack
 Java 25, Quarkus 3 (three services: `core`, `game`, `athlete`), a `pdf-service` in Rust (stateless, renders printable
-sheets for core and game) and a `finance-service` in Go (ADR-0051), PostgreSQL 17 with row-level security (one
+sheets for core and game) and a `finance-service` in Go (ADR-0051), PostgreSQL 19 with row-level security (one
 database, one schema per service), Keycloak (authentication only), Redpanda for core's roster events, Flutter Web PWA
 (Riverpod, Drift offline store), OpenAPI contracts with generated Dart clients, Podman, kind + Helm + Tilt,
 CloudNativePG, an OpenTelemetry collector with a Grafana LGTM pod for local work. No Node anywhere.

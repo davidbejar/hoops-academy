@@ -46,7 +46,7 @@ Seeded users, signed in with their e-mail address (password = `DEV_USER_PASSWORD
 **Origins / CORS.** Since WP17 the realm's client `web` allows `http://localhost:8080/*` and
 `http://localhost:5173/*` as redirect and post-logout URIs and both as web origins, and the services answer CORS
 for `http://localhost:5173` (`hoops.cors.origins`, env `HOOPS_CORS_ORIGINS`; no credentials). The realm is imported
-only on an empty volume: after pulling the WP17 realm run `just down && podman volume rm hoops_pgdata && just up &&
+only on an empty volume: after pulling the WP17 realm run `just down && podman volume rm hoops_pgdata-19 && just up &&
 just seed-users`. Serving the build through nginx on :8080 avoids cross-origin calls altogether.
 
 The three services must be running for the real flow (`e2e/bin/services-up.sh` or `quarkus:dev` per service);

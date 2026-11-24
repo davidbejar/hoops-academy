@@ -39,7 +39,7 @@ flowchart TB
   ATH["athlete-service :8083<br/>training, attendance, plans, health, norms"]
   FIN["finance-service :8085 (Go)<br/>fee plans, dues, payments, expenses, balance"]
   PDF["pdf-service :8084 (Rust)<br/>stateless: roster and match sheet PDFs"]
-  PG[("PostgreSQL 17, one database hoops<br/>schemas core, billing, game, athlete, finance")]
+  PG[("PostgreSQL 19, one database hoops<br/>schemas core, billing, game, athlete, finance")]
   KCDB[("database keycloak")]
   RP[("Redpanda<br/>topics core.*")]
   OT["OpenTelemetry collector<br/>(chart, global.observability.enabled)"]
