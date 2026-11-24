@@ -866,6 +866,12 @@ d6539fc6); then the docs pass WP147. What the orchestrator ran at merge time is 
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
+- **`e2e` in CI needed three attempts on d6539fc6** (2026-11-25, run 45445935916; neither cause is in the round's
+  changes): (1) `just up` failed in `redpanda-topics.sh` with `lookup redpanda: i/o timeout` right after the
+  container turned healthy: the script could retry `rpk` a few times. (2) ZAP reported High 40018 "SQL Injection"
+  on `/platform/audit-events:export?from=...`: its boolean probe got `429 Too Many Requests` from the rate limit and
+  read the different answer as injection. `from` is parsed (`AuditDtos.filter`), never concatenated. To decide: raise
+  or lift the rate limit for the scan's caller, or teach the gate to drop a 40018 whose evidence response is a 429.
 - **PostgreSQL 19 leftovers** (WP144, ADR-0073): CloudNativePG 1.30.2 and Keycloak 26.8.2 do not list 19 yet and
   Flyway 12.0.0 warns ("newer than the version Flyway has been verified with"); none refuses it. When CloudNativePG
   1.31 (about 2026-12-01), a Keycloak or a Flyway release lists 19, update ADR-0073's table. The CloudNativePG path

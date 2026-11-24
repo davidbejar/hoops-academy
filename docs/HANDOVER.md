@@ -90,8 +90,10 @@ project, not a commercial product (ADR-0025).
   `e2e` 45373700129, `semgrep` 45373700085, `codeql` 45373700088, `pages` 45373700109). No red run on `main` from
   4ed1a1e4 through d6539fc6 among the finished runs. On **d6539fc6** (WP145, WP146) `ci` 45445935990 (its `scripts` job ran the env-jdk, tenancy-gate,
   events-drift and kind-cnpg-patch steps green: the first run of WP146's shell tests on GitHub's runner), `images`
-  45445936659, `codeql` 45445935929, `semgrep` 45445936102 and `pages` 45445935890 green; `e2e` 45445935916 was still
-  running at WP147's last look. **Orchestrator to fill in:** the result of that `e2e` run.
+  45445936659, `codeql` 45445935929, `semgrep` 45445936102 and `pages` 45445935890 green; `e2e` 45445935916 green on its third
+  attempt: the first stopped in `just up` (`rpk`: `lookup redpanda: i/o timeout` while creating the topics), the
+  second on ZAP's High 40018 "SQL Injection" on `/platform/audit-events:export` (a false positive: the probe got a
+  429 from the rate limit; `from` is parsed, never concatenated); both are in FOLLOW-UPS "Infra, CI, e2e".
 - GitHub: `davidbejar/hoops-academy` (public, AGPL-3.0), branch `main`. Open: Dependabot PR #22 (pub; `gh pr list` on
   2026-11-25); the stale `bump-pins` PR #21 was closed on 2026-11-24 and its pins applied by WP142. Repository variable
   `IMAGE_REGISTRY=ghcr.io/davidbejar/hoops-academy`; secrets `NVD_API_KEY` (repository and Dependabot). Images per
