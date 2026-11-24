@@ -466,9 +466,9 @@ compose, chart, properties and scripts and runs alone.
 | 3 | WP134 | Replica authorisation rule once in `common-quarkus`, under mutation testing | Opus · high | Done (ADR-0066, ADR-0053 amendment; `MembershipRule` in common under PIT, 29/29 mutants; game 500 on a team without season end fixed; common 492, core 1276, game 552, athlete 1025 tests) |
 | 3 | WP135 | Web: one home for dates, validators, export buttons, error messages, section states | Sonnet · high | Done (ADR-0067; shared dates, validators, export button, error table, section states; four small bugs fixed; web 1921 tests; no golden changed; six findings partly done with reasons) |
 | 3 | WP136 | Chart: library chart for the service sub-charts; one source for the kind and cloud install pins | Opus · high | Done (ADR-0068; chart 0.14.0, library chart `hoops-lib` 0.1.0; renders unchanged; snapshots 1.69 → 0.37 MB; one pins file for kind and cloud; kind proof not green on the loaded VM, repeated in WP139) |
-| 4 | WP137 | Common plumbing: Problem exceptions, paging, language, clock, shared properties, poms, test support, vectors | Opus · high | Running |
+| 4 | WP137 | Common plumbing: Problem exceptions, paging, language, clock, shared properties, poms, test support, vectors | Opus · high | Done (ADR-0069, ADR-0053 and ADR-0014 amendments; `finance.yaml` 1.1.0 (413, 415); 25 shared properties, poms, Problem plumbing, paging, one `PagedQuery`, test support and one copy of the vectors in the library; common 576, core 1259, game 527, athlete 1025 tests) |
 | 4 | WP138 | Web: the tests run against the demo mock; the separate test fakes go | Opus · high | Running (part 1 merged: ADR-0070, seeding API, release check `verify_no_mock`, three features on the mock, fakes 3,565 → 2,700 lines, web 1944 tests; part 2 merged: fake sign-in out of the release build, a third of the core fake; part 3: members, teams/players, athlete, game, finance) |
-| 5 | WP139 | One name for the realm URL everywhere; one login helper for the scripts; database roles from one list | Opus · high | Last but one, alone |
+| 5 | WP139 | One name for the realm URL everywhere; one login helper for the scripts; database roles from one list | Opus · high | Running |
 | 6 | WP140 | Docs pass | Opus · medium | Last alone |
 
 ### Decisions of 2026-11-23, eighth interview (product owner)
