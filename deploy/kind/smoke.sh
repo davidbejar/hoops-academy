@@ -142,9 +142,11 @@ if [[ " ${SERVICES[*]} " == *" core "* ]]; then
   # from .env (never printed)
   # shellcheck source=scripts/lib/oidc-login.sh
   . scripts/lib/oidc-login.sh
-  utok=""
-  oidc_login "$BASE/auth/realms/academy" "$BASE/redirect.html" superadmin@hoops-academy.com DEV_USER_PASSWORD \
-    "openid profile email" && utok=$OIDC_ACCESS_TOKEN
+  user_token() {  # $1 = username -> its access token on stdout (nothing on failure)
+    oidc_login "$BASE/auth/realms/academy" "$BASE/redirect.html" "$1" DEV_USER_PASSWORD "openid profile email" \
+      && printf '%s' "$OIDC_ACCESS_TOKEN"
+  }
+  utok=$(user_token superadmin@hoops-academy.com || true)
   if [ -z "$utok" ]; then bad "superadmin PKCE login failed (run deploy/kind/seed-users.sh first?)"
   else
     me=$(curl -s -H "Authorization: Bearer $utok" "$BASE/api/core/me")
