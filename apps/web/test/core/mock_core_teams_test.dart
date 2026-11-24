@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
+import 'package:hoops_app/core/api/api.dart' as api;
+import 'package:hoops_app/features/roster/data/players_repository.dart';
 import 'package:hoops_app/features/roster/data/teams_repository.dart';
 
 import '../support/core_fixtures.dart';
@@ -48,5 +50,39 @@ void main() {
       ),
     );
     expect((await teams.setJersey('t1', 'p1', '11')).jerseyNumber, '11');
+  });
+
+  test('the eligible teams are only those the player may join '
+      '(listEligibleTeams)', () async {
+    final admin = MockBackend()
+      ..seedTeams([team('t1', 'Mini A'), team('t2', 'Infantil', cat: u14)])
+      ..seedPlayers([
+        // 2013: an Infantil, too old for Mini A
+        player(
+          'p1',
+          'Leo Gil',
+        ).rebuild((b) => b.birthDate = api.Date(2013, 3, 4)),
+      ]);
+    final players = ApiPlayersRepository(
+      admin.coreApi(),
+      MockBackend.testTenantId,
+    );
+    final teams = await players.eligibleTeams('p1', seasonId);
+    expect(teams.map((e) => e.team.id), ['t2']);
+  });
+
+  test('team staff list every player (listPlayers), also an assistant '
+      'without a team yet', () async {
+    final assistant = MockBackend(roles: {TenantRole.assistantCoach})
+      ..seedTeams([team('t1', 'Mini A')])
+      ..seedPlayers([
+        player('p1', 'Ana Ruiz', teams: [assignment('t1', 'Mini A')]),
+        player('p2', 'Leo Gil'),
+      ]);
+    final players = ApiPlayersRepository(
+      assistant.coreApi(),
+      MockBackend.testTenantId,
+    );
+    expect((await players.list()).map((p) => p.id), ['p1', 'p2']);
   });
 }
