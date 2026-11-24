@@ -78,37 +78,14 @@ need() {
 j() { jq -r "$1" "$RESP"; }
 
 # ---------------------------------------------------------------------------------------------------- tokens
-b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
-# login_once USER PASSWORD-ENV-NAME: browser-less authorization-code + PKCE flow of client `web` (as the app does);
-# sets TOKEN. Returns 1 when Keycloak does not redirect with a code (wrong password, or a required action is pending),
-# 2 when the gateway rate limit (nginx zone `auth`, 60/min) answered 429.
+# shellcheck source=scripts/lib/oidc-login.sh
+. scripts/lib/oidc-login.sh
+# login_once USER PASSWORD-ENV-NAME: the app's browser-less sign-in (client `web`, PKCE; scripts/lib/oidc-login.sh); sets
+# TOKEN. Returns 1 when Keycloak does not redirect with a code (wrong password, or a required action is pending), 2 when
+# the gateway rate limit (nginx zone `auth`, 60/min) answered 429.
 login_once() {
-  local user="$1" pwvar="$2" verifier challenge state jar form action loc code redirect="$BASE/redirect.html" hc
-  jar="$WORK/jar"; : >"$jar"
-  verifier=$(openssl rand 48 | b64url)
-  challenge=$(printf '%s' "$verifier" | openssl dgst -sha256 -binary | b64url)
-  state=$(openssl rand -hex 8)
-  hc=$(curl -sS -o "$WORK/form" -w '%{http_code}' -c "$jar" -b "$jar" -G "$ISSUER/protocol/openid-connect/auth" \
-    --data-urlencode client_id=web --data-urlencode response_type=code --data-urlencode "redirect_uri=$redirect" \
-    --data-urlencode "scope=openid profile email offline_access" --data-urlencode "state=$state" \
-    --data-urlencode "code_challenge=$challenge" --data-urlencode code_challenge_method=S256) || return 1
-  [ "$hc" != 429 ] || return 2
-  form=$(cat "$WORK/form")
-  action=$(printf '%s' "$form" | tr '\n' ' ' | sed -n 's/.*id="kc-form-login"[^>]*action="\([^"]*\)".*/\1/p' | sed 's/&amp;/\&/g')
-  [ -n "$action" ] || return 1
-  # credentials travel on stdin, never on a command line
-  U="$user" P="${!pwvar}" jq -jn '"username=\(env.U | @uri)&password=\(env.P | @uri)"' \
-    | curl -sS -o /dev/null -D "$WORK/loc" -c "$jar" -b "$jar" --data-binary @- "$action" || return 1
-  loc=$(tr -d '\r' <"$WORK/loc" | sed -n 's/^[Ll]ocation: //p')
-  if [ -z "$loc" ] && grep -q ' 429 ' "$WORK/loc"; then return 2; fi
-  case "$loc" in "$redirect"*) ;; *) return 1 ;; esac
-  code=$(printf '%s' "$loc" | sed -n 's/.*[?&]code=\([^&#]*\).*/\1/p')
-  hc=$(curl -sS -o "$WORK/tok" -w '%{http_code}' "$ISSUER/protocol/openid-connect/token" -d grant_type=authorization_code \
-    -d client_id=web --data-urlencode "code=$code" --data-urlencode "redirect_uri=$redirect" \
-    --data-urlencode "code_verifier=$verifier") || return 1
-  [ "$hc" != 429 ] || return 2
-  TOKEN=$(jq -r .access_token "$WORK/tok")
-  [ -n "$TOKEN" ] && [ "$TOKEN" != null ]
+  oidc_login "$ISSUER" "$BASE/redirect.html" "$1" "$2" || return
+  TOKEN=$OIDC_ACCESS_TOKEN
 }
 # login USER PASSWORD-ENV-NAME: login_once, waiting out the gateway's rate limit (up to ~2 minutes).
 login() {

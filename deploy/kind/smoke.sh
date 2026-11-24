@@ -138,25 +138,13 @@ done
 
 if [[ " ${SERVICES[*]} " == *" core "* ]]; then
   echo "== seeded user through core (/api/core/me, /platform)"
-  # Browser-less authorization-code + PKCE login of client `web` (as apps/web/tool/keycloak_login_check.sh).
-  user_token() {  # $1 = username; password = DEV_USER_PASSWORD from .env (never printed)
-    local iss="$BASE/auth/realms/academy" redir="$BASE/redirect.html" jar v c form action loc code
-    jar=$(mktemp); trap 'rm -f "$jar"' RETURN
-    b64() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
-    v=$(openssl rand 48 | b64); c=$(printf '%s' "$v" | openssl dgst -sha256 -binary | b64)
-    form=$(curl -fsS -c "$jar" -b "$jar" -G "$iss/protocol/openid-connect/auth" --data-urlencode client_id=web \
-      --data-urlencode response_type=code --data-urlencode "redirect_uri=$redir" --data-urlencode "scope=openid profile email" \
-      --data-urlencode state=smoke --data-urlencode "code_challenge=$c" --data-urlencode code_challenge_method=S256) || return 1
-    action=$(printf '%s' "$form" | tr '\n' ' ' | sed -n 's/.*id="kc-form-login"[^>]*action="\([^"]*\)".*/\1/p' | sed 's/&amp;/\&/g')
-    [ -n "$action" ] || return 1
-    loc=$(printf 'username=%s&password=%s' "$1" "$DEV_USER_PASSWORD" |
-      curl -sS -o /dev/null -D - -c "$jar" -b "$jar" "$action" --data-binary @- | tr -d '\r' | sed -n 's/^[Ll]ocation: //p')
-    code=$(printf '%s' "$loc" | sed -n 's/.*[?&]code=\([^&#]*\).*/\1/p'); [ -n "$code" ] || return 1
-    curl -fsS "$iss/protocol/openid-connect/token" -d grant_type=authorization_code -d client_id=web \
-      --data-urlencode "code=$code" --data-urlencode "redirect_uri=$redir" --data-urlencode "code_verifier=$v" |
-      sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p'
-  }
-  utok=$(user_token superadmin@hoops-academy.com || true)
+  # Browser-less authorization-code + PKCE login of client `web` (scripts/lib/oidc-login.sh); password DEV_USER_PASSWORD
+  # from .env (never printed)
+  # shellcheck source=scripts/lib/oidc-login.sh
+  . scripts/lib/oidc-login.sh
+  utok=""
+  oidc_login "$BASE/auth/realms/academy" "$BASE/redirect.html" superadmin@hoops-academy.com DEV_USER_PASSWORD \
+    "openid profile email" && utok=$OIDC_ACCESS_TOKEN
   if [ -z "$utok" ]; then bad "superadmin PKCE login failed (run deploy/kind/seed-users.sh first?)"
   else
     me=$(curl -s -H "Authorization: Bearer $utok" "$BASE/api/core/me")

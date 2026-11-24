@@ -21,25 +21,11 @@ for arg in "$@"; do
   esac
 done
 
-token() {
-  local iss="$BASE/auth/realms/academy" redir="$BASE/redirect.html" jar v c form action loc code
-  jar=$(mktemp); trap 'rm -f "$jar"' RETURN
-  b64() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
-  v=$(openssl rand 48 | b64); c=$(printf '%s' "$v" | openssl dgst -sha256 -binary | b64)
-  form=$(curl -fsS -c "$jar" -b "$jar" -G "$iss/protocol/openid-connect/auth" --data-urlencode client_id=web \
-    --data-urlencode response_type=code --data-urlencode "redirect_uri=$redir" --data-urlencode "scope=openid profile email" \
-    --data-urlencode state=backfill --data-urlencode "code_challenge=$c" --data-urlencode code_challenge_method=S256) || return 1
-  action=$(printf '%s' "$form" | tr '\n' ' ' | sed -n 's/.*id="kc-form-login"[^>]*action="\([^"]*\)".*/\1/p' | sed 's/&amp;/\&/g')
-  [ -n "$action" ] || return 1
-  loc=$(printf 'username=%s&password=%s' "$USERNAME" "$DEV_USER_PASSWORD" |
-    curl -sS -o /dev/null -D - -c "$jar" -b "$jar" "$action" --data-binary @- | tr -d '\r' | sed -n 's/^[Ll]ocation: //p')
-  code=$(printf '%s' "$loc" | sed -n 's/.*[?&]code=\([^&#]*\).*/\1/p'); [ -n "$code" ] || return 1
-  curl -fsS "$iss/protocol/openid-connect/token" -d grant_type=authorization_code -d client_id=web \
-    --data-urlencode "code=$code" --data-urlencode "redirect_uri=$redir" --data-urlencode "code_verifier=$v" |
-    sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p'
-}
-
-tok=$(token) && [ -n "$tok" ] || { echo "events-backfill.sh: login of $USERNAME failed (just seed-users?)" >&2; exit 1; }
+# shellcheck source=scripts/lib/oidc-login.sh
+. scripts/lib/oidc-login.sh
+oidc_login "$BASE/auth/realms/academy" "$BASE/redirect.html" "$USERNAME" DEV_USER_PASSWORD "openid profile email" \
+  || { echo "events-backfill.sh: login of $USERNAME failed (just seed-users?)" >&2; exit 1; }
+tok=$OIDC_ACCESS_TOKEN
 body=$(printf '{%s"force":%s}' "$tenant" "$force")
 # the token goes through stdin (a header file), never on the command line
 printf 'Authorization: Bearer %s\n' "$tok" |
