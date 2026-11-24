@@ -11,14 +11,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.application.platform.CreateTenant;
 import com.hoopsacademy.core.application.platform.CreateTenantCommand;
 import com.hoopsacademy.core.application.port.AcademyRequestNotifier;
 import com.hoopsacademy.core.application.port.AcademyRequestRepository;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.domain.shared.AppLocale;
 import com.hoopsacademy.core.domain.signup.AcademyName;

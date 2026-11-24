@@ -1,11 +1,11 @@
 package com.hoopsacademy.core.adapters.in.platform;
 
+import com.hoopsacademy.common.paging.PageMeta;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.core.adapters.in.shared.CallerIdentity;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
-import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
 import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.application.signup.DecideAcademyRequest;
 import com.hoopsacademy.core.application.signup.SubmitAcademyRequest;
@@ -85,7 +85,7 @@ public class PlatformAcademyRequestResource {
         PageResult<AcademyRequest> result = decisions.list(
                 Optional.ofNullable(status).map(AcademyRequestStatus::valueOf), new PageRequest(page, size));
         return new AcademyRequestPageDto(result.items().stream().map(AcademyRequestDto::of).toList(),
-                PageMetaDto.of(result));
+                PageMeta.of(result));
     }
 
     @POST

@@ -1,13 +1,13 @@
 package com.hoopsacademy.core.application.players;
 
 import com.hoopsacademy.common.authz.RequiresTenantRole;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.application.port.PlayerRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository.PlayerFilter;
 import com.hoopsacademy.core.application.port.PlayerRepository.PlayerRow;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.membership.PlayerStatus;
 import com.hoopsacademy.core.domain.roster.TeamId;

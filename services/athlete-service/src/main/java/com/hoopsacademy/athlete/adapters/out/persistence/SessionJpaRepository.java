@@ -1,6 +1,5 @@
 package com.hoopsacademy.athlete.adapters.out.persistence;
 
-import com.hoopsacademy.athlete.application.PageResult;
 import com.hoopsacademy.athlete.application.SessionQuery;
 import com.hoopsacademy.athlete.application.SessionRepository;
 import com.hoopsacademy.athlete.domain.ScheduleId;
@@ -8,6 +7,9 @@ import com.hoopsacademy.athlete.domain.SessionId;
 import com.hoopsacademy.athlete.domain.SessionStatus;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.athlete.domain.TrainingSession;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
+import com.hoopsacademy.common.persistence.PagedQuery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
@@ -82,15 +84,16 @@ class SessionJpaRepository implements SessionRepository {
     @Override
     public PageResult<TrainingSession> list(SessionQuery query) {
         if (query.teams() != null && query.teams().isEmpty()) {
-            return new PageResult<>(List.of(), query.page(), query.size(), 0);
+            return new PageResult<>(List.of(), new PageRequest(query.page(), query.size()), 0);
         }
-        PagedQuery<SessionEntity> search = PagedQuery.over(em, SessionEntity.class, "s")
-                .where("s.startsAt >= :from and s.startsAt < :to").bind("from", query.from()).bind("to", query.to());
+        PagedQuery search = PagedQuery.of(em, "from SessionEntity s", "s")
+                .where("s.startsAt >= :from", "from", query.from()).where("s.startsAt < :to", "to", query.to());
         if (query.teams() != null) {
-            search.where("s.teamId in :teams").bind("teams", query.teams().stream().map(TeamId::value).toList());
+            search.where("s.teamId in :teams", "teams", query.teams().stream().map(TeamId::value).toList());
         }
-        query.status().ifPresent(st -> search.where("s.status = :status").bind("status", st.name()));
-        return search.page("s.startsAt, s.id", query.page(), query.size(), SessionJpaRepository::toDomain);
+        return search.whereIf(query.status(), "s.status = :status", "status", SessionStatus::name)
+                .orderBy("s.startsAt, s.id").page(new PageRequest(query.page(), query.size()), "select s",
+                        SessionEntity.class, SessionJpaRepository::toDomain);
     }
 
     @Override

@@ -1,8 +1,8 @@
 package com.hoopsacademy.core.application.platform;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.core.application.port.PlatformUsers;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.util.Optional;

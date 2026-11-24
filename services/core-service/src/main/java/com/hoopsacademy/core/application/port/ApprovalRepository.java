@@ -1,7 +1,7 @@
 package com.hoopsacademy.core.application.port;
 
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.core.domain.approvals.ApprovalAction;
 import com.hoopsacademy.core.domain.approvals.ApprovalRequest;
 import com.hoopsacademy.core.domain.approvals.ApprovalRequestId;

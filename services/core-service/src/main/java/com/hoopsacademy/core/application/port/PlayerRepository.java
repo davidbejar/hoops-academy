@@ -1,12 +1,12 @@
 package com.hoopsacademy.core.application.port;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.core.domain.eligibility.EligibilityCandidate;
 import com.hoopsacademy.core.domain.membership.Gender;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.membership.PlayerStatus;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.roster.JerseyNumber;
 import com.hoopsacademy.core.domain.roster.TeamId;
 import java.time.Instant;

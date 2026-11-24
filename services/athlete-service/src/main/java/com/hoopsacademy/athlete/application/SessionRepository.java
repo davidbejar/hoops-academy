@@ -3,6 +3,7 @@ package com.hoopsacademy.athlete.application;
 import com.hoopsacademy.athlete.domain.ScheduleId;
 import com.hoopsacademy.athlete.domain.SessionId;
 import com.hoopsacademy.athlete.domain.TrainingSession;
+import com.hoopsacademy.common.paging.PageResult;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;

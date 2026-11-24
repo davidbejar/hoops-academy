@@ -10,6 +10,7 @@ import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.athlete.domain.TestResultId;
 import com.hoopsacademy.athlete.domain.TestTypeId;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -104,7 +105,7 @@ public class ManageTestResults {
                 search.from().orElse(MIN_DATE), scope.cap(search.to().orElse(MAX_DATE)),
                 search.page(), search.size());
         List<ResultView> views = view(caller, page.items());
-        return new PageResult<>(views, page.page(), page.size(), page.totalElements());
+        return new PageResult<>(views, page.request(), page.totalElements());
     }
 
     private PhysicalTestResult load(AuthzContext caller, TestResultId id) {

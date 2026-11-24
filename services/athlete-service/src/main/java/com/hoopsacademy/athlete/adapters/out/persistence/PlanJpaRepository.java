@@ -1,6 +1,5 @@
 package com.hoopsacademy.athlete.adapters.out.persistence;
 
-import com.hoopsacademy.athlete.application.PageResult;
 import com.hoopsacademy.athlete.application.PlanRepository;
 import com.hoopsacademy.athlete.domain.Actor;
 import com.hoopsacademy.athlete.domain.ContentLocale;
@@ -12,6 +11,8 @@ import com.hoopsacademy.athlete.domain.PlanItemId;
 import com.hoopsacademy.athlete.domain.SessionId;
 import com.hoopsacademy.athlete.domain.TrainingPlan;
 import com.hoopsacademy.common.paging.PageOffset;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.tenancy.CurrentTenant;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
@@ -140,7 +141,7 @@ class PlanJpaRepository implements PlanRepository {
         });
         List<PlanEntity> page = select.setFirstResult(PageOffset.of(search.page(), search.size())).setMaxResults(search.size())
                 .getResultList();
-        return new PageResult<>(withItems(page), search.page(), search.size(), count.getSingleResult());
+        return new PageResult<>(withItems(page), new PageRequest(search.page(), search.size()), count.getSingleResult());
     }
 
     @Override

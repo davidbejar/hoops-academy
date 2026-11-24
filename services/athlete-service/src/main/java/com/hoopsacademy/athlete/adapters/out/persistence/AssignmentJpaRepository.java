@@ -1,7 +1,6 @@
 package com.hoopsacademy.athlete.adapters.out.persistence;
 
 import com.hoopsacademy.athlete.application.AssignmentRepository;
-import com.hoopsacademy.athlete.application.PageResult;
 import com.hoopsacademy.athlete.domain.Actor;
 import com.hoopsacademy.athlete.domain.AssignmentId;
 import com.hoopsacademy.athlete.domain.CompletionStatus;
@@ -12,6 +11,9 @@ import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.common.paging.PageOffset;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
+import com.hoopsacademy.common.persistence.PagedQuery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -73,7 +75,7 @@ class AssignmentJpaRepository implements AssignmentRepository {
     @Override
     public PageResult<PlanAssignment> search(AssignmentQuery q) {
         if (scopedToNoTarget(q)) {
-            return new PageResult<>(List.of(), q.page(), q.size(), 0);
+            return new PageResult<>(List.of(), new PageRequest(q.page(), q.size()), 0);
         }
         String where = whereClause(q);
         TypedQuery<AssignmentEntity> select = em.createQuery(
@@ -83,7 +85,7 @@ class AssignmentJpaRepository implements AssignmentRepository {
         bind(count, q);
         List<PlanAssignment> items = select.setFirstResult(PageOffset.of(q.page(), q.size())).setMaxResults(q.size()).getResultList()
                 .stream().map(AssignmentJpaRepository::toDomain).toList();
-        return new PageResult<>(items, q.page(), q.size(), count.getSingleResult());
+        return new PageResult<>(items, new PageRequest(q.page(), q.size()), count.getSingleResult());
     }
 
     /** Teams or players were given ({@code null} = unrestricted), but none of either: nothing can match. */
@@ -167,14 +169,15 @@ class AssignmentJpaRepository implements AssignmentRepository {
     @Override
     public PageResult<PlanCompletion> searchCompletions(CompletionQuery q) {
         if (q.players() != null && q.players().isEmpty()) {
-            return new PageResult<>(List.of(), q.page(), q.size(), 0);
+            return new PageResult<>(List.of(), new PageRequest(q.page(), q.size()), 0);
         }
-        PagedQuery<CompletionEntity> query = PagedQuery.over(em, CompletionEntity.class, "c");
-        q.assignment().ifPresent(a -> query.where("c.assignmentId = :assignment").bind("assignment", a.value()));
+        PagedQuery query = PagedQuery.of(em, "from CompletionEntity c", "c")
+                .whereIf(q.assignment(), "c.assignmentId = :assignment", "assignment", AssignmentId::value);
         if (q.players() != null) {
-            query.where("c.playerId in :players").bind("players", q.players().stream().map(PlayerId::value).toList());
+            query.where("c.playerId in :players", "players", q.players().stream().map(PlayerId::value).toList());
         }
-        return query.page("c.markedAt desc, c.id", q.page(), q.size(), AssignmentJpaRepository::toDomain);
+        return query.orderBy("c.markedAt desc, c.id").page(new PageRequest(q.page(), q.size()), "select c",
+                CompletionEntity.class, AssignmentJpaRepository::toDomain);
     }
 
     @Override

@@ -3,9 +3,11 @@ package com.hoopsacademy.athlete.adapters.in.rest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.athlete.application.ManagePlans;
 import com.hoopsacademy.athlete.application.QuickAddItems;
+import com.hoopsacademy.athlete.domain.ContentLocale;
 import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.domain.PlanItemId;
 import com.hoopsacademy.common.authz.RequiresTenantRole;
+import com.hoopsacademy.common.i18n.AcceptLanguage;
 import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import com.hoopsacademy.common.tenancy.TenantContext;
@@ -71,7 +73,7 @@ public class TrainingPlanResource {
             throw InvalidRequestException.of("q", "INVALID_VALUE", "q must be at most 100 characters");
         }
         return PageDto.of(plans.list(Requests.bool("template", template, false), query,
-                AcceptLanguage.negotiate(acceptLanguage), page, size), PlanDtos.Summary::from);
+                ContentLocale.of(AcceptLanguage.negotiate(acceptLanguage)), page, size), PlanDtos.Summary::from);
     }
 
     @POST
@@ -86,7 +88,7 @@ public class TrainingPlanResource {
     @GET
     @Path("/{planId}")
     public PlanDtos.Plan get(@PathParam("planId") UUID planId, @HeaderParam(ACCEPT_LANGUAGE) String acceptLanguage) {
-        return PlanDtos.Plan.from(plans.get(new PlanId(planId), AcceptLanguage.negotiate(acceptLanguage)));
+        return PlanDtos.Plan.from(plans.get(new PlanId(planId), ContentLocale.of(AcceptLanguage.negotiate(acceptLanguage))));
     }
 
     @PATCH
@@ -111,7 +113,7 @@ public class TrainingPlanResource {
             @HeaderParam(ACCEPT_LANGUAGE) String acceptLanguage) {
         AuthzContext caller = caller();
         var copy = plans.copy(caller, actors.of(caller), new PlanId(planId),
-                Optional.ofNullable(request).map(PlanDtos.CopyRequest::name), AcceptLanguage.negotiate(acceptLanguage));
+                Optional.ofNullable(request).map(PlanDtos.CopyRequest::name), ContentLocale.of(AcceptLanguage.negotiate(acceptLanguage)));
         return Response.status(Response.Status.CREATED).entity(PlanDtos.Plan.from(copy)).build();
     }
 
@@ -148,7 +150,7 @@ public class TrainingPlanResource {
     public PlanDtos.Plan copyItems(@PathParam("planId") UUID planId, @Valid @NotNull PlanDtos.CopyItemsRequest request,
             @HeaderParam(ACCEPT_LANGUAGE) String acceptLanguage) {
         return PlanDtos.Plan.from(quickAdd.toPlan(caller(), new PlanId(planId), request.sources(),
-                AcceptLanguage.negotiate(acceptLanguage)));
+                ContentLocale.of(AcceptLanguage.negotiate(acceptLanguage))));
     }
 
     @PATCH

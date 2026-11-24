@@ -9,6 +9,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.application.authz.AuthzCache;
@@ -17,8 +19,6 @@ import com.hoopsacademy.core.application.port.GuardianLinkRepository;
 import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository.PlayerSummary;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.membership.Gender;
 import com.hoopsacademy.core.domain.membership.GuardianLink;
 import com.hoopsacademy.core.domain.membership.GuardianLinkId;

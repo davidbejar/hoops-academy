@@ -5,6 +5,8 @@ import com.hoopsacademy.athlete.domain.SessionId;
 import com.hoopsacademy.athlete.domain.SessionStatus;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.athlete.domain.TrainingSession;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.AuthzContext;
@@ -66,7 +68,7 @@ public class ManageSessions {
         } else if (!access.hasStaffRole(caller)) {
             teams = access.playerTeams(caller);
             if (teams.isEmpty()) {
-                return new PageResult<>(java.util.List.of(), calendar.page(), calendar.size(), 0);
+                return new PageResult<>(java.util.List.of(), new PageRequest(calendar.page(), calendar.size()), 0);
             }
         }
         ZoneId zone = clock.zoneOf(caller);

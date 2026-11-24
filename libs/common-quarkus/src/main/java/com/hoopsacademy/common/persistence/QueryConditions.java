@@ -1,4 +1,4 @@
-package com.hoopsacademy.core.adapters.out.persistence;
+package com.hoopsacademy.common.persistence;
 
 import jakarta.persistence.Query;
 import java.util.ArrayList;

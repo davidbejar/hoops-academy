@@ -3,6 +3,7 @@ package com.hoopsacademy.athlete.application;
 import com.hoopsacademy.athlete.domain.AbsenceId;
 import com.hoopsacademy.athlete.domain.PlannedAbsence;
 import com.hoopsacademy.athlete.domain.PlayerId;
+import com.hoopsacademy.common.paging.PageResult;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;

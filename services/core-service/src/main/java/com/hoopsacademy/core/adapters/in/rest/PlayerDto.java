@@ -1,9 +1,9 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
-import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
+import com.hoopsacademy.common.paging.PageMeta;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.core.application.players.PlayerView;
 import com.hoopsacademy.core.application.port.PlayerRepository.PlayerSummary;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.membership.Gender;
 import com.hoopsacademy.core.domain.membership.PlayerStatus;
 import java.time.Instant;
@@ -20,10 +20,10 @@ public record PlayerDto(UUID id, UUID personId, String givenName, String familyN
     public record AssignmentDto(RefDtos.TeamRef team, String jerseyNumber, int playUpLevels, boolean valid) {}
 
     /** Contract {@code PlayerPage}. */
-    public record PageDto(List<PlayerDto> items, PageMetaDto page) {
+    public record PageDto(List<PlayerDto> items, PageMeta page) {
 
         static PageDto of(PageResult<PlayerView> result) {
-            return new PageDto(result.items().stream().map(PlayerDto::of).toList(), PageMetaDto.of(result));
+            return new PageDto(result.items().stream().map(PlayerDto::of).toList(), PageMeta.of(result));
         }
     }
 

@@ -1,6 +1,8 @@
 package com.hoopsacademy.core.application.roster;
 
 import com.hoopsacademy.common.authz.RequiresTenantRole;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.problem.DomainRuleViolation;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantRole;
@@ -12,8 +14,6 @@ import com.hoopsacademy.core.application.port.PlayerRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository.PlayerSummary;
 import com.hoopsacademy.core.application.port.TeamPlayerRepository;
 import com.hoopsacademy.core.application.port.TeamRepository;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.eligibility.CaseResolution;
 import com.hoopsacademy.core.domain.eligibility.CaseStatus;
 import com.hoopsacademy.core.domain.eligibility.EligibilityCase;

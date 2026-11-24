@@ -1,7 +1,7 @@
-package com.hoopsacademy.core.adapters.out.persistence;
+package com.hoopsacademy.common.persistence;
 
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import java.util.List;
@@ -10,7 +10,9 @@ import java.util.function.Function;
 
 /**
  * One page of a JPQL list: the items query ({@code select … from … where … order by …}, offset and limit) and its
- * count query share the {@code from} clause and the {@link QueryConditions}.
+ * count query share the {@code from} clause and the {@link QueryConditions}. Every fragment (from clause, conditions,
+ * order) is a constant the caller writes as a string literal; every value is a bound parameter, never query text.
+ * One builder for core's and athlete's lists (WP137, scope 8).
  */
 public final class PagedQuery {
 
@@ -62,12 +64,19 @@ public final class PagedQuery {
     /** The page, the rows mapped together (e.g. to load their children with one more query). */
     public <E, R> PageResult<R> pageOfRows(PageRequest page, String select, Class<E> type,
             Function<List<E>, List<R>> map) {
-        TypedQuery<E> items = em.createQuery(select + " " + from + conditions.where() + orderBy, type);
-        TypedQuery<Long> total = em.createQuery("select count(" + counted + ") " + from + conditions.where(),
-                Long.class);
+        TypedQuery<E> items = em.createQuery(itemsJpql(select), type);
+        TypedQuery<Long> total = em.createQuery(countJpql(), Long.class);
         conditions.bind(items);
         conditions.bind(total);
         List<E> rows = items.setFirstResult(page.offset()).setMaxResults(page.size()).getResultList();
         return new PageResult<>(map.apply(rows), page, total.getSingleResult());
+    }
+
+    String itemsJpql(String select) {
+        return select + " " + from + conditions.where() + orderBy;
+    }
+
+    String countJpql() {
+        return "select count(" + counted + ") " + from + conditions.where();
     }
 }

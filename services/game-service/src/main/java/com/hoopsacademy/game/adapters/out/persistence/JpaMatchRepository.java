@@ -1,8 +1,9 @@
 package com.hoopsacademy.game.adapters.out.persistence;
 
 import com.hoopsacademy.common.paging.PageOffset;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.game.application.MatchFilter;
-import com.hoopsacademy.game.application.MatchPage;
 import com.hoopsacademy.game.application.MatchRepository;
 import com.hoopsacademy.game.domain.JerseyNumber;
 import com.hoopsacademy.game.domain.Match;
@@ -82,7 +83,7 @@ class JpaMatchRepository extends JdbcRepository implements MatchRepository {
     }
 
     @Override
-    public MatchPage list(MatchFilter filter, int page, int size) {
+    public PageResult<Match> list(MatchFilter filter, int page, int size) {
         StringBuilder where = new StringBuilder(" where 1 = 1");
         List<Object[]> params = new ArrayList<>();
         if (filter.teamId() != null) {
@@ -115,7 +116,7 @@ class JpaMatchRepository extends JdbcRepository implements MatchRepository {
         List<MatchEntity> entities = select.setFirstResult(PageOffset.of(page, size)).setMaxResults(size).getResultList();
         Map<UUID, MatchScore> scores = scores(entities.stream().map(e -> e.id).toList());
         List<Match> items = entities.stream().map(e -> toDomain(e, scores.getOrDefault(e.id, MatchScore.NONE))).toList();
-        return new MatchPage(items, page, size, count.getSingleResult());
+        return new PageResult<>(items, new PageRequest(page, size), count.getSingleResult());
     }
 
     @Override

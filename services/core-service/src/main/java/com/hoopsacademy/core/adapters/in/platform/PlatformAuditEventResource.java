@@ -1,16 +1,16 @@
 package com.hoopsacademy.core.adapters.in.platform;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.hoopsacademy.common.paging.PageMeta;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.adapters.in.shared.AuditDtos;
 import com.hoopsacademy.core.adapters.in.shared.AuditDtos.EventFields;
 import com.hoopsacademy.core.adapters.in.shared.CallerIdentity;
-import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
 import com.hoopsacademy.core.adapters.in.shared.Params;
 import com.hoopsacademy.core.application.audit.PlatformAuditEntry;
 import com.hoopsacademy.core.application.audit.ReadPlatformAuditTrail;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -39,7 +39,7 @@ public class PlatformAuditEventResource {
     }
 
     /** Contract {@code PlatformAuditEventPage}. */
-    public record PlatformAuditEventPageDto(List<PlatformAuditEventDto> items, PageMetaDto page) {}
+    public record PlatformAuditEventPageDto(List<PlatformAuditEventDto> items, PageMeta page) {}
 
     private final ReadPlatformAuditTrail trail;
 
@@ -55,6 +55,6 @@ public class PlatformAuditEventResource {
         PageResult<PlatformAuditEntry> result = trail.list(Params.uuid("tenantId", tenantId).map(TenantId::new),
                 AuditDtos.filter(from, to, actions), new PageRequest(page, size));
         return new PlatformAuditEventPageDto(result.items().stream().map(PlatformAuditEventDto::of).toList(),
-                PageMetaDto.of(result));
+                PageMeta.of(result));
     }
 }

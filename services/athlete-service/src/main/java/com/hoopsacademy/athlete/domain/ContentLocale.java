@@ -1,20 +1,19 @@
 package com.hoopsacademy.athlete.domain;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import com.hoopsacademy.common.i18n.AppLanguage;
 import java.util.Optional;
 
-/** A language the global templates are written in (common.yaml Locale). English is the fallback (decision 43). */
+/**
+ * A language the global templates are written in (common.yaml Locale). English is the fallback (decision 43). The
+ * request's language comes from common-quarkus' {@code AcceptLanguage}; the codes and tags are read as
+ * {@link AppLanguage} reads them.
+ */
 public enum ContentLocale {
     ES("es"),
     EN("en"),
     ID("id");
 
     public static final ContentLocale FALLBACK = EN;
-
-    /** Java's historical code for Indonesian, still produced by some runtimes. */
-    private static final String LEGACY_INDONESIAN = "in";
 
     private final String code;
 
@@ -26,18 +25,12 @@ public enum ContentLocale {
         return code;
     }
 
-    /** The language of a code or language tag ({@code es}, {@code es-AR}, {@code ID}); empty when unsupported. */
-    public static Optional<ContentLocale> fromCode(String tag) {
-        if (tag == null) {
-            return Optional.empty();
-        }
-        String primary = tag.trim().split("[-_]", 2)[0].toLowerCase(Locale.ROOT);
-        String language = LEGACY_INDONESIAN.equals(primary) ? ID.code : primary;
-        return Arrays.stream(values()).filter(l -> l.code.equals(language)).findFirst();
+    public static ContentLocale of(AppLanguage language) {
+        return valueOf(language.name());
     }
 
-    /** The first supported language of a preference-ordered list of language tags, else {@link #FALLBACK}. */
-    public static ContentLocale negotiate(List<String> preferred) {
-        return preferred.stream().map(ContentLocale::fromCode).flatMap(Optional::stream).findFirst().orElse(FALLBACK);
+    /** The language of a code or language tag ({@code es}, {@code es-AR}, {@code ID}); empty when unsupported. */
+    public static Optional<ContentLocale> fromCode(String tag) {
+        return AppLanguage.fromTag(tag).map(ContentLocale::of);
     }
 }

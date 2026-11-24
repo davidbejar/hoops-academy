@@ -1,6 +1,7 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.hoopsacademy.common.paging.PageRequest;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
 import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.application.roster.TeamService;
@@ -8,7 +9,6 @@ import com.hoopsacademy.core.application.roster.TeamService.NewTeam;
 import com.hoopsacademy.core.application.roster.TeamService.TeamQuery;
 import com.hoopsacademy.core.application.roster.TeamStaffService;
 import com.hoopsacademy.core.application.roster.TeamStaffService.StaffView;
-import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.roster.AgeCategoryId;
 import com.hoopsacademy.core.domain.roster.GenderPolicy;

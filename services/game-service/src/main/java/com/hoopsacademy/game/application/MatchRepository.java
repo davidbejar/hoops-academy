@@ -1,5 +1,6 @@
 package com.hoopsacademy.game.application;
 
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.game.domain.Match;
 import com.hoopsacademy.game.domain.MatchId;
 import com.hoopsacademy.game.domain.MatchRoster;
@@ -18,7 +19,7 @@ public interface MatchRepository {
      */
     Optional<Match> lockById(MatchId id);
 
-    MatchPage list(MatchFilter filter, int page, int size);
+    PageResult<Match> list(MatchFilter filter, int page, int size);
 
     MatchRoster roster(MatchId id);
 

@@ -1,5 +1,7 @@
 package com.hoopsacademy.core.application.audit;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantScope;
 import com.hoopsacademy.core.application.platform.PlatformTenantQueries;
@@ -8,8 +10,6 @@ import com.hoopsacademy.core.application.port.AuditNames;
 import com.hoopsacademy.core.application.port.AuditRecord;
 import com.hoopsacademy.core.application.port.AuditTargetType;
 import com.hoopsacademy.core.application.port.PlatformAuditTrail;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.util.HashMap;

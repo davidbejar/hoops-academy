@@ -1,14 +1,14 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
 import com.hoopsacademy.common.authz.RequiresTenantRole;
+import com.hoopsacademy.common.paging.PageMeta;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.adapters.in.shared.AuditDtos;
 import com.hoopsacademy.core.adapters.in.shared.AuditDtos.EventFields;
-import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
 import com.hoopsacademy.core.application.audit.AuditEntry;
 import com.hoopsacademy.core.application.audit.ReadAuditTrail;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.ws.rs.DefaultValue;
@@ -26,7 +26,7 @@ import java.util.List;
 public class AuditEventResource {
 
     /** Contract {@code AuditEventPage}. */
-    public record AuditEventPageDto(List<EventFields> items, PageMetaDto page) {}
+    public record AuditEventPageDto(List<EventFields> items, PageMeta page) {}
 
     private final ReadAuditTrail trail;
 
@@ -40,6 +40,6 @@ public class AuditEventResource {
             @QueryParam("page") @DefaultValue("0") @Min(0) int page,
             @QueryParam("size") @DefaultValue("50") @Min(1) @Max(200) int size) {
         PageResult<AuditEntry> result = trail.list(AuditDtos.filter(from, to, actions), new PageRequest(page, size));
-        return new AuditEventPageDto(result.items().stream().map(EventFields::of).toList(), PageMetaDto.of(result));
+        return new AuditEventPageDto(result.items().stream().map(EventFields::of).toList(), PageMeta.of(result));
     }
 }

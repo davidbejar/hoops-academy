@@ -197,27 +197,11 @@
       "expires": "2027-05-06"
     },
     {
-      "rule": "java.lang.security.audit.formatted-sql-string.formatted-sql-string",
-      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/PagedQuery.java",
-      "line": 65,
-      "fingerprint": "a8d4372ea0fdbafc",
-      "reason": "False positive (reviewed by the orchestrator on 2026-11-24, WP128): the paged-query builder joins constant JPQL fragments (from clause, conditions, order by) that every caller writes as string literals; every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
-      "expires": "2027-05-06"
-    },
-    {
       "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
-      "path": "services/core-service/src/main/java/com/hoopsacademy/core/adapters/out/persistence/PagedQuery.java",
-      "line": 65,
-      "fingerprint": "a8d4372ea0fdbafc",
-      "reason": "False positive (reviewed by the orchestrator on 2026-11-24, WP128): the paged-query builder joins constant JPQL fragments (from clause, conditions, order by) that every caller writes as string literals; every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
-      "expires": "2027-05-06"
-    },
-    {
-      "rule": "semgrep.rules.hoops-sql-concat-from-parameter",
-      "path": "services/athlete-service/src/main/java/com/hoopsacademy/athlete/adapters/out/persistence/PagedQuery.java",
-      "line": 50,
-      "fingerprint": "cf05931d230ef6e6",
-      "reason": "False positive (reviewed by the orchestrator on 2026-11-24, WP127): the paged-query builder joins constant JPQL fragments (from clause, conditions, order by) that every caller writes as string literals; every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
+      "path": "libs/common-quarkus/src/main/java/com/hoopsacademy/common/persistence/PagedQuery.java",
+      "line": 67,
+      "fingerprint": "2406cf1d3bc267a0",
+      "reason": "False positive (reviewed by the orchestrator on 2026-11-24 for core's WP128 and athlete's WP127 copies; one builder in common-quarkus since WP137): the paged-query builder joins constant JPQL fragments (from clause, conditions, order by) that every caller writes as string literals; every value is a bound parameter. A new caller passing a value would not show here: the helper stays on the review list.",
       "expires": "2027-05-06"
     },
     {

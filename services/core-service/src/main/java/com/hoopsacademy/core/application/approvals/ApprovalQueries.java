@@ -1,13 +1,13 @@
 package com.hoopsacademy.core.application.approvals;
 
 import com.hoopsacademy.common.authz.RequiresTenantRole;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.application.players.PlayerAccess;
 import com.hoopsacademy.core.application.port.ApprovalRepository;
 import com.hoopsacademy.core.application.port.ApprovalRepository.ApprovalFilter;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.approvals.ApprovalAction;
 import com.hoopsacademy.core.domain.approvals.ApprovalRequest;
 import com.hoopsacademy.core.domain.approvals.ApprovalRequestId;

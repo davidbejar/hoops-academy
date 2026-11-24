@@ -1,10 +1,10 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
+import com.hoopsacademy.common.paging.PageRequest;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
 import com.hoopsacademy.core.application.roster.EligibilityCaseService;
 import com.hoopsacademy.core.application.roster.EligibilityCaseService.CaseQuery;
 import com.hoopsacademy.core.application.roster.EligibilityCaseService.Resolution;
-import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.domain.eligibility.CaseResolution;
 import com.hoopsacademy.core.domain.eligibility.CaseStatus;
 import com.hoopsacademy.core.domain.eligibility.EligibilityCaseId;

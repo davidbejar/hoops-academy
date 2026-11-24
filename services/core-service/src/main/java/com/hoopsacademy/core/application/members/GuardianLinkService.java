@@ -1,5 +1,7 @@
 package com.hoopsacademy.core.application.members;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.core.application.port.AuditLog;
 import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditEvent;
@@ -14,8 +16,6 @@ import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository;
 import com.hoopsacademy.core.application.port.PlayerRepository.PlayerSummary;
 import com.hoopsacademy.core.application.port.ProvisionedIdentity;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.domain.membership.GuardianLink;
 import com.hoopsacademy.core.domain.membership.GuardianLinkId;

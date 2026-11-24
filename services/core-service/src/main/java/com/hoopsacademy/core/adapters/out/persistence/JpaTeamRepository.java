@@ -1,9 +1,10 @@
 package com.hoopsacademy.core.adapters.out.persistence;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
+import com.hoopsacademy.common.persistence.PagedQuery;
 import com.hoopsacademy.core.application.events.RosterChanges;
 import com.hoopsacademy.core.application.port.TeamRepository;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.roster.AgeCategoryId;
 import com.hoopsacademy.core.domain.roster.GenderPolicy;
 import com.hoopsacademy.core.domain.roster.SeasonId;

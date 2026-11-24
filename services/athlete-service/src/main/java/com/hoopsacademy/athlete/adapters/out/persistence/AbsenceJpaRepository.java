@@ -1,12 +1,14 @@
 package com.hoopsacademy.athlete.adapters.out.persistence;
 
 import com.hoopsacademy.athlete.application.AbsenceRepository;
-import com.hoopsacademy.athlete.application.PageResult;
 import com.hoopsacademy.athlete.domain.AbsenceId;
 import com.hoopsacademy.athlete.domain.Actor;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlannedAbsence;
 import com.hoopsacademy.athlete.domain.PlayerId;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
+import com.hoopsacademy.common.persistence.PagedQuery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
@@ -61,14 +63,15 @@ class AbsenceJpaRepository implements AbsenceRepository {
     public PageResult<PlannedAbsence> search(Collection<PlayerId> players, LocalDate from, LocalDate to, int page,
             int size) {
         if (players != null && players.isEmpty()) {
-            return new PageResult<>(List.of(), page, size, 0);
+            return new PageResult<>(List.of(), new PageRequest(page, size), 0);
         }
-        PagedQuery<AbsenceEntity> query = PagedQuery.over(em, AbsenceEntity.class, "a")
-                .where("a.toDate >= :from and a.fromDate <= :to").bind("from", from).bind("to", to);
+        PagedQuery query = PagedQuery.of(em, "from AbsenceEntity a", "a")
+                .where("a.toDate >= :from", "from", from).where("a.fromDate <= :to", "to", to);
         if (players != null) {
-            query.where("a.playerId in :players").bind("players", players.stream().map(PlayerId::value).toList());
+            query.where("a.playerId in :players", "players", players.stream().map(PlayerId::value).toList());
         }
-        return query.page("a.fromDate, a.id", page, size, AbsenceJpaRepository::toDomain);
+        return query.orderBy("a.fromDate, a.id")
+                .page(new PageRequest(page, size), "select a", AbsenceEntity.class, AbsenceJpaRepository::toDomain);
     }
 
     @Override

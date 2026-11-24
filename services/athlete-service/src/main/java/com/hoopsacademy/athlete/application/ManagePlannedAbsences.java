@@ -5,6 +5,7 @@ import com.hoopsacademy.athlete.domain.Actor;
 import com.hoopsacademy.athlete.domain.PlannedAbsence;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import jakarta.enterprise.context.ApplicationScoped;

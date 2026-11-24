@@ -2,6 +2,7 @@ package com.hoopsacademy.game.application.sheet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hoopsacademy.common.i18n.AppLanguage;
 import com.hoopsacademy.game.application.GetBoxScore.BoxScore;
 import com.hoopsacademy.game.domain.HomeAway;
 import com.hoopsacademy.game.domain.JerseyNumber;
@@ -54,14 +55,14 @@ class MatchSheetsTest {
             Map.of());
 
     private MatchSheet sheet(Set<PlayerId> visible) {
-        return MatchSheets.of(new BoxScore(match, roster, projection, visible), SheetLanguage.ID, ACADEMY, "U14 Elang");
+        return MatchSheets.of(new BoxScore(match, roster, projection, visible), AppLanguage.ID, ACADEMY, "U14 Elang");
     }
 
     @Test
     void theHeaderIsTheMatchWithItsTeamsName() {
         MatchSheet sheet = sheet(Set.of());
 
-        assertThat(sheet.language()).isEqualTo(SheetLanguage.ID);
+        assertThat(sheet.language()).isEqualTo(AppLanguage.ID);
         assertThat(sheet.academy()).isEqualTo(ACADEMY);
         assertThat(sheet.header()).isEqualTo(new MatchSheet.Header("U14 Elang", "Tigers", HomeAway.AWAY, TIP_OFF,
                 "GOR Bulungan", MatchStatus.SCHEDULED, 4, 8));

@@ -1,13 +1,14 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
+import com.hoopsacademy.common.i18n.AcceptLanguage;
 import com.hoopsacademy.core.adapters.in.export.AuditCsv;
 import com.hoopsacademy.core.adapters.in.export.ExportFileName;
 import com.hoopsacademy.core.adapters.in.export.ExportLabels;
-import com.hoopsacademy.core.adapters.in.export.ExportLanguage;
 import com.hoopsacademy.core.adapters.in.shared.AuditDtos;
 import com.hoopsacademy.core.adapters.in.shared.ExportResponse;
 import com.hoopsacademy.core.application.export.AuditSheet;
 import com.hoopsacademy.core.application.export.ExportAuditTrail;
+import com.hoopsacademy.core.domain.shared.AppLocale;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.Path;
@@ -32,7 +33,7 @@ public class AuditEventExportResource {
             @QueryParam("action") List<String> actions,
             @HeaderParam(ExportResponse.ACCEPT_LANGUAGE) String acceptLanguage) {
         AuditSheet sheet = trail.export(AuditDtos.filter(from, to, actions));
-        byte[] file = AuditCsv.academy(sheet, ExportLabels.of(ExportLanguage.negotiate(acceptLanguage)));
+        byte[] file = AuditCsv.academy(sheet, ExportLabels.of(AppLocale.of(AcceptLanguage.negotiate(acceptLanguage))));
         return ExportResponse.csv(file,
                 ExportFileName.csv(sheet.origin().academySlug(), sheet.origin().day(), "audit"));
     }

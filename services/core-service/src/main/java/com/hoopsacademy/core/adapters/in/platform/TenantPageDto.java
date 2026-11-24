@@ -1,7 +1,7 @@
 package com.hoopsacademy.core.adapters.in.platform;
 
-import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
+import com.hoopsacademy.common.paging.PageMeta;
 import java.util.List;
 
 /** Contract {@code TenantPage}. */
-public record TenantPageDto(List<TenantDto> items, PageMetaDto page) {}
+public record TenantPageDto(List<TenantDto> items, PageMeta page) {}

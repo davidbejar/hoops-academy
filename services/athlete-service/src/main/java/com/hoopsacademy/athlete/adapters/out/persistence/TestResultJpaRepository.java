@@ -1,6 +1,5 @@
 package com.hoopsacademy.athlete.adapters.out.persistence;
 
-import com.hoopsacademy.athlete.application.PageResult;
 import com.hoopsacademy.athlete.application.TestResultRepository;
 import com.hoopsacademy.athlete.domain.Actor;
 import com.hoopsacademy.athlete.domain.PersonId;
@@ -8,6 +7,9 @@ import com.hoopsacademy.athlete.domain.PhysicalTestResult;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TestResultId;
 import com.hoopsacademy.athlete.domain.TestTypeId;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
+import com.hoopsacademy.common.persistence.PagedQuery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
@@ -69,15 +71,16 @@ class TestResultJpaRepository implements TestResultRepository {
     public PageResult<PhysicalTestResult> search(Collection<PlayerId> players, Optional<TestTypeId> type, LocalDate from,
             LocalDate to, int page, int size) {
         if (players != null && players.isEmpty()) {
-            return new PageResult<>(List.of(), page, size, 0);
+            return new PageResult<>(List.of(), new PageRequest(page, size), 0);
         }
-        PagedQuery<TestResultEntity> query = PagedQuery.over(em, TestResultEntity.class, "r")
-                .where("r.measuredOn >= :from and r.measuredOn <= :to").bind("from", from).bind("to", to);
+        PagedQuery query = PagedQuery.of(em, "from TestResultEntity r", "r")
+                .where("r.measuredOn >= :from", "from", from).where("r.measuredOn <= :to", "to", to);
         if (players != null) {
-            query.where("r.playerId in :players").bind("players", players.stream().map(PlayerId::value).toList());
+            query.where("r.playerId in :players", "players", players.stream().map(PlayerId::value).toList());
         }
-        type.ifPresent(t -> query.where("r.testTypeId = :type").bind("type", t.value()));
-        return query.page("r.measuredOn desc, r.id", page, size, TestResultJpaRepository::toDomain);
+        return query.whereIf(type, "r.testTypeId = :type", "type", TestTypeId::value)
+                .orderBy("r.measuredOn desc, r.id").page(new PageRequest(page, size), "select r",
+                        TestResultEntity.class, TestResultJpaRepository::toDomain);
     }
 
     @Override

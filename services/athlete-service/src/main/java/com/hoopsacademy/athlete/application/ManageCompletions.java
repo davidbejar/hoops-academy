@@ -8,6 +8,7 @@ import com.hoopsacademy.athlete.domain.PlanAssignment;
 import com.hoopsacademy.athlete.domain.PlanCompletion;
 import com.hoopsacademy.athlete.domain.PlanProgress;
 import com.hoopsacademy.athlete.domain.PlayerId;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.problem.AccessDeniedException;
 import com.hoopsacademy.common.problem.DomainRuleViolation;
 import com.hoopsacademy.common.problem.NotFoundException;

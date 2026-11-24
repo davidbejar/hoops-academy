@@ -1,7 +1,7 @@
 package com.hoopsacademy.core.adapters.in.platform;
 
-import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
+import com.hoopsacademy.common.paging.PageMeta;
 import java.util.List;
 
 /** Contract {@code AcademyRequestPage}. */
-public record AcademyRequestPageDto(List<AcademyRequestDto> items, PageMetaDto page) {}
+public record AcademyRequestPageDto(List<AcademyRequestDto> items, PageMeta page) {}

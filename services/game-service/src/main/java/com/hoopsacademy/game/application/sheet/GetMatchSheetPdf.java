@@ -1,5 +1,6 @@
 package com.hoopsacademy.game.application.sheet;
 
+import com.hoopsacademy.common.i18n.AppLanguage;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.game.application.AcademyNames;
 import com.hoopsacademy.game.application.CurrentCaller;
@@ -32,7 +33,7 @@ public class GetMatchSheetPdf {
         this.renderer = renderer;
     }
 
-    public PdfFile handle(MatchId matchId, SheetLanguage language) {
+    public PdfFile handle(MatchId matchId, AppLanguage language) {
         GetBoxScore.BoxScore box = boxScores.handle(matchId);
         TenantId tenant = caller.tenantId();
         String teamName = roster.team(tenant, box.match().teamId()).teamName();

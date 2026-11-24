@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.domain.shared;
 
+import com.hoopsacademy.common.i18n.AppLanguage;
 import java.util.Arrays;
 
 /** UI language of the platform (contract {@code Locale}). */
@@ -16,6 +17,11 @@ public enum AppLocale {
 
     public String code() {
         return code;
+    }
+
+    /** The locale of a language common-quarkus negotiated (e.g. from {@code Accept-Language}). */
+    public static AppLocale of(AppLanguage language) {
+        return valueOf(language.name());
     }
 
     public static AppLocale fromCode(String code) {

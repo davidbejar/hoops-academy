@@ -3,10 +3,10 @@ package com.hoopsacademy.athlete.adapters.out.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hoopsacademy.athlete.application.AssignmentRepository.AssignmentQuery;
-import com.hoopsacademy.athlete.application.PageResult;
 import com.hoopsacademy.athlete.domain.PlanAssignment;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.TeamId;
+import com.hoopsacademy.common.paging.PageResult;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;

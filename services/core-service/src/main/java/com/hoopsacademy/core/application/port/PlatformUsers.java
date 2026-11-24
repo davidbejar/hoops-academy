@@ -1,9 +1,9 @@
 package com.hoopsacademy.core.application.port;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.identity.UserId;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.tenant.TenantStatus;

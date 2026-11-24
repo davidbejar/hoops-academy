@@ -3,8 +3,10 @@ package com.hoopsacademy.athlete.adapters.in.rest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.athlete.application.ExerciseRepository;
 import com.hoopsacademy.athlete.application.ManageExercises;
+import com.hoopsacademy.athlete.domain.ContentLocale;
 import com.hoopsacademy.athlete.domain.ExerciseId;
 import com.hoopsacademy.common.authz.RequiresTenantRole;
+import com.hoopsacademy.common.i18n.AcceptLanguage;
 import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import com.hoopsacademy.common.tenancy.TenantContext;
@@ -62,7 +64,7 @@ public class ExerciseResource {
         }
         var search = new ExerciseRepository.Search(scope(scope),
                 Requests.bool("includeArchived", includeArchived, false), query,
-                AcceptLanguage.negotiate(acceptLanguage), page, size);
+                ContentLocale.of(AcceptLanguage.negotiate(acceptLanguage)), page, size);
         return PageDto.of(exercises.list(search), ExerciseDtos.Exercise::from);
     }
 
@@ -76,7 +78,7 @@ public class ExerciseResource {
     @Path("/{exerciseId}")
     public ExerciseDtos.Exercise get(@PathParam("exerciseId") UUID exerciseId,
             @HeaderParam(ACCEPT_LANGUAGE) String acceptLanguage) {
-        return ExerciseDtos.Exercise.from(exercises.get(new ExerciseId(exerciseId), AcceptLanguage.negotiate(acceptLanguage)));
+        return ExerciseDtos.Exercise.from(exercises.get(new ExerciseId(exerciseId), ContentLocale.of(AcceptLanguage.negotiate(acceptLanguage))));
     }
 
     @PATCH

@@ -1,12 +1,12 @@
 package com.hoopsacademy.core.adapters.out.audit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.core.application.port.AuditFilter;
 import com.hoopsacademy.core.application.port.AuditRecord;
 import com.hoopsacademy.core.application.port.AuditTrail;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import java.util.List;

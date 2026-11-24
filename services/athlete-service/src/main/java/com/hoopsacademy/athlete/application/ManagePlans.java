@@ -6,6 +6,7 @@ import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.domain.PlanItem;
 import com.hoopsacademy.athlete.domain.PlanItemId;
 import com.hoopsacademy.athlete.domain.TrainingPlan;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.AuthzContext;

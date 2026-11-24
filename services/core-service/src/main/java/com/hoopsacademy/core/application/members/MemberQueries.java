@@ -1,12 +1,12 @@
 package com.hoopsacademy.core.application.members;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.port.PersonRepository.MemberFilter;
 import com.hoopsacademy.core.application.port.PlayerRepository;
 import com.hoopsacademy.core.application.port.TemporaryPasswordLogins;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.identity.TemporaryPasswordStatus;
 import com.hoopsacademy.core.domain.identity.UserId;
 import com.hoopsacademy.core.domain.membership.Person;

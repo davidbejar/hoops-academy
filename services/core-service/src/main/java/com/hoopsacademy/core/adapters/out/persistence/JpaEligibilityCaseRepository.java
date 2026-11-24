@@ -1,8 +1,9 @@
 package com.hoopsacademy.core.adapters.out.persistence;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
+import com.hoopsacademy.common.persistence.PagedQuery;
 import com.hoopsacademy.core.application.port.EligibilityCaseRepository;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.eligibility.CaseResolution;
 import com.hoopsacademy.core.domain.eligibility.CaseStatus;
 import com.hoopsacademy.core.domain.eligibility.EligibilityCase;

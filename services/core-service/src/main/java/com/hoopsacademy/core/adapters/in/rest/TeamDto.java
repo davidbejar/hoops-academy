@@ -1,8 +1,8 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
-import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
+import com.hoopsacademy.common.paging.PageMeta;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.core.application.roster.TeamView;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.roster.GenderPolicy;
 import java.util.List;
 import java.util.UUID;
@@ -12,10 +12,10 @@ public record TeamDto(UUID id, UUID seasonId, boolean seasonEnded, String name, 
         AgeCategoryDto ageCategory, GenderPolicy genderPolicy, long playerCount) {
 
     /** Contract {@code TeamPage}. */
-    public record PageDto(List<TeamDto> items, PageMetaDto page) {
+    public record PageDto(List<TeamDto> items, PageMeta page) {
 
         static PageDto of(PageResult<TeamView> result) {
-            return new PageDto(result.items().stream().map(TeamDto::of).toList(), PageMetaDto.of(result));
+            return new PageDto(result.items().stream().map(TeamDto::of).toList(), PageMeta.of(result));
         }
     }
 

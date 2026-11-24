@@ -1,5 +1,7 @@
 package com.hoopsacademy.game.application;
 
+import com.hoopsacademy.common.paging.PageResult;
+import com.hoopsacademy.game.domain.Match;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
@@ -13,7 +15,7 @@ public class ListMatches {
     }
 
     @Transactional
-    public MatchPage handle(MatchFilter filter, int page, int size) {
+    public PageResult<Match> handle(MatchFilter filter, int page, int size) {
         return matches.list(filter, page, size);
     }
 }

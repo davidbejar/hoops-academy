@@ -1,8 +1,8 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
-import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
+import com.hoopsacademy.common.paging.PageMeta;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.core.application.approvals.ApprovalView;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.approvals.ApprovalAction;
 import com.hoopsacademy.core.domain.approvals.ApprovalPayload;
 import com.hoopsacademy.core.domain.approvals.ApprovalRequest;
@@ -20,10 +20,10 @@ public record ApprovalRequestDto(UUID id, ApprovalAction action, ApprovalStatus 
     public record PayloadDto(UUID teamId, String jerseyNumber, String note, String reason) {}
 
     /** Contract {@code ApprovalRequestPage}. */
-    public record PageDto(List<ApprovalRequestDto> items, PageMetaDto page) {
+    public record PageDto(List<ApprovalRequestDto> items, PageMeta page) {
 
         static PageDto of(PageResult<ApprovalView> result) {
-            return new PageDto(result.items().stream().map(ApprovalRequestDto::of).toList(), PageMetaDto.of(result));
+            return new PageDto(result.items().stream().map(ApprovalRequestDto::of).toList(), PageMeta.of(result));
         }
     }
 

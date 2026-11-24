@@ -1,16 +1,16 @@
 package com.hoopsacademy.core.adapters.in.platform;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.hoopsacademy.common.paging.PageMeta;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.adapters.in.shared.CallerIdentity;
 import com.hoopsacademy.core.adapters.in.shared.PatchBody;
-import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
 import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
 import com.hoopsacademy.core.application.members.MemberView;
 import com.hoopsacademy.core.application.platform.ManageTenantAdmins;
 import com.hoopsacademy.core.application.platform.ManageTenantAdmins.AddedAdmin;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PersonalDataChanges;
@@ -55,7 +55,7 @@ public class PlatformAdminResource {
             @QueryParam("size") @DefaultValue("50") @Min(1) @Max(200) int size) {
         PageResult<MemberView> result = admins.list(new TenantId(tenantId), new PageRequest(page, size));
         return new TenantAdminPageDto(result.items().stream().map(TenantAdminDto::of).toList(),
-                PageMetaDto.of(result));
+                PageMeta.of(result));
     }
 
     @POST

@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
+import com.hoopsacademy.common.paging.PageRequest;
 import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.common.problem.Problem;
 import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
@@ -7,7 +8,6 @@ import com.hoopsacademy.core.application.approvals.ApprovalQueries;
 import com.hoopsacademy.core.application.approvals.ApproveRequest;
 import com.hoopsacademy.core.application.approvals.CancelRequest;
 import com.hoopsacademy.core.application.approvals.RejectRequest;
-import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.domain.approvals.ApprovalAction;
 import com.hoopsacademy.core.domain.approvals.ApprovalRequestId;
 import com.hoopsacademy.core.domain.approvals.ApprovalStatus;

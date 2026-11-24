@@ -1,6 +1,7 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.hoopsacademy.common.paging.PageRequest;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
 import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.application.approvals.CreatePlayer;
@@ -9,7 +10,6 @@ import com.hoopsacademy.core.application.approvals.PlayerCommandResult;
 import com.hoopsacademy.core.application.approvals.WithdrawPlayer;
 import com.hoopsacademy.core.application.players.PlayerQueries;
 import com.hoopsacademy.core.application.players.UpdatePlayerPreference;
-import com.hoopsacademy.core.application.shared.PageRequest;
 import com.hoopsacademy.core.domain.membership.PlayerId;
 import com.hoopsacademy.core.domain.membership.PlayerStatus;
 import com.hoopsacademy.core.domain.roster.JerseyNumber;

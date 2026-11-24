@@ -9,12 +9,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import com.hoopsacademy.common.i18n.AppLanguage;
 import com.hoopsacademy.common.problem.UpstreamUnavailableException;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.game.application.sheet.MatchSheet;
 import com.hoopsacademy.game.application.sheet.MatchSheetRenderer;
 import com.hoopsacademy.game.application.sheet.PdfFile;
-import com.hoopsacademy.game.application.sheet.SheetLanguage;
+
 import com.hoopsacademy.game.domain.HomeAway;
 import com.hoopsacademy.game.domain.JerseyNumber;
 import com.hoopsacademy.game.domain.MatchStatus;
@@ -50,7 +51,7 @@ class PdfServiceMatchSheetRendererTest {
     static final String PLAYER = "Ana Ruiz";
     static final StatLine ANA = new StatLine(12, 2, 4, 2, 5, 2, 3, 3, 1, 4, 2, 1, 0, 2, 0, 0, 1500);
     static final StatLine BEA = new StatLine(3, 1, 2, 1, 1, 0, 2, 0, 0, 1, 1, 0, 1, 1, 1, 0, 600);
-    static final MatchSheet SHEET = new MatchSheet(SheetLanguage.ID,
+    static final MatchSheet SHEET = new MatchSheet(AppLanguage.ID,
             new MatchSheet.Academy("Garuda Hoops", ZoneId.of("Asia/Jakarta")),
             new MatchSheet.Header("U14 Elang", "Tigers", HomeAway.HOME, Instant.parse("2026-11-14T09:00:00Z"),
                     "GOR Bulungan", MatchStatus.FINISHED, 4, 10),
@@ -129,7 +130,7 @@ class PdfServiceMatchSheetRendererTest {
     void aSheetWithoutVenueSendsNoVenue() throws Exception {
         PdfServiceStubs.rendersMatchSheets(wm);
         MatchSheet.Header header = SHEET.header();
-        MatchSheet noVenue = new MatchSheet(SheetLanguage.ES, SHEET.academy(), new MatchSheet.Header(header.teamName(),
+        MatchSheet noVenue = new MatchSheet(AppLanguage.ES, SHEET.academy(), new MatchSheet.Header(header.teamName(),
                 header.opponentName(), HomeAway.AWAY, header.scheduledAt(), null, MatchStatus.SCHEDULED, 4, 10),
                 0, 0, List.of(), StatLine.ZERO, List.of());
 

@@ -1,13 +1,13 @@
 package com.hoopsacademy.core.adapters.out.platform;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.adapters.out.audit.AuditEventQueryRepository;
 import com.hoopsacademy.core.adapters.out.audit.AuditEventSource;
 import com.hoopsacademy.core.application.port.AuditFilter;
 import com.hoopsacademy.core.application.port.PlatformAuditTrail;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;

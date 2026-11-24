@@ -1,5 +1,6 @@
 package com.hoopsacademy.game.adapters.in.rest;
 
+import com.hoopsacademy.common.i18n.AcceptLanguage;
 import com.hoopsacademy.game.application.sheet.GetMatchSheetPdf;
 import com.hoopsacademy.game.application.sheet.PdfFile;
 import com.hoopsacademy.game.domain.MatchId;

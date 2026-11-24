@@ -1,10 +1,10 @@
 package com.hoopsacademy.core.application.platform;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.application.port.TenantRepository;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.tenant.Tenant;
 import com.hoopsacademy.core.domain.tenant.TenantStatus;
 import jakarta.enterprise.context.ApplicationScoped;

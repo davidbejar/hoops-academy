@@ -1,8 +1,8 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
-import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
+import com.hoopsacademy.common.paging.PageMeta;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.core.application.roster.EligibilityCaseService.CaseView;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.eligibility.CaseResolution;
 import com.hoopsacademy.core.domain.eligibility.CaseStatus;
 import com.hoopsacademy.core.domain.eligibility.EligibilityCase;
@@ -17,10 +17,10 @@ public record EligibilityCaseDto(UUID id, RefDtos.PlayerRef player, RefDtos.Team
         String resolutionNote) {
 
     /** Contract {@code EligibilityCasePage}. */
-    public record PageDto(List<EligibilityCaseDto> items, PageMetaDto page) {
+    public record PageDto(List<EligibilityCaseDto> items, PageMeta page) {
 
         static PageDto of(PageResult<CaseView> result) {
-            return new PageDto(result.items().stream().map(EligibilityCaseDto::of).toList(), PageMetaDto.of(result));
+            return new PageDto(result.items().stream().map(EligibilityCaseDto::of).toList(), PageMeta.of(result));
         }
     }
 

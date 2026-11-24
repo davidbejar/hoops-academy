@@ -4,6 +4,7 @@ import com.hoopsacademy.athlete.domain.Injury;
 import com.hoopsacademy.athlete.domain.InjuryId;
 import com.hoopsacademy.athlete.domain.InjuryStatus;
 import com.hoopsacademy.athlete.domain.PlayerId;
+import com.hoopsacademy.common.paging.PageResult;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;

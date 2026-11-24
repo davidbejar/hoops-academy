@@ -1,12 +1,12 @@
 package com.hoopsacademy.core.adapters.out.platform;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
+import com.hoopsacademy.common.persistence.PagedQuery;
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.adapters.out.persistence.LikePattern;
-import com.hoopsacademy.core.adapters.out.persistence.PagedQuery;
 import com.hoopsacademy.core.application.port.TenantRepository;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.shared.AppLocale;
 import com.hoopsacademy.core.domain.tenant.Tenant;
 import com.hoopsacademy.core.domain.tenant.TenantSlug;

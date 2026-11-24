@@ -1,5 +1,8 @@
 package com.hoopsacademy.core.adapters.out.persistence;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
+import com.hoopsacademy.common.persistence.PagedQuery;
 import com.hoopsacademy.core.application.events.RosterChanges;
 import com.hoopsacademy.core.application.port.PlayerRepository;
 import com.hoopsacademy.core.domain.membership.Gender;
@@ -10,8 +13,6 @@ import com.hoopsacademy.core.domain.roster.JerseyNumber;
 import com.hoopsacademy.core.domain.roster.TeamId;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import java.time.Clock;
 import java.util.Collection;
 import java.util.List;

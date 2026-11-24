@@ -1,4 +1,4 @@
-package com.hoopsacademy.core.adapters.out.persistence;
+package com.hoopsacademy.common.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

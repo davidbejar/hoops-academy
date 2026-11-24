@@ -1,11 +1,11 @@
 package com.hoopsacademy.core.adapters.out.platform;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.adapters.out.persistence.NativeValues;
 import com.hoopsacademy.core.application.port.AcademyRequestRepository;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.shared.AppLocale;
 import com.hoopsacademy.core.domain.signup.AcademyName;
 import com.hoopsacademy.core.domain.signup.AcademyRequest;

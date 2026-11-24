@@ -3,6 +3,7 @@ package com.hoopsacademy.athlete.application;
 import com.hoopsacademy.athlete.domain.ContentLocale;
 import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.domain.TrainingPlan;
+import com.hoopsacademy.common.paging.PageResult;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;

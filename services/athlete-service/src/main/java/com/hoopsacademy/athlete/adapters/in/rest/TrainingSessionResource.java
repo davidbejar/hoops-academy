@@ -3,10 +3,12 @@ package com.hoopsacademy.athlete.adapters.in.rest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.athlete.application.ManageSessions;
 import com.hoopsacademy.athlete.application.QuickAddItems;
+import com.hoopsacademy.athlete.domain.ContentLocale;
 import com.hoopsacademy.athlete.domain.SessionId;
 import com.hoopsacademy.athlete.domain.SessionStatus;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.common.authz.RequiresTenantRole;
+import com.hoopsacademy.common.i18n.AcceptLanguage;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.common.tenancy.TenantRole;
@@ -58,7 +60,7 @@ public class TrainingSessionResource {
             @Valid @NotNull PlanDtos.CopyItemsRequest request, @HeaderParam("Accept-Language") String acceptLanguage) {
         AuthzContext caller = caller();
         return PlanDtos.Plan.from(quickAdd.toSession(caller, actors.of(caller), new SessionId(sessionId),
-                request.sources(), AcceptLanguage.negotiate(acceptLanguage)));
+                request.sources(), ContentLocale.of(AcceptLanguage.negotiate(acceptLanguage))));
     }
 
     @GET

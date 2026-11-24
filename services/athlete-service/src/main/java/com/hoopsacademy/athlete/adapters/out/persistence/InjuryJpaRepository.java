@@ -1,7 +1,6 @@
 package com.hoopsacademy.athlete.adapters.out.persistence;
 
 import com.hoopsacademy.athlete.application.InjuryRepository;
-import com.hoopsacademy.athlete.application.PageResult;
 import com.hoopsacademy.athlete.domain.Actor;
 import com.hoopsacademy.athlete.domain.Injury;
 import com.hoopsacademy.athlete.domain.InjuryId;
@@ -9,6 +8,9 @@ import com.hoopsacademy.athlete.domain.InjurySeverity;
 import com.hoopsacademy.athlete.domain.InjuryStatus;
 import com.hoopsacademy.athlete.domain.PersonId;
 import com.hoopsacademy.athlete.domain.PlayerId;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
+import com.hoopsacademy.common.persistence.PagedQuery;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
@@ -67,15 +69,16 @@ class InjuryJpaRepository implements InjuryRepository {
     public PageResult<Injury> search(Collection<PlayerId> players, Optional<InjuryStatus> status,
             Optional<LocalDate> occurredUntil, int page, int size) {
         if (players != null && players.isEmpty()) {
-            return new PageResult<>(List.of(), page, size, 0);
+            return new PageResult<>(List.of(), new PageRequest(page, size), 0);
         }
-        PagedQuery<InjuryEntity> query = PagedQuery.over(em, InjuryEntity.class, "i");
+        PagedQuery query = PagedQuery.of(em, "from InjuryEntity i", "i");
         if (players != null) {
-            query.where("i.playerId in :players").bind("players", players.stream().map(PlayerId::value).toList());
+            query.where("i.playerId in :players", "players", players.stream().map(PlayerId::value).toList());
         }
-        status.ifPresent(s -> query.where("i.status = :status").bind("status", s.name()));
-        occurredUntil.ifPresent(until -> query.where("i.occurredOn <= :until").bind("until", until));
-        return query.page("i.occurredOn desc, i.id", page, size, InjuryJpaRepository::toDomain);
+        return query.whereIf(status, "i.status = :status", "status", InjuryStatus::name)
+                .whereIf(occurredUntil, "i.occurredOn <= :until", "until", until -> until)
+                .orderBy("i.occurredOn desc, i.id")
+                .page(new PageRequest(page, size), "select i", InjuryEntity.class, InjuryJpaRepository::toDomain);
     }
 
     @Override

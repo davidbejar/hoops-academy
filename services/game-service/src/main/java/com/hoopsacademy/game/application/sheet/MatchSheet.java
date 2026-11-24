@@ -1,5 +1,6 @@
 package com.hoopsacademy.game.application.sheet;
 
+import com.hoopsacademy.common.i18n.AppLanguage;
 import com.hoopsacademy.game.domain.HomeAway;
 import com.hoopsacademy.game.domain.JerseyNumber;
 import com.hoopsacademy.game.domain.MatchStatus;
@@ -14,7 +15,7 @@ import java.util.Objects;
  * What a match sheet prints (decisions 89 and 90, ADR-0048 amendment of WP117): the box score one caller sees, with the
  * match's header, in that caller's language. {@code players} holds only the lines the caller sees in the box score.
  */
-public record MatchSheet(SheetLanguage language, Academy academy, Header header, int teamScore, int opponentScore,
+public record MatchSheet(AppLanguage language, Academy academy, Header header, int teamScore, int opponentScore,
         List<PeriodScore> periodScores, StatLine teamTotals, List<Line> players) {
 
     public MatchSheet {

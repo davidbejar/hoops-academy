@@ -1,9 +1,9 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
+import com.hoopsacademy.common.i18n.AcceptLanguage;
 import com.hoopsacademy.core.adapters.in.export.AcceptedFormat;
 import com.hoopsacademy.core.adapters.in.export.ExportFileName;
 import com.hoopsacademy.core.adapters.in.export.ExportLabels;
-import com.hoopsacademy.core.adapters.in.export.ExportLanguage;
 import com.hoopsacademy.core.adapters.in.export.RosterCsv;
 import com.hoopsacademy.core.adapters.in.shared.ExportResponse;
 import com.hoopsacademy.core.application.export.ExportFormat;
@@ -43,7 +43,7 @@ public class TeamRosterExportResource {
     @Produces({"text/csv", "application/pdf"})
     public Response export(@PathParam("teamId") UUID team,
             @HeaderParam(ExportResponse.ACCEPT_LANGUAGE) String acceptLanguage, @Context HttpHeaders headers) {
-        AppLocale language = ExportLanguage.negotiate(acceptLanguage);
+        AppLocale language = AppLocale.of(AcceptLanguage.negotiate(acceptLanguage));
         return AcceptedFormat.of(headers.getAcceptableMediaTypes()) == ExportFormat.PDF
                 ? pdf(new TeamId(team), language)
                 : csv(new TeamId(team), language);

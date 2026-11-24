@@ -1,16 +1,17 @@
 package com.hoopsacademy.core.adapters.in.platform;
 
+import com.hoopsacademy.common.i18n.AcceptLanguage;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.adapters.in.export.AuditCsv;
 import com.hoopsacademy.core.adapters.in.export.ExportFileName;
 import com.hoopsacademy.core.adapters.in.export.ExportLabels;
-import com.hoopsacademy.core.adapters.in.export.ExportLanguage;
 import com.hoopsacademy.core.adapters.in.shared.AuditDtos;
 import com.hoopsacademy.core.adapters.in.shared.CallerIdentity;
 import com.hoopsacademy.core.adapters.in.shared.ExportResponse;
 import com.hoopsacademy.core.adapters.in.shared.Params;
 import com.hoopsacademy.core.application.export.AuditSheet;
 import com.hoopsacademy.core.application.export.ExportPlatformAuditTrail;
+import com.hoopsacademy.core.domain.shared.AppLocale;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.HeaderParam;
@@ -38,7 +39,7 @@ public class PlatformAuditEventExportResource {
             @HeaderParam(ExportResponse.ACCEPT_LANGUAGE) String acceptLanguage) {
         AuditSheet sheet = trail.export(Params.uuid("tenantId", tenantId).map(TenantId::new),
                 AuditDtos.filter(from, to, actions));
-        byte[] file = AuditCsv.platform(sheet, ExportLabels.of(ExportLanguage.negotiate(acceptLanguage)));
+        byte[] file = AuditCsv.platform(sheet, ExportLabels.of(AppLocale.of(AcceptLanguage.negotiate(acceptLanguage))));
         return ExportResponse.csv(file,
                 ExportFileName.csv(sheet.origin().academySlug(), sheet.origin().day(), "audit"));
     }

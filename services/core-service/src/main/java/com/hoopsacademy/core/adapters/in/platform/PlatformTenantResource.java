@@ -1,11 +1,13 @@
 package com.hoopsacademy.core.adapters.in.platform;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.hoopsacademy.common.paging.PageMeta;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.adapters.in.shared.CallerIdentity;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
-import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
 import com.hoopsacademy.core.adapters.in.shared.Params;
 import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
@@ -13,8 +15,6 @@ import com.hoopsacademy.core.application.platform.CreateTenant;
 import com.hoopsacademy.core.application.platform.CreateTenantCommand;
 import com.hoopsacademy.core.application.platform.PlatformTenantQueries;
 import com.hoopsacademy.core.application.platform.TenantLifecycle;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.application.usage.AggregateTenantUsage;
 import com.hoopsacademy.core.application.usage.UsageHistory;
@@ -84,7 +84,7 @@ public class PlatformTenantResource {
             @QueryParam("size") @DefaultValue("50") @Min(1) @Max(200) int size) {
         PageResult<Tenant> result = queries.list(Optional.ofNullable(status).map(TenantStatus::valueOf),
                 Optional.ofNullable(query).filter(q -> !q.isBlank()), new PageRequest(page, size));
-        return new TenantPageDto(result.items().stream().map(TenantDto::of).toList(), PageMetaDto.of(result));
+        return new TenantPageDto(result.items().stream().map(TenantDto::of).toList(), PageMeta.of(result));
     }
 
     @POST

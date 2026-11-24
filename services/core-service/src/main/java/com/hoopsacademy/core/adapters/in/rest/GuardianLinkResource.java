@@ -1,12 +1,12 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
 import com.hoopsacademy.common.authz.RequiresTenantRole;
+import com.hoopsacademy.common.paging.PageMeta;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.tenancy.TenantRole;
-import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
 import com.hoopsacademy.core.application.members.GuardianLinkService;
 import com.hoopsacademy.core.application.members.GuardianLinkService.LinkView;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.membership.GuardianLinkId;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PlayerId;
@@ -40,7 +40,7 @@ public class GuardianLinkResource {
     public record CreateRequest(@NotNull UUID guardianPersonId, @NotNull UUID playerId) {}
 
     /** Contract {@code GuardianLinkPage}. */
-    public record PageDto(List<GuardianLinkDto> items, PageMetaDto page) {}
+    public record PageDto(List<GuardianLinkDto> items, PageMeta page) {}
 
     private final GuardianLinkService links;
 
@@ -54,7 +54,7 @@ public class GuardianLinkResource {
             @QueryParam("size") @DefaultValue("50") @Min(1) @Max(200) int size) {
         PageResult<LinkView> result = links.list(Optional.ofNullable(playerId).map(PlayerId::new),
                 Optional.ofNullable(guardianPersonId).map(PersonId::new), new PageRequest(page, size));
-        return new PageDto(result.items().stream().map(GuardianLinkDto::of).toList(), PageMetaDto.of(result));
+        return new PageDto(result.items().stream().map(GuardianLinkDto::of).toList(), PageMeta.of(result));
     }
 
     @POST

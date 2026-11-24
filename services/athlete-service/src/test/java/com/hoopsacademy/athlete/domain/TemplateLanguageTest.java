@@ -3,6 +3,7 @@ package com.hoopsacademy.athlete.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hoopsacademy.common.i18n.AppLanguage;
 import com.hoopsacademy.common.problem.DomainRuleViolation;
 import java.time.Instant;
 import java.util.List;
@@ -30,24 +31,22 @@ class TemplateLanguageTest {
                         ContentLocale.ES, new LocalizedText("Técnica de tiro", "Primero la mecánica"))));
     }
 
-    // ---- negotiation
+    // ---- languages (the header is negotiated by common-quarkus' AcceptLanguage)
     @Test
-    void theFirstSupportedLanguageInPreferenceOrderWins() {
-        assertThat(ContentLocale.negotiate(List.of("id", "en"))).isEqualTo(ContentLocale.ID);
-        assertThat(ContentLocale.negotiate(List.of("fr", "es", "en"))).isEqualTo(ContentLocale.ES);
-        assertThat(ContentLocale.negotiate(List.of("en-GB", "es"))).isEqualTo(ContentLocale.EN);
-        assertThat(ContentLocale.negotiate(List.of("ES-ar"))).isEqualTo(ContentLocale.ES);
-        assertThat(ContentLocale.negotiate(List.of("in"))).as("legacy Java code of Indonesian").isEqualTo(ContentLocale.ID);
+    void everyLanguageOfThePlatformIsATemplateLanguage() {
+        for (AppLanguage language : AppLanguage.values()) {
+            assertThat(ContentLocale.of(language).code()).isEqualTo(language.code());
+        }
+        assertThat(ContentLocale.FALLBACK).isEqualTo(ContentLocale.of(AppLanguage.FALLBACK)).isEqualTo(ContentLocale.EN);
     }
 
     @Test
-    void absentWildcardOrUnsupportedLanguagesFallBackToEnglish() {
-        assertThat(ContentLocale.negotiate(List.of())).isEqualTo(ContentLocale.EN);
-        assertThat(ContentLocale.negotiate(List.of("*"))).isEqualTo(ContentLocale.EN);
-        assertThat(ContentLocale.negotiate(List.of("fr", "de-DE", ""))).isEqualTo(ContentLocale.EN);
-        assertThat(ContentLocale.FALLBACK).isEqualTo(ContentLocale.EN);
-        assertThat(ContentLocale.fromCode(null)).isEmpty();
+    void aStoredCodeOrTagNamesItsLanguage() {
         assertThat(ContentLocale.fromCode("id")).contains(ContentLocale.ID);
+        assertThat(ContentLocale.fromCode("ES-ar")).contains(ContentLocale.ES);
+        assertThat(ContentLocale.fromCode("in")).as("legacy Java code of Indonesian").contains(ContentLocale.ID);
+        assertThat(ContentLocale.fromCode("fr")).isEmpty();
+        assertThat(ContentLocale.fromCode(null)).isEmpty();
         assertThat(ContentLocale.ID.code()).isEqualTo("id");
     }
 

@@ -1,11 +1,11 @@
 package com.hoopsacademy.core.adapters.in.platform;
 
+import com.hoopsacademy.common.paging.PageMeta;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.core.adapters.in.shared.CallerIdentity;
-import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
 import com.hoopsacademy.core.application.platform.ListPlatformUsers;
 import com.hoopsacademy.core.application.port.PlatformUsers;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -50,7 +50,7 @@ public class PlatformUserResource {
     }
 
     /** Contract {@code PlatformUserPage}. */
-    public record PlatformUserPageDto(List<PlatformUserDto> items, PageMetaDto page) {}
+    public record PlatformUserPageDto(List<PlatformUserDto> items, PageMeta page) {}
 
     private final ListPlatformUsers users;
 
@@ -64,6 +64,6 @@ public class PlatformUserResource {
             @QueryParam("size") @DefaultValue("50") @Min(1) @Max(200) int size) {
         PageResult<PlatformUsers.Login> result = users.list(Optional.ofNullable(query), new PageRequest(page, size));
         return new PlatformUserPageDto(result.items().stream().map(PlatformUserDto::of).toList(),
-                PageMetaDto.of(result));
+                PageMeta.of(result));
     }
 }

@@ -1,5 +1,6 @@
 package com.hoopsacademy.game.application.sheet;
 
+import com.hoopsacademy.common.i18n.AppLanguage;
 import com.hoopsacademy.game.application.GetBoxScore.BoxScore;
 import com.hoopsacademy.game.application.GetBoxScore.VisibleLine;
 import com.hoopsacademy.game.domain.Match;
@@ -24,7 +25,7 @@ final class MatchSheets {
         return new MatchSheet.Academy(name.orElse(UNKNOWN_ACADEMY), zone.orElse(UNKNOWN_ZONE));
     }
 
-    static MatchSheet of(BoxScore box, SheetLanguage language, MatchSheet.Academy academy, String teamName) {
+    static MatchSheet of(BoxScore box, AppLanguage language, MatchSheet.Academy academy, String teamName) {
         Match match = box.match();
         MatchSummary summary = box.projection().summary();
         return new MatchSheet(language, academy,

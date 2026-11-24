@@ -2,10 +2,12 @@ package com.hoopsacademy.core.adapters.in.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.common.authz.RequiresTenantRole;
+import com.hoopsacademy.common.paging.PageMeta;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
 import com.hoopsacademy.core.adapters.in.shared.PatchBody;
-import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
 import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
 import com.hoopsacademy.core.application.members.Guardians;
 import com.hoopsacademy.core.application.members.InviteMember;
@@ -13,8 +15,6 @@ import com.hoopsacademy.core.application.members.MemberCommands;
 import com.hoopsacademy.core.application.members.MemberQueries;
 import com.hoopsacademy.core.application.members.MemberView;
 import com.hoopsacademy.core.application.port.PersonRepository.MemberFilter;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.domain.membership.Gender;
 import com.hoopsacademy.core.domain.membership.PersonId;
 import com.hoopsacademy.core.domain.membership.PersonalDataChanges;
@@ -81,7 +81,7 @@ public class MemberResource {
         MemberFilter filter = new MemberFilter(Optional.ofNullable(role).map(TenantRole::valueOf),
                 Optional.ofNullable(active), Optional.ofNullable(query).filter(q -> !q.isBlank()));
         PageResult<MemberView> result = queries.list(filter, new PageRequest(page, size));
-        return new MemberPageDto(result.items().stream().map(MemberDto::of).toList(), PageMetaDto.of(result));
+        return new MemberPageDto(result.items().stream().map(MemberDto::of).toList(), PageMeta.of(result));
     }
 
     @POST

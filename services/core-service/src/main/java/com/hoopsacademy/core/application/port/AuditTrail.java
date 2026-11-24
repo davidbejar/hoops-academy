@@ -1,7 +1,8 @@
 package com.hoopsacademy.core.application.port;
 
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
+
 
 /** Reads the bound tenant's audit trail (core_app, under RLS), newest first. */
 public interface AuditTrail {

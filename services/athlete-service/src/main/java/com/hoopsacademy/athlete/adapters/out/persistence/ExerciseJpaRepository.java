@@ -1,11 +1,12 @@
 package com.hoopsacademy.athlete.adapters.out.persistence;
 
 import com.hoopsacademy.athlete.application.ExerciseRepository;
-import com.hoopsacademy.athlete.application.PageResult;
 import com.hoopsacademy.athlete.domain.ContentLocale;
 import com.hoopsacademy.athlete.domain.Exercise;
 import com.hoopsacademy.athlete.domain.ExerciseId;
 import com.hoopsacademy.common.paging.PageOffset;
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.tenancy.CurrentTenant;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.persistence.EntityManager;
@@ -95,7 +96,7 @@ class ExerciseJpaRepository implements ExerciseRepository {
         }
         List<Exercise> page = select.setFirstResult(PageOffset.of(search.page(), search.size()))
                 .setMaxResults(search.size()).getResultList().stream().map(ExerciseJpaRepository::toDomain).toList();
-        return new PageResult<>(page, search.page(), search.size(), count.getSingleResult());
+        return new PageResult<>(page, new PageRequest(search.page(), search.size()), count.getSingleResult());
     }
 
     private static Exercise toDomain(ExerciseEntity e) {

@@ -1,13 +1,11 @@
-package com.hoopsacademy.core.application.shared;
+package com.hoopsacademy.common.paging;
 
-import com.hoopsacademy.common.paging.PageOffset;
-
-/** A 0-based page of at most {@code size} (1..200) items. */
+/** A 0-based page of at most {@code size} (1..{@value PageOffset#MAX_SIZE}) items: common.yaml's Page and Size. */
 public record PageRequest(int page, int size) {
 
     public PageRequest {
         if (page < 0 || size < 1 || size > PageOffset.MAX_SIZE) {
-            throw new IllegalArgumentException("page >= 0 and size 1..200 required");
+            throw new IllegalArgumentException("page >= 0 and size 1.." + PageOffset.MAX_SIZE + " required");
         }
     }
 

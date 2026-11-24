@@ -1,5 +1,7 @@
 package com.hoopsacademy.core.application.platform;
 
+import com.hoopsacademy.common.paging.PageRequest;
+import com.hoopsacademy.common.paging.PageResult;
 import com.hoopsacademy.common.problem.ConflictException;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.TenantId;
@@ -23,8 +25,6 @@ import com.hoopsacademy.core.application.port.PersonRepository;
 import com.hoopsacademy.core.application.port.PersonRepository.MemberFilter;
 import com.hoopsacademy.core.application.port.ProvisionedIdentity;
 import com.hoopsacademy.core.application.shared.ChangedFields;
-import com.hoopsacademy.core.application.shared.PageRequest;
-import com.hoopsacademy.core.application.shared.PageResult;
 import com.hoopsacademy.core.application.shared.WithTemporaryPassword;
 import com.hoopsacademy.core.domain.identity.TemporaryPassword;
 import com.hoopsacademy.core.domain.membership.Person;
