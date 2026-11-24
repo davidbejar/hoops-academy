@@ -67,4 +67,13 @@ class PdfServiceRosterPrinterTest {
         assertThatThrownBy(() -> new PdfServiceRosterPrinter(Optional.of(request -> new byte[0])).print(ROSTER))
                 .isInstanceOf(UpstreamUnavailableException.class).hasMessage("pdf-service answered no sheet");
     }
+
+    @Test
+    void anAnswerThatIsNotAPdfIsNotASheet() {
+        // game checked the %PDF- magic, core took any non-empty body as the sheet (X-06)
+        byte[] page = "<html>proxy error</html>".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+
+        assertThatThrownBy(() -> new PdfServiceRosterPrinter(Optional.of(request -> page)).print(ROSTER))
+                .isInstanceOf(UpstreamUnavailableException.class).hasMessage("pdf-service answered no sheet");
+    }
 }
