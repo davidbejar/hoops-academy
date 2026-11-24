@@ -40,6 +40,11 @@ public class RecordedSpans implements SpanExporter {
         return CompletableResultCode.ofSuccess();
     }
 
+    /** Every span exported so far, of any trace. */
+    public RequestTrace all() {
+        return new RequestTrace(List.copyOf(spans));
+    }
+
     /**
      * The spans of {@code trace} once its root has ended (the span whose parent is the trace's remote parent: a request's
      * server span, the last of the request to end), or fails after 10 s.

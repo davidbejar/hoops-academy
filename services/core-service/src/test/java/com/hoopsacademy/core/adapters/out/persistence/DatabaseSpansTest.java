@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.adapters.out.persistence;
 
+import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -96,6 +97,37 @@ class DatabaseSpansTest {
         assertThat(trace.exportedText()).doesNotContain(GIVEN, FAMILY, EMAIL, tenant);
     }
 
+    /**
+     * A statement with no request or job span around it (the outbox poll, every second) starts no trace of its own;
+     * the same statement under a span is exported.
+     */
+    @Test
+    void aStatementOutsideAnySpanStartsNoTrace() throws SQLException {
+        String orphan = "wp143_orphan_" + UUID.randomUUID().toString().replace("-", "");
+        String traced = "wp143_traced_" + UUID.randomUUID().toString().replace("-", "");
+        selectAs(orphan);
+        SampledTrace trace = SampledTrace.random();
+        Span probe = tracer.spanBuilder("traced select").setParent(trace.context()).startSpan();
+        try (Scope scope = probe.makeCurrent()) {
+            selectAs(traced);
+        } finally {
+            probe.end();
+        }
+
+        assertThat(recorded.of(trace).exportedText()).contains(traced);
+        assertThat(recorded.all().exportedText()).doesNotContain(orphan);
+    }
+
+    /** Quarkus keeps the management paths out of traces, their database checks included, even when asked to trace. */
+    @Test
+    void aHealthCheckLeavesNoSpan() {
+        SampledTrace health = SampledTrace.random();
+        given().header("traceparent", health.traceparent()).get("/q/health/ready");
+        rosterRead();
+
+        assertThat(recorded.all().spans()).noneMatch(span -> span.getTraceId().equals(health.traceId()));
+    }
+
     /** The race {@code ConstraintConflicts} turns into a 409: the database refuses the row and names the key. */
     @Test
     void theSpanOfARefusedStatementQuotesNeitherTheKeyNorTheTenant() {
@@ -112,6 +144,13 @@ class DatabaseSpansTest {
         assertThat(spans.databaseSpans()).as("the refused insert is a span with its error")
                 .anySatisfy(span -> assertThat(span.getEvents()).isNotEmpty());
         assertThat(spans.exportedText()).doesNotContain(TAKEN_NAME, tenant);
+    }
+
+    private void selectAs(String alias) throws SQLException {
+        try (Connection connection = dataSource.getConnection();
+                PreparedStatement select = connection.prepareStatement("select 1 as " + alias)) {
+            select.execute();
+        }
     }
 
     private void insertTheTakenName() throws SQLException {

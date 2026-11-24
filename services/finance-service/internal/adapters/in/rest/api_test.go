@@ -13,6 +13,9 @@ import (
 	"strings"
 	"testing"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/trace"
+
 	"hoopsacademy.local/finance/internal/adapters/in/oidc"
 	"hoopsacademy.local/finance/internal/adapters/in/rest"
 	"hoopsacademy.local/finance/internal/adapters/out/persistence"
@@ -20,6 +23,7 @@ import (
 	"hoopsacademy.local/finance/internal/platform/clock"
 	"hoopsacademy.local/finance/internal/platform/ids"
 	"hoopsacademy.local/finance/internal/platform/security"
+	"hoopsacademy.local/finance/internal/platform/telemetry"
 	"hoopsacademy.local/finance/internal/testsupport/contract"
 	"hoopsacademy.local/finance/internal/testsupport/pgtest"
 	"hoopsacademy.local/finance/internal/testsupport/realm"
@@ -36,20 +40,36 @@ type api struct {
 	logs   *bytes.Buffer
 }
 
-func newAPI(t *testing.T) *api {
+func newAPI(t *testing.T) *api { return newTracedAPI(t, nil) }
+
+// newTracedAPI is newAPI reporting spans to provider (when not nil) as main wires the service: the pool is built by
+// persistence.NewPool with the telemetry query tracer, the handler is wrapped in otelhttp.
+func newTracedAPI(t *testing.T, provider trace.TracerProvider) *api {
 	t.Helper()
 	db := pgtest.Start(t)
 	r := realm.Start(t)
 	logs := &bytes.Buffer{}
 	log := slog.New(slog.NewJSONHandler(logs, nil))
 	events := security.NewEvents(log)
-	finance := application.NewFinance(persistence.NewPorts(db.App, clock.System{}, log))
+	pool, wrap := db.App, func(h http.Handler) http.Handler { return h }
+	if provider != nil {
+		traced, err := persistence.NewPool(context.Background(), db.AppURL, telemetry.NewQueryTracer(provider))
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(traced.Close)
+		pool = traced
+		wrap = func(h http.Handler) http.Handler {
+			return otelhttp.NewHandler(h, telemetry.ServiceName, otelhttp.WithTracerProvider(provider))
+		}
+	}
+	finance := application.NewFinance(persistence.NewPorts(pool, clock.System{}, log))
 	handler := rest.NewHandler(rest.Deps{
 		Finance: finance, Verifier: oidc.NewVerifier(oidc.Config{AuthServerURL: r.URL(), Audience: realm.Audience}),
 		Security: events, Log: log, CORSOrigins: []string{"http://localhost:5173"},
-		Ready: func(ctx context.Context) error { return db.App.Ping(ctx) },
+		Ready: func(ctx context.Context) error { return pool.Ping(ctx) },
 	})
-	server := httptest.NewServer(handler)
+	server := httptest.NewServer(wrap(handler))
 	t.Cleanup(server.Close)
 	return &api{server: server, realm: r, db: db, events: events, logs: logs}
 }
