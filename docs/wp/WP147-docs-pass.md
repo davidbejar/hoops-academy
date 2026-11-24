@@ -75,6 +75,9 @@ Decisions 114–118 of 2026-11-24. No ADR.
 - **CI observed**: every run on 4ed1a1e4, c9daa73e, b2e269f5 and 1781cfcb green; on d6539fc6 `ci` (with WP146's four
   shell-test steps green on GitHub's runner), `images`, `codeql`, `semgrep`, `pages` green, `e2e` 45445935916 still
   running at the last look: **orchestrator to fill in** (also in HANDOVER's CI paragraph).
+- **Second pass** (after review): `docs/runbooks/observability.md` no longer says the services emit no database spans;
+  `kind.md` and `cloud.md` name CloudNativePG 1.30.2, `release.md` oras v1.4.0 (the pins of `deploy/lib/platform.sh`
+  and `scripts/sbom.sh`); WP146's three kind runs worded per run; the CI and ZAP claims scoped to the finished runs.
 - **Red tests**: not applicable (documentation only, no behaviour changed; WP140's and WP145's precedent).
 - **Decisions/ADRs**: none.
 - **Contradictions found.** The brief's Working rules say "Do not edit README.md, docs/HANDOVER.md,

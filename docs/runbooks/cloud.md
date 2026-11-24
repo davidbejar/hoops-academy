@@ -10,7 +10,7 @@ next round runs them and replaces the marks with what it saw. Proven so far: `ju
 OpenTofu (infra/tofu)                              Helm + kubectl (deploy/cloud/install.sh)
   VPC 172.20.0.0/16, vSwitch 172.20.1.0/24           namespaces, Secrets from .env (deploy/kind/secrets.sh)
   security group: 22 + 6443 from admin_cidrs,        Stakater Reloader, Envoy Gateway v1.10.0 (+ rate limit backend),
-                  80 + 443 from everyone             CloudNativePG 1.30.1, self-signed hoops-gateway-tls
+                  80 + 443 from everyone             CloudNativePG 1.30.2, self-signed hoops-gateway-tls
   key pair (your public key)                         chart `hoops` with values-cloud.yaml, images ghcr.io/...:<sha>
   ECS ecs.g7.large (2 vCPU, 8 GiB), Ubuntu 24.04,
      ESSD 60 GiB encrypted, IMDSv2 only, no own IP   k3s inside the VM (cloud-init, first boot):

@@ -92,7 +92,7 @@ When the job pushes (main, `IMAGE_REGISTRY` set) it attaches each file to the pu
 artifact type `application/vnd.cyclonedx+json`; on ghcr.io via the referrers tag `sha256-<digest>`). Read them back:
 ```bash
 img=ghcr.io/<owner>/hoops-academy/core-service@sha256:<digest>
-oras=ghcr.io/oras-project/oras:v1.3.6     # scripts/sbom.sh pins the digest
+oras=ghcr.io/oras-project/oras:v1.4.0     # scripts/sbom.sh pins the digest
 podman run --rm "$oras" discover --artifact-type application/vnd.cyclonedx+json "$img"   # the SBOMs' digests
 podman run --rm -v "$PWD:/w" -w /w "$oras" pull -o sbom "ghcr.io/<owner>/hoops-academy/core-service@<SBOM digest>"
 ```

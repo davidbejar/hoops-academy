@@ -29,7 +29,7 @@ podman machine start
 ```bash
 source scripts/env.sh
 just kind-up          # cluster "hoops" (kindest/node v1.36.4) + Envoy Gateway v1.10.0 (Gateway API v1.6.1 CRDs) with its
-                      # rate limit service (Redis backend ratelimit-redis.hoops:6379) + CNPG 1.30.1 (no leader election, WP86)
+                      # rate limit service (Redis backend ratelimit-redis.hoops:6379) + CNPG 1.30.2 (no leader election, WP86)
                       # + ns hoops + Secrets from .env + self-signed TLS Secret hoops-gateway-tls
                       # + Stakater Reloader 2.2.20 (v1.4.24, namespace hoops-reloader, WP87)
 just tilt             # = tilt up: builds 4 images with Podman, kind-loads them, deploys the chart, port-forwards

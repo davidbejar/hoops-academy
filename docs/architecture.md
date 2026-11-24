@@ -379,7 +379,7 @@ its Flyway migrations and sources (`just diagrams`; CI fails when one is stale, 
 Each page has three parts: **Tables** (ER diagrams), **Domain classes** (class diagrams) and **Application ports**.
 
 ## 11. Testing strategy and current counts
-The per-module JVM counts are the ones WP146 reports for its fresh `just test` (2026-11-25, on PostgreSQL 19.0), the
+The per-module JVM counts are the ones WP146 reports for its fresh `just test` (2026-11-24/25, on PostgreSQL 19.0), the
 last full build of the tenth round. The Rust count is WP146's (the same as WP132's), the Go count WP143's (WP144 the
 same; coverage from WP146), the Flutter count WP141's (2026-11-24; no web change since). They change with every commit.
 

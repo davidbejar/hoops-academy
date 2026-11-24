@@ -58,8 +58,10 @@ curl -s "$G/prometheus/api/v1/query" --data-urlencode 'query=sum by (job, kind) 
 Example (WP120 on kind): admin1's roster PDF `GET /api/core/teams/{teamId}/roster:export` (`Accept: application/pdf`) is
 one trace `hoops.hoops ingress` -> `router httproute/hoops/core-service-roster-export/rule/0 egress` -> `core-service GET
 /api/core/teams/{teamId}/roster:export` -> `core-service POST /internal/pdf/team-roster` (client) -> `pdf-service POST
-/internal/pdf/team-roster` -> `pdf-service render`. The services emit no database spans (no JDBC / pgx instrumentation),
-so a trace ends at the service; database time is the server span minus its children.
+/internal/pdf/team-roster` -> `pdf-service render`. Since WP143 (ADR-0074) core, game, athlete and finance add one
+client span per SQL statement under the span that runs it (`db.system = postgresql`, `db.statement` parameterised,
+never a bound value; the first is the tenant's `set_config`); a database span without a parent is dropped, so the
+scheduled jobs and core's outbox poll start no trace. In Grafana: TraceQL `{ span.db.system = "postgresql" }`.
 
 ## Retention, storage, memory (dev only)
 - **24 h** for logs (Loki compactor retention), traces (Tempo block retention) and metrics (Prometheus TSDB):
@@ -92,8 +94,8 @@ records in Loki and `hoops_authz_denied_total{job="pdf-service"}` in Prometheus.
 
 ## Not exported
 Keycloak's log and events (`org.keycloak.events`, see Security events below), Envoy's access log and its metrics, Redpanda,
-CloudNativePG / Postgres, Envoy Gateway and the operators: `kubectl logs` / `podman logs` as before. No database spans
-(above). pdf-service and finance-service trace their own `/q/health` probes and the collector's `/q/metrics` scrapes (the
+CloudNativePG / Postgres, Envoy Gateway and the operators: `kubectl logs` / `podman logs` as before. The scheduled
+jobs' SQL (no parent span, above). pdf-service and finance-service trace their own `/q/health` probes and the collector's `/q/metrics` scrapes (the
 requests dashboard filters `/q/`).
 
 ## Collector down

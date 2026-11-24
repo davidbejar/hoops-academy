@@ -933,9 +933,10 @@ d6539fc6); then the docs pass WP147. What the orchestrator ran at merge time is 
   -> pdf-service calls ran on compose on 2026-11-16 (the orchestrator's `just e2e` after the WP123 merge: 38 tests, 0
   failures, `JourneyTest` 32 steps, none skipped).
 - **kind install under VM load** (WP139, WP146, ADR-0076): Keycloak's deadline and the probes are fixed for kind
-  (Resolved), but a fresh `up.sh --deploy` beside a Maven build at a VM load of 50-123 on the 2-vCPU VM still missed
-  helm's 15 minutes in all three of WP146's runs (core, game, athlete killed by their probes, the kube-apiserver
-  restarted); the same cluster passed `up.sh`, seed and smoke (57) once the build had ended. Raising helm's timeout
+  (Resolved), but a fresh `up.sh --deploy` beside a Maven build on the 2-vCPU VM still fails: in WP146's run 1 on the
+  CNPG webhook (fixed since), in runs 2 (load 85-123) and 3 (all fixes, load 32-63) with services InProgress after
+  helm's 15 minutes (run 3: core, game, athlete killed by their probes, the kube-apiserver restarted; WP146 sums it up
+  as "a VM load of 50 to 60"); the same cluster passed `up.sh`, seed and smoke (57) once the build had ended. Raising helm's timeout
   would only hide it; more vCPUs is a Pending user action. otel-collector and lgtm also restart under load (5-6
   times); their probes are unchanged (not app workloads).
 - **kind smoke's outbox wait has no test** (WP144, WP146): `deploy/kind/smoke.sh` waits for core's published counter

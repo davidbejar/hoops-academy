@@ -46,7 +46,7 @@ project, not a commercial product (ADR-0025).
   and WP141 (the rollover wizard, ADR-0072): merge order with commits in FOLLOW-UPS "Plan (2026-11-23, ninth round)"
   and the WP140 handover; ADRs 0059–0072.
 - Tests, as the last handovers report them (WP147 re-ran only the Python, chart and docs checks):
-  - **Java**: WP146's `just test` (2026-11-25, Maven offline, rc 0): contracts 346, common-quarkus 585, core 1,267,
+  - **Java**: WP146's `just test` (2026-11-24/25, Maven offline, rc 0): contracts 346, common-quarkus 585, core 1,267,
     game 530, athlete 1,028, e2e 38 (32 skip without a stack) — **3,794** as the sum, the same total WP143 reported
     (32 skipped); 0 failures; coverage, SpotBugs, PMD / CPD gates met. All on PostgreSQL 19.0 since WP144 (Flyway warns
     that 19 is newer than it was verified with). The round started at 3,780 (WP139).
@@ -65,9 +65,11 @@ project, not a commercial product (ADR-0025).
     c9daa73e, b2e269f5 and 1781cfcb.
 - **Kind this round**: WP144 on PostgreSQL 19.0 (CNPG 1.30.2): `up.sh --deploy --from-host`, seed, then a smoke race
   found and fixed (finance read before core's outbox had published academy B's events), **SMOKE PASSED, 57 checks**.
-  WP146: three fresh installs beside a Maven build (VM load 32 to 123) all missed helm's 15 minutes; after its fixes
-  Keycloak, the databases and the operator had 0 restarts, but core, game and athlete were still probe-killed; on the
-  same cluster with no build `up.sh` passed in 275 s, seed and **smoke 57 checks**. Clusters deleted. **Not proven on
+  WP146: three fresh installs beside a Maven build failed: run 1 (load up to 68) on the CNPG webhook (operator
+  probe-killed; fixed), run 2 (load 85-123) and run 3 (all fixes, load 32-63) with services InProgress after helm's 15
+  minutes; in run 3 Keycloak, the databases and the operator had 0 restarts, but core, game and athlete were
+  probe-killed and the kube-apiserver restarted. On the same cluster with no build `up.sh` passed in 275 s, seed and
+  **smoke 57 checks**. Clusters deleted. **Not proven on
   kind**: a fresh install under load, `tilt ci` (last on 0.9.0), the e2e journey, ESO and Reloader with the finance
   Secrets. Nothing in the cloud (decision 88).
 - **Local stack**: the owner's compose stack runs PostgreSQL 19.0 on the fresh volume `hoops_pgdata-19` (moved by
@@ -78,14 +80,15 @@ project, not a commercial product (ADR-0025).
 - **Security**: F-01..F-24 and P-01..P-13 unchanged. Database spans carry the parameterised statement only (ADR-0074;
   the Tempo proof above). Open question found in that proof: three server spans of game-service carry an exception
   event whose message holds an id ("Match <uuid> not found"); P-11 / ADR-0043 (FOLLOW-UPS "Security"). ZAP 40018 on
-  core's audit export (ninth round, seen once) did not recur in the round's `e2e` runs.
+  core's audit export (ninth round, seen once) did not fail the `e2e` runs through 1781cfcb (inferred from their
+  green ZAP gate).
 - CI on `main` (observed by WP147 with `gh run list -b main` on 2026-11-25): all **green** on **1781cfcb** (`ci`
   45418280411, `e2e` 45418280139, `images` 45418280541, `semgrep` 45418280513, `codeql` 45418280601, `pages`
   45418280375), on **b2e269f5** (`ci` 45398105545, `e2e` 45398105628, `images` 45398105528, `semgrep` 45398105516,
   `codeql` 45398105483, `pages` 45398105603), on **c9daa73e** (`ci` 45389069608, `e2e` 45389069367, `images`
   45389069480, `semgrep` 45389069425, `codeql` 45389069423, `pages` 45389069424) and on 4ed1a1e4 (`ci` 45373700118,
-  `e2e` 45373700129, `semgrep` 45373700085, `codeql` 45373700088, `pages` 45373700109). No red run on `main` in the
-  round. On **d6539fc6** (WP145, WP146) `ci` 45445935990 (its `scripts` job ran the env-jdk, tenancy-gate,
+  `e2e` 45373700129, `semgrep` 45373700085, `codeql` 45373700088, `pages` 45373700109). No red run on `main` from
+  4ed1a1e4 through d6539fc6 among the finished runs. On **d6539fc6** (WP145, WP146) `ci` 45445935990 (its `scripts` job ran the env-jdk, tenancy-gate,
   events-drift and kind-cnpg-patch steps green: the first run of WP146's shell tests on GitHub's runner), `images`
   45445936659, `codeql` 45445935929, `semgrep` 45445936102 and `pages` 45445935890 green; `e2e` 45445935916 was still
   running at WP147's last look. **Orchestrator to fill in:** the result of that `e2e` run.

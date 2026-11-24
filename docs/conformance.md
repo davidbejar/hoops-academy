@@ -295,7 +295,7 @@ reason; none is a silent gap.
 | One login, several academies | an invite of an e-mail that already signs in links that login without asking its owner and reveals that it exists (F-11, accepted by design); logins stay enabled when an academy is suspended or withdrawn | ADR-0025 |
 
 ## Verification baseline
-- **Backend**: tenth round, WP146 (2026-11-25, `just test` in its worktree, Maven offline, on PostgreSQL 19.0):
+- **Backend**: tenth round, WP146 (2026-11-24/25, `just test` in its worktree, Maven offline, on PostgreSQL 19.0):
   contracts 346, common-quarkus 585, core 1267, game 530, athlete 1028, e2e 38 (32 skipped) = **3,794 tests** (sum of
   the counts WP146 reports), 0 failures, the gates met; **Go** 15 packages ok, 88.68 % / 98.84 % domain, govulncheck
   clean (174 top-level tests counted by WP143); **Rust 105 tests** (95.72 % / 99.80 % domain).
