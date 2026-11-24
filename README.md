@@ -89,8 +89,9 @@ Common commands: `just test` (Maven verify with coverage, RLS and PMD gates, the
 
 ## Layout
 ```
-libs/common-quarkus   tenancy, RLS, authz, Problem+JSON, shared test fixtures
-libs/contracts        OpenAPI specs + event JSON Schemas (source of truth for clients)
+libs/common-quarkus   tenancy, RLS, authz and the membership rule, Problem+JSON, paging, the roster replica
+                      pipeline, shared settings, shared test fixtures
+libs/contracts        OpenAPI specs, event JSON Schemas, projection vectors (source of truth for clients)
 services/*            core-service, game-service, athlete-service (Quarkus); pdf-service (Rust); finance-service (Go)
 apps/web              Flutter Web PWA (generated API clients in apps/web/packages)
 infra/                compose stack, DB init SQL, Keycloak realm, OpenTofu module for the cloud VM (infra/tofu)
@@ -109,19 +110,29 @@ docs/                 guides, runbooks, architecture, ADRs, security, work packa
 | Domain rules and models | [`docs/domain/`](docs/domain): authz matrix, glossary, norms; generated ER and class diagrams per service: [core](docs/domain/core-model.md), [game](docs/domain/game-model.md), [athlete](docs/domain/athlete-model.md) (`just diagrams`); the finance model in [ADR-0056](docs/adr/0056-finance-domain-model.md) |
 | Runbooks | [`docs/runbooks/`](docs/runbooks): [local stack](docs/runbooks/local-stack.md), [onboard tenant](docs/runbooks/onboard-tenant.md), [rotate secrets](docs/runbooks/rotate-secrets.md), [backup/restore (design)](docs/runbooks/backup-restore.md), [release](docs/runbooks/release.md), [kind](docs/runbooks/kind.md), [cloud (not yet applied)](docs/runbooks/cloud.md), [e2e](docs/runbooks/e2e.md), [events](docs/runbooks/events.md), [observability](docs/runbooks/observability.md), [troubleshooting](docs/runbooks/troubleshooting.md), [documentation site](docs/runbooks/docs-site.md) (all of `docs/` with search at <https://davidbejar.github.io/hoops-academy/>, or `just docs-serve` locally; ADR-0057) |
 | Security | [`docs/security/`](docs/security): [review](docs/security/review-2026-11.md), [threat model](docs/security/threat-model.md), [ASVS checklist](docs/security/asvs-checklist.md), [SAST/DAST](docs/security/sast-dast.md), [privacy threat model (LINDDUN)](docs/security/privacy-threat-model.md); quality: [mutation testing](docs/quality/mutation.md), [PMD / CPD gate](docs/quality/pmd.md) |
-| Roadmap, plan and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) (plans of 2026-11-05, the four rounds of 2026-11-06/07, the sixth round of 2026-11-10, the seventh of 2026-11-14 and the eighth of 2026-11-15/16), [`docs/HANDOVER.md`](docs/HANDOVER.md) (current state) |
+| Roadmap, plan and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) (plans of 2026-11-05, the four rounds of 2026-11-06/07, the sixth round of 2026-11-10, the seventh of 2026-11-14, the eighth of 2026-11-15/16 and the ninth of 2026-11-23/24), [`docs/HANDOVER.md`](docs/HANDOVER.md) (current state) |
 | Agent conventions | [`CLAUDE.md`](CLAUDE.md) |
 
 ## Project status
-Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages **WP0–WP125 are done** (no
-WP79), with handovers in `docs/wp/` (the eighth round, WP111–WP125, on 2026-11-15 and 2026-11-16). As the last
-handovers of 2026-11-16 report: `just test` runs **3,556 Maven tests** (32 of them, the e2e journey steps, skipped
-without a running stack), **100 Rust tests** and **204 Go tests**, all green with their coverage gates; `flutter
-test` **1,801 tests**; the 32-step e2e journey was green on a compose stack on 2026-11-16, including the real PDF
-calls; the CI `e2e` workflow runs it on every push, with a browser login round trip and ZAP API scans of core, game,
-athlete and finance. Contract versions:
-core 3.7.0, game 2.4.0, athlete 3.0.0, common 1.1.1, pdf 1.0.0, finance 1.0.0; roster event schemas in
+Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages **WP0–WP140 are done** (no
+WP79), with handovers in `docs/wp/` (the ninth round, WP126–WP140, on 2026-11-23 and 2026-11-24). As the last
+handovers of 2026-11-24 report: Maven `verify` runs **3,780 tests** (the sum of WP139's module counts; 32 of them, the
+e2e journey steps, skipped without a running stack), `just test-rust` **105 tests** (WP132), `just test-go` green
+(**167** top-level tests at WP131), all with their coverage gates; `flutter test` **1,954 tests** (WP138); the e2e
+journey (38 tests) was green on a compose stack after the last merge of the round; the CI `e2e` workflow runs it on
+every push, with a browser login round trip and ZAP API scans of core, game, athlete and finance. Contract versions:
+core 3.7.0, game 2.4.0, athlete 3.0.0, common 1.1.1, pdf 1.0.0, finance 1.1.0; roster event schemas in
 `libs/contracts/events`.
+
+- **Ninth round**: no new features; a read-only audit of the repository for duplication and inefficiencies (173
+  findings) became fourteen work packages. The roster replica pipeline, the membership rule, paging, Problem plumbing
+  and the settings the Java services share now live once in `libs/common-quarkus` (ADR-0062, ADR-0066, ADR-0069); the
+  service sub-charts share a library chart and kind and the cloud take their pins from one file (ADR-0068); CI cancels
+  superseded pull request runs and runs each gate once (ADR-0065); the web reads whole lists through one `fetchAll`
+  and pages with one `Pager` (ADR-0061), keeps dates, validators and error words in one place (ADR-0067), and its tests
+  run against the seeded demo mock with no repository fake (ADR-0070); one name for the realm URL,
+  `OIDC_AUTH_SERVER_URL` (ADR-0071). Bugs found on the way were fixed with a red test first (game's feed cursor race,
+  a record parked twice, athlete's tenant zone, the lists cut at the first page, finance's contract guard).
 
 - **Eighth round**: two services outside the JVM (ADR-0051). `pdf-service` in Rust renders the team roster and the
   match sheet in es / en / id; core and game call it and return the PDF (audited for the roster), the web has a PDF
@@ -168,22 +179,23 @@ core 3.7.0, game 2.4.0, athlete 3.0.0, common 1.1.1, pdf 1.0.0, finance 1.0.0; r
 - **Supply chain**: a validated CycloneDX SBOM per image, attached to the pushed image as an OCI referrer (ADR-0043);
   GitHub Actions pinned to commit SHAs, Dependabot with a 7-day cooldown, and a weekly `bump-pins` PR for image
   digests, chart tags and kind pins.
-- **Kubernetes**: the Helm chart (0.13.0, with sub-charts for pdf-service and finance-service) uses Gateway API with Envoy Gateway v1.10.0 (ADR-0031) and global rate limits through
+- **Kubernetes**: the Helm chart (0.15.0, with sub-charts for pdf-service and finance-service built from the library
+  chart `hoops-lib`) uses Gateway API with Envoy Gateway v1.10.0 (ADR-0031) and global rate limits through
   Redis with an ACL (ADR-0033), renders the broker behind `events.enabled` (with `global.events.enabled`), can take its
   Secrets from the External Secrets Operator and roll the pods on a rotation with Stakater Reloader
   (`global.reloader.enabled`, ADR-0012 amendments), and ships traces and logs through an OpenTelemetry collector
   (`global.observability.enabled`, ADR-0046) to one Grafana LGTM pod on kind; with events on, game, athlete and
-  finance read their replicas; core's mail goes to Mailpit on kind; proven on kind with `smoke.sh` (the eighth round's
-  services on 0.11.0 to 0.13.0; `tilt ci` last on 0.9.0).
+  finance read their replicas; core's mail goes to Mailpit on kind; proven on kind with `smoke.sh` (57 checks on
+  0.15.0, WP139; `tilt ci` last on 0.9.0).
 - **Quality**: mutation testing (PIT and a Dart tool for the web rule code) runs on demand and monthly against
-  baselines equal to the scores (common 337/338, core 932/933, game 555/557, athlete 690/690, web 100 %;
+  baselines equal to the scores (common 486/487, core 920/921, game 505/507, athlete 620/620 after WP137, web 100 %;
   `docs/quality/mutation.md`; not yet for Rust and Go); PMD and CPD gate maintainability in `verify`, Clippy (pedantic)
   and golangci-lint the two new services. 475 of 630 fitness norm rows are cited from published tables; the rest are flagged
   "reference pending" (`docs/domain/norms.md`). The web app is an installable PWA (Lighthouse PWA score 1,
   airplane-mode cold start checked by script) and its demo mode (`HOOPS_MOCK_API=true`) reaches every screen.
 
 The CI workflows `ci`, `e2e`, `images`, `codeql` and `semgrep` run on every push to `main`; their latest state and run
-ids are in `docs/HANDOVER.md` (`images` is green again since the distroless base of WP114). No cloud deployment exists
+ids are in `docs/HANDOVER.md`. No cloud deployment exists
 yet. Not built: billing (a placeholder screen), the purge job, erasure and per-person export (privacy findings P-01,
 P-02). Open items: [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md); current state:
 [`docs/HANDOVER.md`](docs/HANDOVER.md); what the system does for each spec statement, with evidence:
