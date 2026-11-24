@@ -505,6 +505,39 @@ under "Resolved", "Ninth round".
     and both web WPs that change behaviour or the test base; Opus · medium for finance and the docs pass; Sonnet · high
     for CI and the web duplication; Sonnet · medium for pdf-service.
 
+## Plan (2026-11-24, tenth round)
+Decided in the interview of 2026-11-24 (decisions 114–118 below): a short round around the PostgreSQL upgrade the
+owner asked for, with four infrastructure and database items that sit next to it. Same mechanics (`wp-round` skill).
+The pins go first because the upgrade wants the current CloudNativePG; the database spans touch only the services and
+run beside them; the upgrade runs alone (it moves the database under every suite and is the kind user); the trigram
+index and the kind and CI hardening follow on the new version; the docs pass closes. At the WP144 merge the
+orchestrator moves the owner's compose stack: a dump of the old database outside the repo, the old volume kept, a
+fresh volume, the seeds, the checks and the e2e journey; on failure back to the old image and volume.
+
+| Wave | WP | Title | Model | Status |
+|---|---|---|---|---|
+| 1 | WP142 | Infra: apply the outdated pins; the bump script tracks PostgreSQL | Sonnet · high | Planned |
+| 1 | WP143 | Services: the SQL calls of every service appear in its traces | Opus · medium | Planned |
+| 2 | WP144 | Database: PostgreSQL 17 to 19 (18.7 if a dependency refuses 19) | Opus · high | After wave 1 |
+| 3 | WP145 | athlete: a trigram index for the exercise search | Opus · medium | After wave 2 |
+| 3 | WP146 | kind and CI: the install waits for Keycloak under load; the skipped shell tests run in CI | Opus · medium | After wave 2 |
+| 4 | WP147 | Docs pass | Opus · medium | Last alone |
+
+### Decisions of 2026-11-24, ninth interview (product owner)
+114. **PostgreSQL version** → WP144: 19 (19.0 is published by Docker Hub and CloudNativePG). The package first checks
+     Keycloak, Flyway, the JDBC driver, pgx and CloudNativePG against 19; if one refuses it, the whole project lands
+     on 18.7 instead. ADR-0073.
+115. **The owner's local data** → orchestrator at the WP144 merge: a backup first (a dump outside the repo, the old
+     volume kept), then a fresh volume and the seeds. If that fails, back to the backup and another way (dump and
+     restore, then `pg_upgrade`). The fresh volume also proves the bootstrap from the one role list (WP139, INF-03).
+116. **What rides along** → WP142, WP143, WP145, WP146: the outdated pins including the workflow-file pins, and the
+     bump script tracks PostgreSQL's minor; database spans in the traces of core, game, athlete and finance
+     (ADR-0074); the trigram index for the exercise search with `pg_trgm` in the bootstrap (ADR-0075); the kind
+     install under load and the three shell tests no workflow runs (ADR-0076 reserved).
+117. **IDR minor digits**: not this round; the item stays open.
+118. **Models**: Opus · high for the upgrade; Opus · medium for the spans, the index, the kind and CI package and the
+     docs pass; Sonnet · high for the pins.
+
 ## Open
 
 ### Pending user actions
