@@ -40,11 +40,22 @@ sync_podman_clock() {
   fi
 }
 
+# maven_offline_first <log> <maven args…>: offline first, online only when the local repository lacks an artifact.
+# A remote repository that answers 503 or stalls (repository.jboss.org on 2026-11-24) otherwise holds the check for
+# minutes although nothing needs downloading.
+maven_offline_first() {
+  local log=$1
+  shift
+  ./mvnw -o -B -ntp "$@" >"$log" 2>&1 && return 0
+  grep -qE 'offline mode|has not been downloaded from it before' "$log" || return 1
+  ./mvnw -B -ntp "$@" >"$log" 2>&1
+}
+
 # run_maven <maven args…>: quiet on success, the failing tests and assertion messages on failure.
 run_maven() {
   local log start=$SECONDS
   log=$(mktemp -t hoops-hook.XXXXXX)
-  if ./mvnw -B -ntp "$@" >"$log" 2>&1; then
+  if maven_offline_first "$log" "$@"; then
     # Per-module surefire totals ("Tests run: N, …" without "-- in <class>"). Zero means the filter matched nothing
     # (a renamed test class): that must not count as a pass.
     local ran
