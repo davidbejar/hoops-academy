@@ -722,6 +722,33 @@ void main() {
         expect(await repo.norms(scope: 'TENANT'), isEmpty);
       },
     );
+
+    test('a tenant norm replaces only the global rows whose ages it overlaps (athlete.yaml, BandResolver)', () async {
+      final repo = ApiFitnessRepository(athlete, t);
+      final type = (await repo.types()).first;
+      Future<int> globalsInForce() async => (await repo.norms(
+        testTypeId: type.id,
+        gender: ath.Gender.MALE,
+      )).where((n) => n.global).length;
+      final before = await globalsInForce(); // ages 10 to 12
+      expect(before, greaterThan(0));
+      ath.PhysicalTestNormInput older(int minAge, int maxAge) =>
+          ath.PhysicalTestNormInput(
+            (b) => b
+              ..testTypeId = type.id
+              ..gender = ath.Gender.MALE
+              ..minAge = minAge
+              ..maxAge = maxAge
+              ..band = ath.NormBand.AVERAGE
+              ..minValue = 3
+              ..maxValue = 4,
+          );
+      final apart = await repo.createNorm(older(14, 16));
+      expect(await globalsInForce(), before);
+      await repo.deleteNorm(apart.id);
+      await repo.createNorm(older(12, 13));
+      expect(await globalsInForce(), 0);
+    });
   });
 
   // ------------------------------------------------------------------ WP47: shared rosters and role filtering
