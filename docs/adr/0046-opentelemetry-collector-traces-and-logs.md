@@ -127,3 +127,9 @@ Redpanda's and the databases' logs, the Envoy Gateway and operator logs: read wi
 Consequences: chart 0.13.0 (`pdf-service` and `finance-service` 0.2.0); the LGTM image is 2.7 GB (a first `up.sh` pulls it
 inside the node); dashboards are files under review like code; when a real environment gets Grafana, the 24 h retention,
 the anonymous Viewer and the no-egress policy are dev choices to revisit, not defaults to copy.
+
+## Amendment 2026-11-24 (decision 116, WP143): database spans
+The services' SQL is now part of their traces: [ADR-0074](0074-database-spans-in-the-services-traces.md). Database
+spans carry the parameterised statement and never a bound value or the tenant id; "no code sets span attributes" above
+now reads "no code sets span attributes beyond those of the database spans, which ADR-0074 fixes". The collector config
+is unchanged.
