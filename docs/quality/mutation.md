@@ -15,10 +15,10 @@ treatment with a Dart mutation tool ([Web rule code](#web-rule-code-dart-mutatio
 
 | Module | Mutated classes (`pit.targetClasses`) | Tests PIT runs (`pit.targetTests`) | Mutants | Runtime¹ | Baseline |
 |---|---|---|---|---|---|
-| `common-quarkus` | `TenantId`, `TenantContext`, `AuthzContext`, `Problem`, `ProblemType`, `CoreRosterClient`, `RosterAuthzResolver`, `ServiceTokenClientFilter`, `AuthzDenial`, `DenialKind`, `TokenFailureReason` (WP85) + `ExclusiveLocks`, `TenantScopedPaths`, `ProblemMapping` (WP88) + `UnsafeText`, `PageOffset` (WP84) + `replica.ReplicaRetention`, `replica.ParkedPosition` (moved from game and athlete), `contracts.ContractResources` (WP98) + `authz.MembershipRule`, `authz.MembershipReads`, `authz.Member`: the membership rule of all three services (WP134, ADR-0066) + `paging.PageRequest`, `PageResult`, `PageMeta`, `i18n.AcceptLanguage`, `AppLanguage`, `problem.InvalidRequestException` (WP137, ADR-0069) | their plain unit tests | 338 | 39 s³ | 99 |
-| `core-service` | `core.domain.*` + `LoginProvisioning`, `TemporaryPasswordGenerator`, `AuthzCache`, `AuditActorKind`, `AuditFilter`, `AuditAction`, the event classes `EventTopic`, `RosterPayloads`, `RosterEventAppender`, `EventEnvelopes`, `TenantEvents` (WP67), `KafkaEventBroker` (WP81) + `BackfillPlan`, `DecideAcademyRequest`, `ChangedFields`, `AuditEntry`, `PatchBody` (WP88) + the export renderers `adapters.in.export.*` and `ExportPages` (WP96) | `core.domain.*` tests + the tests of those classes | 926 | 108 s | 99 |
-| `game-service` | `game.domain.*` + `EventAuthorization`, `StatVisibility`, the replica rules `ReplicaRosterPort`, `ReplicaPlayer`, `ReplicaTenant` (WP68; the membership rule moved to common-quarkus, WP134) + `EventAdmission`, `EventLedger`, `MatchEventDecoder`, `RosterEventDecoder` (WP88) + `VoidMarks` (WP126); `ReplicaRetention`, `ParkedPosition` moved to common-quarkus (WP98) | `game.domain.*` tests + the tests of those classes | 527 | 84 s³ | 99 |
-| `athlete-service` | `athlete.domain.*` + the replica rules `ApplyRosterEvent`, `RosterChange`, `RosterTopic` and the adapters' parsers `CoreEventDecoder`, `PatchBody`, `RosterSource` (WP88; `AcceptLanguage` moved to common-quarkus, WP137); `ReplicaRetention`, `ParkedPosition` moved to common-quarkus (WP98) | `athlete.domain.*` tests + `ApplyRosterEventRulesTest`, `CoreEventDecoderTest`, `PatchBodyTest`, `RosterSourceTest` | 690 | 121 s³ | 100 |
+| `common-quarkus` | `TenantId`, `TenantContext`, `AuthzContext`, `Problem`, `ProblemType`, `CoreRosterClient`, `RosterAuthzResolver`, `ServiceTokenClientFilter`, `AuthzDenial`, `DenialKind`, `TokenFailureReason` (WP85) + `ExclusiveLocks`, `TenantScopedPaths`, `ProblemMapping` (WP88) + `UnsafeText`, `PageOffset` (WP84) + `replica.ReplicaRetention`, `replica.ParkedPosition` (moved from game and athlete), `contracts.ContractResources` (WP98) + `authz.MembershipRule`, `authz.MembershipReads`, `authz.Member`: the membership rule of all three services (WP134, ADR-0066) + `paging.PageRequest`, `PageResult`, `PageMeta`, `i18n.AcceptLanguage`, `AppLanguage`, `problem.InvalidRequestException` (WP137, ADR-0069) + the roster replica pipeline `replica.CoreEventDecoder`, `DecodedEvent`, `EventEnvelope`, `RosterTopic`, `ReplicaConsumer`, `ReplicaMetrics`, `RetryPolicy`, `ReplicaOutcome`, `ReplicaHousekeeping`, `ReplicaSchema` (WP130, ADR-0062) | their plain unit tests | 487 | 39 s³ | 99 |
+| `core-service` | `core.domain.*` + `LoginProvisioning`, `TemporaryPasswordGenerator`, `AuthzCache`, `AuditActorKind`, `AuditFilter`, `AuditAction`, the event classes `EventTopic`, `RosterPayloads`, `RosterEventAppender`, `EventEnvelopes`, `TenantEvents` (WP67), `KafkaEventBroker` (WP81) + `BackfillPlan`, `DecideAcademyRequest`, `ChangedFields`, `AuditEntry`, `PatchBody` (WP88) + the export renderers `adapters.in.export.*` and `ExportPages` (WP96) | `core.domain.*` tests + the tests of those classes | 921 | 108 s | 99 |
+| `game-service` | `game.domain.*` + `EventAuthorization`, `StatVisibility`, the replica rules `ReplicaRosterPort`, `ReplicaPlayer`, `ReplicaTenant` (WP68; the membership rule moved to common-quarkus, WP134) + `EventAdmission`, `EventLedger`, `MatchEventDecoder` (WP88) + `VoidMarks` (WP126) + `ReplicaAcademyNames`, `MatchSheets` (WP117) + `RosterEventMapper` (the payload mapper that replaced `RosterEventDecoder`, WP130); `ReplicaRetention`, `ParkedPosition` moved to common-quarkus (WP98), the decoder envelope and consumer loop too (WP130) | `game.domain.*` tests + the tests of those classes | 507 | 84 s³ | 99 |
+| `athlete-service` | `athlete.domain.*` + the replica rules `ApplyRosterEvent`, `RosterChange` and the adapters' parsers `CoreEventMapper` (replaced `CoreEventDecoder`; `RosterTopic` moved to common-quarkus, WP130), `PatchBody`, `RosterSource` (WP88; `AcceptLanguage` moved to common-quarkus, WP137) + `RequestMemoRosterPort` (WP127); `ReplicaRetention`, `ParkedPosition` moved to common-quarkus (WP98) | `athlete.domain.*` tests + the tests of those classes (`pit.targetTests` in the pom) | 620 | 121 s³ | 100 |
 
 ¹ Wall clock of `just mutation <module>` including compilation, on the development Mac (Apple M1 Pro, 10 cores, shared
 with other work), `threads = 4`, measured in WP88 (2026-11-07). All four modules in turn (`just mutation`): 281 s.
@@ -39,6 +39,20 @@ decoders' resource guards became common's `ContractResources`. core-service: see
 
 WP126 (2026-11-23): game-service 572/574 (99.6 %; the scope grew by `VoidMarks`, the voided_by marks a re-projection
 changes, and `ReplicaRosterPort.team`), 117 s on a host shared with three other worktrees.
+WP127 (2026-11-23): athlete-service 671/671 (100 %; `RequestMemoRosterPort` joined the scope, the dead domain methods
+went, so fewer mutants), 109 s.
+WP128 (2026-11-23): core-service 941/942 (99.9 %; 942 mutants, 926 before; the one survivor is the listed
+`Eligibility.reasons` one; a second, a past deadline in `KafkaEventBroker.sendAll`, was killed by a new test).
+WP130 (2026-11-24, the replica pipeline moved into common-quarkus, ADR-0062): common-quarkus 414/415 (99.8 %; the
+survivor is the listed `CoreRosterClient.zoneOf` one), game-service 551/553 (99.6 %; both survivors outside the
+replica), athlete-service 644/644 (100 %); two equivalent mutants in `ReplicaConsumer` went with a refactor.
+WP134 (2026-11-24, the membership rule moved into common-quarkus, ADR-0066): common-quarkus 443/444 (99.8 %; all 29
+`authz` mutants killed), core-service 941/942, game-service 527/529 (99.6 %), athlete-service 644/644; game's and
+athlete's entries for the removed rule copies are gone.
+WP137 (2026-11-24, the shared plumbing moved into common-quarkus, ADR-0069): common-quarkus 486/487 (99.8 %),
+core-service 920/921 (99.9 %), game-service 505/507 (99.6 %), athlete-service 620/620 (100 %); the dead
+`TenantHeaderPropagationFilter` and its entries went. These are the latest scores (the "Mutants" column above);
+no later work package ran PIT.
 
 ² WP92, 2026-11-10, host shared with four other worktrees.
 ³ WP98, 2026-11-10, host shared with other worktrees.
@@ -106,7 +120,8 @@ no framework import, the application ones no CDI).
 Classes that were already pure but outside the scope joined it with their unit tests: `TenantScopedPaths` (own test now),
 core `DecideAcademyRequest` (WP90), `ChangedFields`, `AuditEntry`, `PatchBody`; game `EventLedger`, `MatchEventDecoder`,
 `RosterEventDecoder`; athlete `ApplyRosterEvent`, `ReplicaRetention` (the WP82 rules, now also tested without a database
-as in game), `CoreEventDecoder`, `AcceptLanguage`, `PatchBody`, `RosterSource`.
+as in game), `CoreEventDecoder`, `AcceptLanguage`, `PatchBody`, `RosterSource`. (Since WP130 the two event decoders are
+common's `replica.CoreEventDecoder` plus a payload mapper per service; since WP137 `AcceptLanguage` is common's.)
 
 ## Reading a report
 
