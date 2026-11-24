@@ -20,6 +20,9 @@ required. `roles.sh` prints the list for scripts and workflows; the Java (`Boots
 harnesses read it from the SQL; `scripts/tests/test_db_roles.py` checks the lists that stay literal (compose,
 `.env.example`, the chart's CNPG roles and Secrets, kind's `secrets.sh` and `env-keys.sh`). A new service adds its rows
 here, its schema row, and the names in those lists.
+In Kubernetes CloudNativePG runs the same SQL (`postInitApplicationSQL`) and then manages the roles' passwords from
+Secrets; its role reconciler clears the `hoops service role` comment, which only `02_passwords.sh` reads (kind proof of
+WP139: roles, privileges and role settings otherwise equal to compose's).
 
 A compose database created before a role existed gets it with `just finance-up` or `e2e/bin/services-up.sh`
 (`infra/compose/db-roles.sh` re-applies `01_roles_schemas.sql`, which is idempotent, and runs `02_passwords.sh`).
