@@ -5,10 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
 
+import com.hoopsacademy.common.testing.LogCapture;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
 import com.hoopsacademy.core.testsupport.CoreTestResources;
-import com.hoopsacademy.core.testsupport.LogCapture;
 import com.hoopsacademy.core.testsupport.SideEffectsProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;

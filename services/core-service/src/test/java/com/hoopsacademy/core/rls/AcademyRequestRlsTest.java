@@ -37,7 +37,7 @@ class AcademyRequestRlsTest {
         CoreDb.tenant(tenant);
         try (Connection app = RlsTestDatabase.fromConfig().openAsApp()) {
             app.setAutoCommit(false);
-            CoreDb.bindTenant(app, TenantId.parse(tenant));
+            RlsTestDatabase.bindTenant(app, TenantId.parse(tenant));
             assertThat(sqlState(app, "select count(*) from core.academy_request")).isEqualTo(INSUFFICIENT_PRIVILEGE);
             assertThat(sqlState(app, "update core.academy_request set status = 'REJECTED' where id = '" + request
                     + "'")).isEqualTo(INSUFFICIENT_PRIVILEGE);

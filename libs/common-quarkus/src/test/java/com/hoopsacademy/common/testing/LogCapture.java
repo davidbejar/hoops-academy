@@ -1,4 +1,4 @@
-package com.hoopsacademy.game.support;
+package com.hoopsacademy.common.testing;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

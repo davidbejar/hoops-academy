@@ -2,10 +2,7 @@ package com.hoopsacademy.athlete.support;
 
 import static io.restassured.RestAssured.given;
 
-import com.atlassian.oai.validator.OpenApiInteractionValidator;
-import com.atlassian.oai.validator.report.LevelResolver;
-import com.atlassian.oai.validator.report.ValidationReport;
-import com.atlassian.oai.validator.restassured.OpenApiValidationFilter;
+import com.hoopsacademy.common.testing.ContractFilters;
 import com.hoopsacademy.common.testing.TenantUserRegistry;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import com.hoopsacademy.common.tenancy.TenantId;
@@ -21,18 +18,8 @@ import java.util.UUID;
 /** REST Assured entry points that validate every exchange against {@code athlete.yaml}, plus membership helpers. */
 public final class ApiSupport {
 
-    /**
-     * Default, strict configuration: the contract has no allOf compositions (StrictValidatorCompatibilityTest), so an
-     * undeclared request or response field fails the test.
-     */
-    private static final OpenApiInteractionValidator STRICT = OpenApiInteractionValidator
-            .createForSpecificationUrl("/openapi/athlete.yaml").build();
-    private static final OpenApiInteractionValidator RESPONSE_ONLY = OpenApiInteractionValidator
-            .createForSpecificationUrl("/openapi/athlete.yaml")
-            .withLevelResolver(LevelResolver.create()
-                    .withLevel("validation.request", ValidationReport.Level.IGNORE)
-                    .build())
-            .build();
+    /** athlete.yaml in the validator's strict configuration (common's ContractFilters). */
+    private static final ContractFilters SPEC = ContractFilters.forSpec("/openapi/athlete.yaml");
 
     /** The tenant zone of the members built here. */
     public static final ZoneId ZONE = ZoneId.of("Europe/Madrid");
@@ -41,12 +28,12 @@ public final class ApiSupport {
 
     /** Request and response are validated against the contract. */
     public static RequestSpecification api(String tenant) {
-        return base(tenant).filter(new OpenApiValidationFilter(STRICT));
+        return base(tenant).filter(SPEC.strict());
     }
 
     /** For deliberately invalid requests: only the response is validated. */
     public static RequestSpecification lenient(String tenant) {
-        return base(tenant).filter(new OpenApiValidationFilter(RESPONSE_ONLY));
+        return base(tenant).filter(SPEC.responsesOnly());
     }
 
     /** No OpenAPI validation: role-matrix calls that only assert the status code. */
@@ -55,7 +42,8 @@ public final class ApiSupport {
     }
 
     private static RequestSpecification base(String tenant) {
-        return given().header("X-Tenant-Id", tenant).header("Authorization", "Bearer test").contentType(ContentType.JSON);
+        return given().header("X-Tenant-Id", tenant).header("Authorization", ContractFilters.SIMULATED_BEARER)
+                .contentType(ContentType.JSON);
     }
 
     /** Registers the single test caller ({@code tenant-user}) as a member of {@code tenant}. */

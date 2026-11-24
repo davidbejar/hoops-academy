@@ -9,6 +9,7 @@ import com.hoopsacademy.athlete.domain.NormId;
 import com.hoopsacademy.athlete.domain.PhysicalTestNorm;
 import com.hoopsacademy.athlete.domain.TestTypeId;
 import com.hoopsacademy.athlete.support.CoreMockResource;
+import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RlsTestDatabase;
 import io.quarkus.test.common.ResourceArg;
@@ -340,9 +341,7 @@ class NormSeedTest {
     private static Connection app() throws SQLException {
         Connection app = RlsTestDatabase.fromConfig().openAsApp();
         app.setAutoCommit(false);
-        try (Statement st = app.createStatement()) {
-            st.execute("select set_config('app.tenant_id', '00000000-0000-4000-8000-00000000feed', true)");
-        }
+        RlsTestDatabase.bindTenant(app, TenantId.parse("00000000-0000-4000-8000-00000000feed"));
         return app;
     }
 

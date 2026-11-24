@@ -65,7 +65,7 @@ class OutboxRlsTest {
     void appRoleReadsAndMarksOnlyTheBoundTenantsRows() throws SQLException {
         try (Connection app = RlsTestDatabase.fromConfig().openAsApp()) {
             app.setAutoCommit(false);
-            CoreDb.bindTenant(app, TenantId.parse(tenantA));
+            RlsTestDatabase.bindTenant(app, TenantId.parse(tenantA));
             assertThat(count(app, "select count(*) from core.outbox where tenant_id = '" + tenantB + "'")).isZero();
             assertThat(CoreDb.update(app, "update core.outbox set published_at = clock_timestamp() where published_at is null"))
                     .isEqualTo(1);

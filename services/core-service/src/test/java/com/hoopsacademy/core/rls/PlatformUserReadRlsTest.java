@@ -4,7 +4,9 @@ import static com.hoopsacademy.core.testsupport.Sql.count;
 import static com.hoopsacademy.core.testsupport.Sql.sqlState;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
+import com.hoopsacademy.common.testing.RlsTestDatabase;
 import com.hoopsacademy.core.testsupport.CoreDb;
 import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.TestDatabases;
@@ -112,10 +114,7 @@ class PlatformUserReadRlsTest {
     private static Connection boundToNoTenant() throws SQLException {
         Connection platform = TestDatabases.openAsPlatform();
         platform.setAutoCommit(false);
-        try (PreparedStatement statement = platform.prepareStatement("select set_config('app.tenant_id', ?, true)")) {
-            statement.setString(1, NIL);
-            statement.execute();
-        }
+        RlsTestDatabase.bindTenant(platform, TenantId.parse(NIL));
         return platform;
     }
 

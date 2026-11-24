@@ -131,7 +131,7 @@ class OutboxPublisherJobTest {
 
         try (Connection otherPublisher = RlsTestDatabase.fromConfig().openAsApp()) {
             otherPublisher.setAutoCommit(false);
-            CoreDb.bindTenant(otherPublisher, TenantId.parse(tenant));
+            RlsTestDatabase.bindTenant(otherPublisher, TenantId.parse(tenant));
             lockFirstEventOf(otherPublisher, lions);
 
             job.run();

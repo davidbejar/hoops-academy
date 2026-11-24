@@ -29,20 +29,13 @@ public final class CoreDb {
         try (Connection connection = RlsTestDatabase.fromConfig().openAsMigrator()) {
             connection.setAutoCommit(false);
             if (tenant != null) {
-                bindTenant(connection, TenantId.parse(tenant));
+                RlsTestDatabase.bindTenant(connection, TenantId.parse(tenant));
             }
             T result = work.run(connection);
             connection.commit();
             return result;
         } catch (SQLException e) {
             throw new IllegalStateException(e);
-        }
-    }
-
-    public static void bindTenant(Connection connection, TenantId tenant) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement("select set_config('app.tenant_id', ?, true)")) {
-            statement.setString(1, tenant.toString());
-            statement.execute();
         }
     }
 

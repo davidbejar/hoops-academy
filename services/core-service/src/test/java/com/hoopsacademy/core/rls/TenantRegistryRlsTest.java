@@ -41,7 +41,7 @@ class TenantRegistryRlsTest {
     void appRoleSeesOnlyTheBoundTenant() throws SQLException {
         try (Connection app = RlsTestDatabase.fromConfig().openAsApp()) {
             app.setAutoCommit(false);
-            CoreDb.bindTenant(app, TenantId.parse(tenantA));
+            RlsTestDatabase.bindTenant(app, TenantId.parse(tenantA));
             assertThat(count(app, "select count(*) from core.tenant")).isEqualTo(1);
             assertThat(count(app, "select count(*) from core.tenant where id = '" + tenantB + "'")).isZero();
             app.rollback();
@@ -61,7 +61,7 @@ class TenantRegistryRlsTest {
     void appRoleCannotCreateDeleteOrChangeTheStatusOfTenants() throws SQLException {
         try (Connection app = RlsTestDatabase.fromConfig().openAsApp()) {
             app.setAutoCommit(false);
-            CoreDb.bindTenant(app, TenantId.parse(tenantA));
+            RlsTestDatabase.bindTenant(app, TenantId.parse(tenantA));
             assertThat(sqlState(app, "update core.tenant set status = 'ACTIVE'")).isEqualTo(INSUFFICIENT_PRIVILEGE);
             assertThat(sqlState(app, "delete from core.tenant")).isEqualTo(INSUFFICIENT_PRIVILEGE);
             assertThat(sqlState(app, "insert into core.tenant (id, slug, name, timezone, default_locale) values ('"

@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.testsupport;
 
+import com.hoopsacademy.common.testing.LogCapture;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /** Proves that a temporary password (ADR-0024) reached neither the database nor the logs. */

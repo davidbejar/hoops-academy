@@ -6,12 +6,12 @@ import static org.hamcrest.Matchers.equalTo;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hoopsacademy.common.tenancy.TenantRole;
+import com.hoopsacademy.common.testing.LogCapture;
 import com.hoopsacademy.common.testing.SecurityEventCapture;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
 import com.hoopsacademy.core.testsupport.CoreTestResources;
-import com.hoopsacademy.core.testsupport.LogCapture;
 import com.hoopsacademy.core.testsupport.Members;
 import com.hoopsacademy.core.testsupport.RosterDb;
 import io.quarkus.test.junit.QuarkusTest;

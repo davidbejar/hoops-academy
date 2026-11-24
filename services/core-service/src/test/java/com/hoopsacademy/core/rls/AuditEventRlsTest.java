@@ -39,7 +39,7 @@ class AuditEventRlsTest {
     void theAppRoleAppendsAndReadsButNeverRewritesHistory() throws SQLException {
         try (Connection app = RlsTestDatabase.fromConfig().openAsApp()) {
             app.setAutoCommit(false);
-            CoreDb.bindTenant(app, TenantId.parse(tenant));
+            RlsTestDatabase.bindTenant(app, TenantId.parse(tenant));
             assertThat(sqlState(app, insert(tenant))).isEqualTo("no error");
             CoreDb.update(app, insert(tenant));
             assertThat(count(app, "select count(*) from core.audit_event")).isEqualTo(1);
@@ -85,7 +85,7 @@ class AuditEventRlsTest {
         CoreDb.inTenant(tenant, c -> CoreDb.update(c, insert(tenant)));
         try (Connection app = RlsTestDatabase.fromConfig().openAsApp()) {
             app.setAutoCommit(false);
-            CoreDb.bindTenant(app, TenantId.parse(tenant));
+            RlsTestDatabase.bindTenant(app, TenantId.parse(tenant));
             assertThat(count(app, "select count(*) from core.audit_event where tenant_id <> '" + tenant + "'")).isZero();
             assertThat(count(app, "select count(*) from core.audit_event")).isEqualTo(1);
             app.rollback();

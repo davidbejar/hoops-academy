@@ -23,13 +23,13 @@ import static org.hamcrest.Matchers.nullValue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.hoopsacademy.common.testing.LogCapture;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
 import com.hoopsacademy.core.testsupport.CoreTestResources;
 import com.hoopsacademy.core.testsupport.FailingProvisioningHook;
 import com.hoopsacademy.core.testsupport.InjectWireMock;
 import com.hoopsacademy.core.testsupport.KeycloakStubs;
-import com.hoopsacademy.core.testsupport.LogCapture;
 import com.hoopsacademy.core.testsupport.PasswordLeaks;
 import com.hoopsacademy.core.testsupport.RosterDb;
 import com.hoopsacademy.core.testsupport.RosterEvents;

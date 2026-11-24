@@ -55,9 +55,9 @@ public final class RlsIsolationCheck {
             migrator.setAutoCommit(false);
             TableShape shape = TableShape.load(migrator, table);
             try {
-                bindTenant(migrator, tenantA);
+                RlsTestDatabase.bindTenant(migrator, tenantA);
                 FixtureRows.insert(migrator, shape, FixtureRows.rowFor(shape, tenantA, overrides, migrator));
-                bindTenant(migrator, tenantB);
+                RlsTestDatabase.bindTenant(migrator, tenantB);
                 Map<String, Object> rowBKey =
                         FixtureRows.insert(migrator, shape, FixtureRows.rowFor(shape, tenantB, overrides, migrator));
                 Map<String, Object> crossTenantRow = FixtureRows.rowFor(shape, tenantB, overrides, migrator);
@@ -72,7 +72,7 @@ public final class RlsIsolationCheck {
     private void assertTenantSeesOnlyItsOwnRows(Fixtures fixtures) throws SQLException {
         try (Connection app = db.openAsApp()) {
             app.setAutoCommit(false);
-            bindTenant(app, tenantA);
+            RlsTestDatabase.bindTenant(app, tenantA);
             assertThat(count(app, "select count(*) from " + table))
                     .as("%s: tenant A must see exactly its own row", table).isEqualTo(1);
             assertThat(executeUpdateByKey(app, "update " + table + " set tenant_id = tenant_id", fixtures.rowBKey()))
@@ -108,7 +108,7 @@ public final class RlsIsolationCheck {
         try (Connection migrator = db.openAsMigrator()) {
             migrator.setAutoCommit(false);
             for (TenantId tenant : List.of(tenantA, tenantB)) {
-                bindTenant(migrator, tenant);
+                RlsTestDatabase.bindTenant(migrator, tenant);
                 try (PreparedStatement delete = migrator.prepareStatement("delete from " + table + " where tenant_id = ?")) {
                     delete.setObject(1, tenant.value());
                     delete.executeUpdate();
@@ -130,13 +130,6 @@ public final class RlsIsolationCheck {
         try (ResultSet rs = connection.createStatement().executeQuery(sql)) {
             rs.next();
             return rs.getLong(1);
-        }
-    }
-
-    private static void bindTenant(Connection connection, TenantId tenant) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement("select set_config('app.tenant_id', ?, true)")) {
-            statement.setString(1, tenant.toString());
-            statement.execute();
         }
     }
 

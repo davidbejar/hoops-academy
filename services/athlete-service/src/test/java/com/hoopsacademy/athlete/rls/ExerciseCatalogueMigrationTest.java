@@ -2,7 +2,9 @@ package com.hoopsacademy.athlete.rls;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
+import com.hoopsacademy.common.testing.RlsTestDatabase;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -117,7 +119,7 @@ class ExerciseCatalogueMigrationTest {
         UUID sessionOnTemplate = UUID.randomUUID();
         try (Connection app = openAsApp()) {
             app.setAutoCommit(false);
-            exec(app, "select set_config('app.tenant_id', ?, true)", TENANT.toString());
+            RlsTestDatabase.bindTenant(app, new TenantId(TENANT));
             exec(app, "insert into athlete.training_plan (id, owner_tenant_id, name, description, source_plan_id) "
                     + "values (?, ?, 'Week 1', 'My notes', ?)", ownPlan, TENANT, FINISHING);
             exec(app, "insert into athlete.plan_item (id, plan_id, owner_tenant_id, position, title, description, "
@@ -155,7 +157,7 @@ class ExerciseCatalogueMigrationTest {
         List<String> rows = new ArrayList<>();
         try (Connection app = openAsApp()) {
             app.setAutoCommit(false);
-            exec(app, "select set_config('app.tenant_id', ?, true)", TENANT.toString());
+            RlsTestDatabase.bindTenant(app, new TenantId(TENANT));
             try (PreparedStatement ps = app.prepareStatement(query); ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     rows.add(rs.getString(1));

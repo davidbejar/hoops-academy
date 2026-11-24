@@ -240,10 +240,7 @@ class ApplyRosterEventTest {
     private long count(String sql) {
         try (Connection c = RlsTestDatabase.fromConfig().openAsApp()) {
             c.setAutoCommit(false);
-            try (PreparedStatement bind = c.prepareStatement("select set_config('app.tenant_id', ?, true)")) {
-                bind.setString(1, tenant.toString());
-                bind.execute();
-            }
+            RlsTestDatabase.bindTenant(c, tenant);
             try (PreparedStatement ps = c.prepareStatement(sql)) {
                 ps.setObject(1, tenant.value());
                 try (ResultSet rs = ps.executeQuery()) {

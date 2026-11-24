@@ -26,10 +26,7 @@ public final class ReplicaDb {
     public static List<Map<String, Object>> rows(TenantId tenant, String sql) {
         try (Connection app = RlsTestDatabase.fromConfig().openAsApp()) {
             app.setAutoCommit(false);
-            try (PreparedStatement bind = app.prepareStatement("select set_config('app.tenant_id', ?, true)")) {
-                bind.setString(1, tenant.toString());
-                bind.execute();
-            }
+            RlsTestDatabase.bindTenant(app, tenant);
             try (PreparedStatement statement = app.prepareStatement(sql); ResultSet rs = statement.executeQuery()) {
                 List<Map<String, Object>> rows = read(rs);
                 app.rollback();
@@ -50,10 +47,7 @@ public final class ReplicaDb {
     public static void execute(TenantId tenant, String sql) {
         try (Connection app = RlsTestDatabase.fromConfig().openAsApp()) {
             app.setAutoCommit(false);
-            try (PreparedStatement bind = app.prepareStatement("select set_config('app.tenant_id', ?, true)")) {
-                bind.setString(1, tenant.toString());
-                bind.execute();
-            }
+            RlsTestDatabase.bindTenant(app, tenant);
             try (PreparedStatement statement = app.prepareStatement(sql)) {
                 statement.execute();
             }

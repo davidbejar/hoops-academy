@@ -274,9 +274,6 @@ class CoreRosterConsumerTest {
     }
 
     private void bind(Connection c) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement("select set_config('app.tenant_id', ?, true)")) {
-            ps.setString(1, tenant.toString());
-            ps.execute();
-        }
+        RlsTestDatabase.bindTenant(c, tenant);
     }
 }

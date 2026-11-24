@@ -11,6 +11,7 @@ import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.tenancy.TenantRole;
 import com.hoopsacademy.common.testing.DatabaseRoleCheck;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
+import com.hoopsacademy.common.testing.RlsTestDatabase;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
 import com.hoopsacademy.core.testsupport.KeycloakContainerResource;
@@ -152,7 +153,7 @@ class CrossTenantAccessTest {
             assertThat(DatabaseRoleCheck.violations(c)).as("the app pool's role must be bound by RLS").isEmpty();
 
             c.setAutoCommit(false);
-            CoreDb.bindTenant(c, TenantId.parse(academyA));
+            RlsTestDatabase.bindTenant(c, TenantId.parse(academyA));
             assertThat(scalar(c, "select count(*) from core.player where id = ?", foreignPlayer)).isZero();
             assertThat(scalar(c, "select count(*) from core.person where family_name = ?", SECRET_FAMILY_NAME)).isZero();
             assertThat(scalar(c, "select count(*) from core.player where id = ?", ownPlayer)).isEqualTo(1);

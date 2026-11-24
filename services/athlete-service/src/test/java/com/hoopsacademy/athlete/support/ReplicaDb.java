@@ -72,9 +72,6 @@ public final class ReplicaDb {
     }
 
     private static void bind(Connection app, TenantId tenant) throws SQLException {
-        try (PreparedStatement bind = app.prepareStatement("select set_config('app.tenant_id', ?, true)")) {
-            bind.setString(1, tenant.toString());
-            bind.execute();
-        }
+        RlsTestDatabase.bindTenant(app, tenant);
     }
 }

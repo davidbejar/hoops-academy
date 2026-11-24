@@ -151,6 +151,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <!-- ContractFilters (test-jar, WP137): the services' contract validation of every REST Assured exchange -->
+      <groupId>com.atlassian.oai</groupId>
+      <artifactId>openapi-request-validator-restassured</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>com.tngtech.archunit</groupId>
       <artifactId>archunit-junit5</artifactId>
       <scope>test</scope>

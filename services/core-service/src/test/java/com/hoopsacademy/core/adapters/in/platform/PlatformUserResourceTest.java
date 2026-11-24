@@ -8,11 +8,11 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 
 import com.hoopsacademy.common.tenancy.TenantRole;
+import com.hoopsacademy.common.testing.LogCapture;
 import com.hoopsacademy.common.testing.TenantUser;
 import com.hoopsacademy.core.testsupport.Contract;
 import com.hoopsacademy.core.testsupport.CoreDb;
 import com.hoopsacademy.core.testsupport.CoreTestResources;
-import com.hoopsacademy.core.testsupport.LogCapture;
 import com.hoopsacademy.core.testsupport.Members;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;

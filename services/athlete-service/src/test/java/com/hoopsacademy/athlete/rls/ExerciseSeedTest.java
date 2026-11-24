@@ -3,6 +3,7 @@ package com.hoopsacademy.athlete.rls;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hoopsacademy.athlete.support.CoreMockResource;
+import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RlsTestDatabase;
 import io.quarkus.test.common.ResourceArg;
@@ -115,7 +116,7 @@ class ExerciseSeedTest {
         List<String> rows = new ArrayList<>();
         try (Connection app = RlsTestDatabase.fromConfig().openAsApp(); Statement st = app.createStatement()) {
             app.setAutoCommit(false);
-            st.execute("select set_config('app.tenant_id', '00000000-0000-4000-8000-00000000feed', true)");
+            RlsTestDatabase.bindTenant(app, TenantId.parse("00000000-0000-4000-8000-00000000feed"));
             try (ResultSet rs = st.executeQuery(query)) {
                 while (rs.next()) {
                     rows.add(rs.getString(1));

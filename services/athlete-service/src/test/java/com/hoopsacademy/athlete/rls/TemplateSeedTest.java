@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hoopsacademy.athlete.support.CoreMockResource;
+import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.common.testing.PostgresRlsResource;
 import com.hoopsacademy.common.testing.RlsTestDatabase;
 import io.quarkus.test.common.ResourceArg;
@@ -82,7 +83,7 @@ class TemplateSeedTest {
     void tenantPlansCannotCarryTemplateTexts() throws Exception {
         try (Connection app = RlsTestDatabase.fromConfig().openAsApp(); Statement st = app.createStatement()) {
             app.setAutoCommit(false);
-            st.execute("select set_config('app.tenant_id', '00000000-0000-4000-8000-00000000feed', true)");
+            RlsTestDatabase.bindTenant(app, TenantId.parse("00000000-0000-4000-8000-00000000feed"));
             for (String insert : List.of(
                     "insert into athlete.training_plan (id, owner_tenant_id, name, i18n) values (gen_random_uuid(), "
                             + "app.current_tenant(), 'Mine', '{\"es\": {\"name\": \"Mío\"}}')",
@@ -134,7 +135,7 @@ class TemplateSeedTest {
         List<String> rows = new ArrayList<>();
         try (Connection app = RlsTestDatabase.fromConfig().openAsApp(); Statement st = app.createStatement()) {
             app.setAutoCommit(false);
-            st.execute("select set_config('app.tenant_id', '00000000-0000-4000-8000-00000000feed', true)");
+            RlsTestDatabase.bindTenant(app, TenantId.parse("00000000-0000-4000-8000-00000000feed"));
             try (ResultSet rs = st.executeQuery(query)) {
                 while (rs.next()) {
                     rows.add(rs.getString(1));

@@ -78,7 +78,7 @@ class RosterSchemaTest {
     private static <T> T asApp(String tenant, CoreDb.Work<T> work) {
         try (Connection app = RlsTestDatabase.fromConfig().openAsApp()) {
             app.setAutoCommit(false);
-            CoreDb.bindTenant(app, TenantId.parse(tenant));
+            RlsTestDatabase.bindTenant(app, TenantId.parse(tenant));
             T result = work.run(app);
             app.commit();
             return result;

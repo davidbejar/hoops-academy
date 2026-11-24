@@ -188,7 +188,7 @@ class ExerciseRlsIsolationTest {
     }
 
     private static void bind(Connection connection, TenantId tenant) throws SQLException {
-        exec(connection, "select set_config('app.tenant_id', ?, true)", tenant.toString());
+        RlsTestDatabase.bindTenant(connection, tenant);
     }
 
     private static int exec(Connection connection, String sql, Object... params) throws SQLException {

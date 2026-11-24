@@ -146,10 +146,7 @@ class RosterReplayTest {
     private void empty() {
         try (Connection c = RlsTestDatabase.fromConfig().openAsMigrator()) {
             c.setAutoCommit(false);
-            try (PreparedStatement bind = c.prepareStatement("select set_config('app.tenant_id', ?, true)")) {
-                bind.setString(1, tenant.toString());
-                bind.execute();
-            }
+            RlsTestDatabase.bindTenant(c, tenant);
             for (String table : REPLICA_TABLES) {
                 try (PreparedStatement delete = c.prepareStatement("delete from " + table + " where tenant_id = ?")) {
                     delete.setObject(1, tenant.value());
