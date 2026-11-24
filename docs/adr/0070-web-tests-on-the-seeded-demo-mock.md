@@ -55,5 +55,5 @@ app's real repositories, generated clients and error mapping, so a widget test n
 - Until the migration ends, core, athlete, game and finance tests still use their fakes (`fake_repos.dart`,
   `fake_athlete.dart`, `fake_game.dart`, `fake_finance.dart`); the `Harness` combines both (a faked repository wins,
   everything else reaches the empty mock).
-- `MockAuthService` is still compiled into the release bundle (its code is unreachable: the guard refuses mock mode);
-  the release check covers the mock API only.
+- *Amendment (WP138 part 2):* `MockAuthService` is chosen only in a demo build (`mockBuild`, a compile-time
+  constant), so a release no longer holds it; `verify_no_mock.dart` checks its token too.

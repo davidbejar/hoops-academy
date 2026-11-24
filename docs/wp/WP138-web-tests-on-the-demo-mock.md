@@ -104,6 +104,56 @@ Not yours: generated clients; goldens change only if the seeded data must differ
     administrator; no test needs it, left as is.
   - FOLLOW-UPS l.519 (mock 409 vs service 404 for the season balance) belongs to the finance move, still open.
 
+### Part 2 (2026-11-24)
+- **Built**
+  - **(4) `MockAuthService` out of the release build.** `authServiceProvider` picks it only when `mockBuild` (the
+    `HOOPS_MOCK_API` define as a compile-time constant, `core/config/app_config.dart`) and the mock API is on; the
+    Keycloak branch is unchanged. `verify_no_mock.dart` gains its token as a third marker (red first on a real release
+    build, which held it). Checked on real builds: the release passes, a `HOOPS_MOCK_API=true` build fails on all three
+    markers. Tests and the landing capture that run the app in mock mode without the define provide
+    `MockAuthService` themselves (`mock_mode_test`, `live_match_golden_test`, `landing_screens_capture`).
+  - **(1) Core seeding.** The core mock exposes its data (`@visibleForTesting`: profile, settings, seasons,
+    categories, teams, players, members, guardian links, approvals, cases, staff, logo, `requestedLogins`) and takes
+    the user's person (`selfId`, also in the adapter and the athlete, game and finance mocks: the tests use the
+    membership's `person-me`). `test/support/core_seed.dart` seeds it from the fixtures' models, keeping it coherent (a
+    roster is the players' assignments). `seedMembership` makes the mock's authz match the test membership (staff rows
+    on `staffTeamIds` / `historicStaffTeamIds`, guardian links to `linkedPlayerIds`, the own player's person); the
+    `Harness` runs it for the first membership. `FakeCore` now carries the migrated data and seeds it (plus the teams
+    and players of its remaining fakes, so authz and case decisions work on one roster); `pumpAs(prepare:)` injects
+    faults before the first frame.
+  - **Migrated, one commit each, fake deleted:** academy profile (`FakeAcademyRepository`), seasons and age categories
+    (`FakeSeasonsRepository`, `FakeAgeCategoriesRepository`), approval requests and eligibility cases
+    (`FakeApprovalsRepository`, `FakeCasesRepository`), with their parts of `notifiers_test`.
+  - **Mock and fake differed (decided against `core.yaml`, red test first, the fake was right, mock fixed):**
+    4. a player created with a new e-mail (admin) and an approved request that asked for a login got no temporary
+       password (`createPlayer`, `approveApprovalRequest`): now answered once, none for an e-mail that already signs
+       in; 5. deciding a decided request answered 409 without `NOT_PENDING`; 6. the requesting coach could not cancel
+       the own request (403; `cancelApprovalRequest`: the requester).
+  - **Found, not changed (owner's call):** the rollover wizard calls `rolloverSeason` with the season it was opened on
+    as both the path's *target* and `fromSeasonId`. `core.yaml` and core-service (`RolloverSeason`) treat the path as
+    the target and refuse the same season (`ROLLOVER_SAME_SEASON`), so the wizard cannot work against the real
+    service. The fake and the mock both accepted it (the mock creates a "next" season and ignores the clone flags).
+    Fixing it changes the wizard (it must offer a target season); the mock was left matching the app so the tests
+    keep describing today's screen.
+- **Verified** (fresh, 2026-11-24): `flutter analyze` no issues; `just web-format-check` clean; `just web-test`
+  **1944 passed, 0 failed** (part 2 started at 1939). +5 tests, none removed: 1 marker test, 3 player-login / NOT_PENDING, 1
+  coach cancel. Every migrated file keeps its test count (academy 15, seasons/categories 12, approvals/cases 18,
+  notifiers 12); the full suite was green after each feature commit (on a copy of the tree). Assertions changed
+  only where the mock now shows more than the fake did: after the rollover the cases screen lists the case it opened
+  (was "no open cases" from an empty faked list); a coach no longer receives another person's request or another
+  team's case at all (the fake listed them and hid the actions). No golden moved.
+  - Fake lines: 2,937 at the start of part 2 → **2,700** (`fake_repos` 825 → 588; `fake_athlete` 1,529, `fake_game`
+    326, `fake_finance` 257 unchanged). Added: `core_seed.dart` 155.
+- **Open points / not done (time)**, in this order next:
+  - **Members** (`FakeMembersRepository`, 7 files; `guardian_dialog_test` also has a local `FakeGuardiansRepository`):
+    the mock needs "an e-mail that signs in elsewhere" (linked, no password, ACCEPTED) and `LOGIN_SHARED` for a
+    member's re-issued password before the tests can move.
+  - **Teams and players** (`FakeTeamsRepository`, `FakePlayersRepository`, 13 files): the fakes return whatever each
+    test set (eligibility verdicts, rosters independent of players, fixed counts); the mock computes eligibility
+    from birth year, category and gender policy and rosters from assignments, so every test needs coherent seeds.
+  - **Athlete, game, finance:** unchanged since part 1 (they need the roster above in the mock; finance needs
+    explicit finance seeds).
+
 | ID | Done / Skipped | What changed or why not |
 |---|---|---|
-| WEB-02 | Done (part) | Tests on the seeded demo mock (ADR-0070); audit, academy-request and platform fakes deleted (628 lines); 3 mock/contract differences fixed; core, athlete, game and finance fakes (2,937 lines) left for follow-up WPs |
+| WEB-02 | Done (part) | Tests on the seeded demo mock (ADR-0070). Part 1: audit, academy-request and platform fakes deleted (628 lines). Part 2: academy, seasons, categories, approvals and cases fakes deleted (237 lines), `MockAuthService` out of the release build; 6 mock/contract differences fixed; members, teams, players, athlete, game and finance fakes (2,700 lines) left for follow-up |
