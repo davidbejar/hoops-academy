@@ -196,9 +196,9 @@ extension _MockFinanceReads on MockFinanceApi {
         .cast<Map<String, Object?>>()
         .where((s) => s['id'] == id)
         .firstOrNull;
-    if (found == null) return mockProblem(404, 'Not found');
-    if (_currency == null) {
-      return mockProblem(409, 'Currency not set', code: 'CURRENCY_NOT_SET');
+    // No currency yet: 404, like finance-service (the contract lists no 409).
+    if (found == null || _currency == null) {
+      return mockProblem(404, 'Not found');
     }
     final plans = {
       for (final p in _plans)
