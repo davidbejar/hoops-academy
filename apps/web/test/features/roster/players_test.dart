@@ -5,6 +5,7 @@ import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/core_fixtures.dart';
+import '../../support/core_seed.dart';
 import '../../support/fake_repos.dart';
 import '../../support/pump_helpers.dart';
 
@@ -50,7 +51,7 @@ FakeCore coreWithPlayers({bool coachRequests = false}) => FakeCore(
     },
     createdPending: coachRequests,
   ),
-  members: FakeMembersRepository(
+  members: MembersData(
     [
       member('m2', 'Pat Parent', roles: {api.TenantRole.PARENT}),
     ],

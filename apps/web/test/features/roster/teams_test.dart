@@ -5,6 +5,7 @@ import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/core_fixtures.dart';
+import '../../support/core_seed.dart';
 import '../../support/fake_repos.dart';
 import '../../support/pump_helpers.dart';
 
@@ -56,7 +57,7 @@ FakeCore coreWithTeams() => FakeCore(
     player('p4', 'Dan Lopez', status: api.PlayerStatus.ORPHAN),
     player('p5', 'Withdrawn One', status: api.PlayerStatus.WITHDRAWN),
   ]),
-  members: FakeMembersRepository([
+  members: MembersData([
     member('m1', 'Casey Coach', roles: {api.TenantRole.COACH}),
     member('m2', 'Ally Assist', roles: {api.TenantRole.ASSISTANT_COACH}),
     member('m3', 'Pat Parent', roles: {api.TenantRole.PARENT}),

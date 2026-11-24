@@ -6,11 +6,12 @@ import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/core_fixtures.dart';
+import '../../support/core_seed.dart';
 import '../../support/fake_repos.dart';
 import '../../support/pump_helpers.dart';
 
 FakeCore coreWithMembers() => FakeCore(
-  members: FakeMembersRepository([
+  members: MembersData([
     member('m1', 'Casey Coach', roles: {api.TenantRole.COACH}),
     member('m2', 'Pat Parent', roles: {api.TenantRole.PARENT}),
     member('m3', 'Old Admin', roles: {api.TenantRole.ADMIN}, active: false),
@@ -200,7 +201,8 @@ void main() {
       'a person who already has a login gets no dialog: they use their current password',
       (tester) async {
         final core = coreWithMembers();
-        core.members.newLoginPassword = null;
+        // Nora already signs in to another academy: her login is linked.
+        core.members.loginsElsewhere.add('nora@hoops-academy.com');
         await pumpAs(
           tester,
           roles: {TenantRole.admin},
@@ -297,7 +299,7 @@ void main() {
       tester,
     ) async {
       final core = FakeCore(
-        members: FakeMembersRepository([
+        members: MembersData([
           member(
             'm9',
             'Gus Guardian',
@@ -342,13 +344,14 @@ void main() {
         await tapKey(tester, 'member-issue-password');
         expect(core.members.reissuedFor, ['m4']);
         expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
+        final password = core.members.newLoginPassword!;
         expect(
           tester
               .widget<SelectableText>(
                 find.byKey(const Key('temp-password-value')),
               )
               .data,
-          'Reissued-1',
+          password,
         );
         expect(find.textContaining('Nina Nueva'), findsWidgets);
         expect(
@@ -359,7 +362,7 @@ void main() {
           findsOneWidget,
         );
         await tapKey(tester, 'temp-password-done');
-        expect(find.text('Reissued-1'), findsNothing);
+        expect(find.text(password), findsNothing);
       },
     );
 
@@ -367,7 +370,7 @@ void main() {
       'an expired temporary password is labelled in the list and next to the re-issue button',
       (tester) async {
         final core = FakeCore(
-          members: FakeMembersRepository([
+          members: MembersData([
             member(
               'm6',
               'Eva Expirada',
@@ -420,7 +423,7 @@ void main() {
       'a pending member whose temporary password is still valid shows no expiry label',
       (tester) async {
         final core = FakeCore(
-          members: FakeMembersRepository([
+          members: MembersData([
             member(
               'm7',
               'Ivo Vigente',
@@ -444,7 +447,7 @@ void main() {
       tester,
     ) async {
       final core = FakeCore(
-        members: FakeMembersRepository([
+        members: MembersData([
           member(
             'm5',
             'Ines Inactiva',
@@ -561,7 +564,7 @@ void main() {
       await tapKey(tester, 'guardian-add');
       await tapKey(tester, 'pick-player-p2');
       expect(core.members.calls, contains('addLink'));
-      expect(find.text('Player p2'), findsOneWidget);
+      expect(find.text('Leo Gil'), findsOneWidget); // the player's own name
 
       await tester.tap(find.byTooltip('Quitar').first);
       await tester.pumpAndSettle();
@@ -661,9 +664,7 @@ void main() {
     testWidgets('clearing the e-mail of a member with a login is blocked '
         'before the request', (tester) async {
       final core = FakeCore(
-        members: FakeMembersRepository([
-          member('m8', 'Lia Login', userId: 'u-8'),
-        ]),
+        members: MembersData([member('m8', 'Lia Login', userId: 'u-8')]),
       );
       await pumpAs(
         tester,

@@ -5,7 +5,8 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/avatar_menu.dart';
 import '../../support/core_fixtures.dart' show member;
-import '../../support/fake_repos.dart' show FakeCore, FakeMembersRepository;
+import '../../support/core_seed.dart';
+import '../../support/fake_repos.dart' show FakeCore;
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
 import '../../support/pump_helpers.dart';
@@ -146,7 +147,7 @@ void main() {
     testWidgets('the academy member list shows the new name afterwards', (
       tester,
     ) async {
-      final members = FakeMembersRepository([
+      final members = MembersData([
         member('person-me', 'Casey Coach', roles: {api.TenantRole.ADMIN}),
       ]);
       final member0 = membershipWithRoles({TenantRole.admin});
@@ -163,11 +164,10 @@ void main() {
       await _scrollTo(tester, 'profile-given-name');
       await enter(tester, 'profile-given-name', 'Carlos');
       // The server renames the person; the list must be read again.
-      members.members[0] = member(
-        'person-me',
-        'Carlos Coach',
-        roles: {api.TenantRole.ADMIN},
-      );
+      // (`/me` is the session fake here; the academy's copy is renamed too.)
+      h.backend.core.members.first
+        ..['givenName'] = 'Carlos'
+        ..['displayName'] = 'Carlos Coach';
       await tapKey(tester, 'profile-name-save');
       await h.go(tester, '/admin/members');
 

@@ -1,7 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:built_value/serializer.dart';
+import 'package:dio/dio.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
+import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import 'mock_backend.dart';
@@ -152,4 +154,175 @@ extension CoreSeed on MockBackend {
       }
     }
   }
+}
+
+/// What `/api/core/members` and the guardian links hold for a test, and
+/// afterwards what the app did with them (ADR-0070). Before the backend is
+/// seeded the lists are the seed; once seeded they are read back from the
+/// mock, and the other getters from the requests the app sent. Failures go to
+/// the backend.
+class MembersData {
+  MembersData(List<api.Member> members, {List<api.GuardianLink>? links})
+    : _members = members,
+      _links = links ?? [];
+
+  final List<api.Member> _members;
+  final List<api.GuardianLink> _links;
+  MockBackend? _backend;
+
+  /// E-mails that already sign in to another academy (linked, no password).
+  final Set<String> loginsElsewhere = {};
+
+  static final _api = RegExp('^/api/core/(members|guardian-links)');
+  static const _list = '/api/core/members';
+
+  void seedInto(MockBackend backend) {
+    _backend = backend;
+    backend
+      ..seedMembers(_members)
+      ..seedGuardianLinks(_links);
+    backend.core.loginsElsewhere.addAll(loginsElsewhere);
+    if (_hang) backend.hang(_api);
+    if (_failWith != null) _inject(_failWith!, _api);
+    if (_issueFails != null) _inject(_issueFails!, _issuePath);
+  }
+
+  MockBackend get _b => _backend!;
+
+  static T _from<T>(Object? json) =>
+      api.standardSerializers.deserialize(json, specifiedType: FullType(T))
+          as T;
+
+  List<api.Member> get members => _backend == null
+      ? _members
+      : [for (final m in _b.core.members) _from<api.Member>(m)];
+
+  List<api.GuardianLink> get links => _backend == null
+      ? _links
+      : [for (final l in _b.core.guardianLinks) _from<api.GuardianLink>(l)];
+
+  bool _hang = false;
+  set hang(bool value) {
+    _hang = value;
+    if (_backend != null && value) _b.hang(_api);
+  }
+
+  Object? _failWith;
+
+  /// Fails every members and guardian-link call (null: heals).
+  set failWith(Object? error) {
+    _failWith = error;
+    if (_backend == null) return;
+    error == null ? _b.heal() : _inject(error, _api);
+  }
+
+  static final _issuePath = RegExp(r'/temporary-password$');
+  Object? _issueFails;
+
+  /// Fails only the issue of a temporary password.
+  set issueFails(Object? error) {
+    _issueFails = error;
+    if (_backend != null && error != null) _inject(error, _issuePath);
+  }
+
+  void _inject(Object error, Pattern path) {
+    final b = _backend!;
+    if (error is AppError) {
+      if (error.kind == AppErrorKind.network) return b.networkDown(path);
+      final status =
+          error.status ??
+          switch (error.kind) {
+            AppErrorKind.conflict => 409,
+            AppErrorKind.timeout => 504,
+            AppErrorKind.validation => 422,
+            _ => 500,
+          };
+      return b.fail(path, status: status, code: error.code);
+    }
+    if (error is DioException) {
+      final data = error.response?.data as Map?;
+      return b.fail(
+        path,
+        status: error.response?.statusCode ?? 500,
+        code: data?['code'] as String?,
+      );
+    }
+    b.fail(path);
+  }
+
+  /// The search text of the last list request.
+  String? get lastQuery => _b.lastQuery(_list).text('q');
+
+  /// The last invitation sent, null when none.
+  api.InviteMemberRequest? get invited {
+    final sent = _b.requestsTo(_list, method: 'POST');
+    return sent.isEmpty
+        ? null
+        : _from<api.InviteMemberRequest>(MockBackend.bodyOf(sent.last));
+  }
+
+  /// The password of the last login the mock created for a member.
+  String? get newLoginPassword {
+    final sent = _b.requests.where(
+      (r) =>
+          r.method.toUpperCase() == 'POST' &&
+          (r.path == _list || _issuePath.hasMatch(r.path)),
+    );
+    if (sent.isEmpty) return null;
+    final a = _b.lastAnswer(sent.last.path, method: 'POST');
+    return a is Map ? a['temporaryPassword'] as String? : null;
+  }
+
+  /// The people a temporary password was issued for, in order.
+  List<String> get reissuedFor => [
+    for (final r in _b.requestsTo(_issuePath, method: 'POST'))
+      r.path.split('/')[4],
+  ];
+
+  /// Every member update as the dialog sent it (a cleared value is null).
+  List<
+    ({
+      String personId,
+      String givenName,
+      String familyName,
+      String? email,
+      String? phone,
+      api.Date? birthDate,
+      api.Gender? gender,
+    })
+  >
+  get updates => [
+    for (final r in _b.requestsTo(
+      RegExp(r'^/api/core/members/[^/]+$'),
+      method: 'PATCH',
+    ))
+      () {
+        final b = MockBackend.bodyOf(r);
+        final day = b['birthDate'] as String?;
+        return (
+          personId: r.path.split('/').last,
+          givenName: b['givenName']! as String,
+          familyName: b['familyName']! as String,
+          email: b['email'] as String?,
+          phone: b['phone'] as String?,
+          birthDate: day == null ? null : _from<api.Date>(day),
+          gender: b['gender'] == null ? null : _from<api.Gender>(b['gender']),
+        );
+      }(),
+  ];
+
+  /// The repository operations the app called, by the fakes' names.
+  List<String> get calls => [
+    for (final r in _b.requests)
+      if (_api.hasMatch(r.path))
+        switch ((r.method.toUpperCase(), r.path)) {
+          ('GET', '/api/core/guardian-links') => 'links',
+          ('POST', '/api/core/guardian-links') => 'addLink',
+          ('DELETE', _) when r.path.startsWith('/api/core/guardian-links/') =>
+            'removeLink',
+          ('GET', _list) => 'list',
+          ('POST', _list) => 'invite',
+          _ => '${r.method} ${r.path}',
+        },
+  ];
 }

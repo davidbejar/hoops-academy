@@ -2,11 +2,8 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:dio/dio.dart';
-import 'package:built_collection/built_collection.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/core/export/server_file.dart';
-import 'package:hoops_app/features/admin/data/members_repository.dart';
 import 'package:hoops_app/features/roster/data/players_repository.dart';
 import 'package:hoops_app/features/roster/data/teams_repository.dart';
 
@@ -27,199 +24,6 @@ mixin Faulty {
     if (failWith != null) throw failWith!;
     return body();
   }
-}
-
-class FakeMembersRepository with Faulty implements MembersRepository {
-  FakeMembersRepository(this.members, {List<api.GuardianLink>? links})
-    : links = links ?? [];
-  final List<api.Member> members;
-  final List<api.GuardianLink> links;
-  String? lastQuery;
-  api.InviteMemberRequest? invited;
-
-  /// Every `update` call as the dialog made it (a null optional value is sent in `clear`).
-  final List<
-    ({
-      String personId,
-      String givenName,
-      String familyName,
-      String? email,
-      String? phone,
-      api.Date? birthDate,
-      api.Gender? gender,
-    })
-  >
-  updates = [];
-
-  /// What the server returns for a login it creates (null: the person already had a login).
-  String? newLoginPassword = 'test-temp-password-1';
-  final List<String> reissuedFor = [];
-
-  /// Thrown by `issueTemporaryPassword` only, e.g. a 409 `LOGIN_SHARED` Problem.
-  Object? issueFails;
-
-  static api.MemberWithPassword withPassword(api.Member m, String? password) =>
-      api.MemberWithPassword(
-        (b) => b
-          ..personId = m.personId
-          ..givenName = m.givenName
-          ..familyName = m.familyName
-          ..displayName = m.displayName
-          ..email = m.email
-          ..roles = SetBuilder<api.TenantRole>(m.roles)
-          ..active = m.active
-          ..invitationStatus = m.invitationStatus
-          ..temporaryPasswordStatus = m.temporaryPasswordStatus
-          ..createdAt = m.createdAt
-          ..temporaryPassword = password,
-      );
-
-  @override
-  Future<List<api.Member>> list({
-    String? query,
-    api.TenantRole? role,
-    bool? active,
-  }) => run('list', () {
-    lastQuery = query;
-    return [
-      for (final m in members)
-        if ((query == null ||
-                m.displayName.toLowerCase().contains(query.toLowerCase())) &&
-            (active == null || m.active == active))
-          m,
-    ];
-  });
-  @override
-  Future<api.MemberWithPassword> invite(api.InviteMemberRequest request) =>
-      run('invite', () {
-        invited = request;
-        final m = member(
-          'new-${members.length}',
-          '${request.givenName} ${request.familyName}',
-          roles: request.roles.toSet(),
-          email: request.email,
-          invitation: newLoginPassword == null
-              ? api.InvitationStatus.ACCEPTED
-              : api.InvitationStatus.PENDING,
-        );
-        members.add(m);
-        return withPassword(m, newLoginPassword);
-      });
-  @override
-  Future<api.MemberWithPassword> issueTemporaryPassword(String personId) =>
-      run('issueTemporaryPassword', () {
-        if (issueFails != null) throw issueFails!;
-        var m = members.firstWhere((m) => m.personId == personId);
-        if (m.userId == null &&
-            m.email != null &&
-            m.roles.contains(api.TenantRole.PARENT)) {
-          // First login of a guardian (WP58): becomes a pending member.
-          m = m.rebuild(
-            (b) => b
-              ..userId = 'u-$personId'
-              ..invitationStatus = api.InvitationStatus.PENDING,
-          );
-          members[members.indexWhere((x) => x.personId == personId)] = m;
-        }
-        if (m.invitationStatus != api.InvitationStatus.PENDING) {
-          throw DioException(
-            requestOptions: RequestOptions(path: '/members'),
-            type: DioExceptionType.badResponse,
-            response: Response<dynamic>(
-              requestOptions: RequestOptions(path: '/members'),
-              statusCode: 409,
-              data: {
-                'status': 409,
-                'code': 'INVITATION_NOT_PENDING',
-                'detail': 'English server detail that must never be shown',
-              },
-            ),
-          );
-        }
-        reissuedFor.add(personId);
-        final renewed = m.rebuild(
-          (b) => b.temporaryPasswordStatus = api.TemporaryPasswordStatus.ACTIVE,
-        );
-        members[members.indexOf(m)] = renewed;
-        return withPassword(renewed, 'Reissued-${reissuedFor.length}');
-      });
-  @override
-  Future<api.Member> replaceRoles(String personId, Set<api.TenantRole> roles) =>
-      run('replaceRoles', () {
-        final i = members.indexWhere((m) => m.personId == personId);
-        members[i] = members[i].rebuild((b) => b.roles.replace(roles));
-        return members[i];
-      });
-  @override
-  Future<api.Member> update(
-    String personId, {
-    required String givenName,
-    required String familyName,
-    String? email,
-    String? phone,
-    api.Date? birthDate,
-    api.Gender? gender,
-  }) => run('update', () {
-    updates.add((
-      personId: personId,
-      givenName: givenName,
-      familyName: familyName,
-      email: email,
-      phone: phone,
-      birthDate: birthDate,
-      gender: gender,
-    ));
-    final i = members.indexWhere((m) => m.personId == personId);
-    members[i] = members[i].rebuild(
-      (b) => b
-        ..givenName = givenName
-        ..familyName = familyName
-        ..displayName = '$givenName $familyName'
-        ..email = email
-        ..phone = phone
-        ..birthDate = birthDate
-        ..gender = gender,
-    );
-    return members[i];
-  });
-  @override
-  Future<api.Member> deactivate(String personId) => run('deactivate', () {
-    final i = members.indexWhere((m) => m.personId == personId);
-    members[i] = members[i].rebuild((b) => b.active = false);
-    return members[i];
-  });
-  @override
-  Future<List<api.GuardianLink>> guardianLinks({
-    String? playerId,
-    String? guardianPersonId,
-  }) => run(
-    'links',
-    () => [
-      for (final l in links)
-        if ((playerId == null || l.player.id == playerId) &&
-            (guardianPersonId == null ||
-                l.guardian.personId == guardianPersonId))
-          l,
-    ],
-  );
-  @override
-  Future<api.GuardianLink> addGuardianLink({
-    required String guardianPersonId,
-    required String playerId,
-  }) => run('addLink', () {
-    final l = api.GuardianLink(
-      (b) => b
-        ..id = 'link-${links.length}'
-        ..guardian.replace(personRef(guardianPersonId, 'Parent'))
-        ..player.replace(playerRef(playerId, 'Player $playerId'))
-        ..createdAt = DateTime.utc(2026, 1, 1),
-    );
-    links.add(l);
-    return l;
-  });
-  @override
-  Future<void> removeGuardianLink(String linkId) =>
-      run('removeLink', () => links.removeWhere((l) => l.id == linkId));
 }
 
 class FakeTeamsRepository with Faulty implements TeamsRepository {
@@ -541,7 +345,7 @@ class FakeCore {
   FakeCore({
     api.TenantProfile? profile,
     api.TenantSettings? settings,
-    FakeMembersRepository? members,
+    MembersData? members,
     List<api.Season>? seasons,
     List<api.AgeCategory>? categories,
     FakeTeamsRepository? teams,
@@ -550,7 +354,7 @@ class FakeCore {
     this.cases = const [],
   }) : profile = profile ?? profileFixture(),
        settings = settings ?? settingsFixture(),
-       members = members ?? FakeMembersRepository([]),
+       members = members ?? MembersData([]),
        seasons = seasons ?? [season(seasonId, '2026/27', current: true)],
        categories = categories ?? [u12, u14],
        teams = teams ?? FakeTeamsRepository(teams: []),
@@ -559,7 +363,9 @@ class FakeCore {
   /// The academy's profile and settings (`/api/core/tenant`).
   final api.TenantProfile profile;
   final api.TenantSettings settings;
-  final FakeMembersRepository members;
+
+  /// The members and guardian links, then what the app did with them.
+  final MembersData members;
 
   /// The seasons and age categories (`/api/core/seasons`, `/age-categories`).
   final List<api.Season> seasons;
@@ -584,5 +390,6 @@ class FakeCore {
       ..seedCases(cases)
       ..seedTeams(teams.teams)
       ..seedPlayers(players.players);
+    members.seedInto(backend);
   }
 }

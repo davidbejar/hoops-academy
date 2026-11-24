@@ -8,6 +8,7 @@ import 'package:hoops_app/features/admin/application/admin_providers.dart';
 import 'package:hoops_app/features/admin/application/logo_revision.dart';
 import 'package:hoops_app/features/admin/data/academy_repository.dart';
 import 'package:hoops_app/features/admin/data/age_categories_repository.dart';
+import 'package:hoops_app/features/admin/data/members_repository.dart';
 import 'package:hoops_app/features/admin/data/seasons_repository.dart';
 import 'package:hoops_app/features/roster/application/roster_providers.dart';
 import 'package:hoops_app/features/roster/data/approvals_repository.dart';
@@ -30,7 +31,9 @@ ProviderContainer containerFor(FakeCore core, {MockBackend? backend}) {
       academyRepositoryProvider.overrideWithValue(
         ApiAcademyRepository(b.coreApi(), tenant),
       ),
-      membersRepositoryProvider.overrideWithValue(core.members),
+      membersRepositoryProvider.overrideWithValue(
+        ApiMembersRepository(b.coreApi(), tenant),
+      ),
       seasonsRepositoryProvider.overrideWithValue(
         ApiSeasonsRepository(b.coreApi(), tenant),
       ),
@@ -53,9 +56,7 @@ ProviderContainer containerFor(FakeCore core, {MockBackend? backend}) {
 
 void main() {
   test('members: invite refreshes the list; a failure surfaces and leaves state intact', () async {
-    final core = FakeCore(
-      members: FakeMembersRepository([member('m1', 'Casey Coach')]),
-    );
+    final core = FakeCore(members: MembersData([member('m1', 'Casey Coach')]));
     final c = containerFor(core);
     expect((await c.read(membersProvider.future)).length, 1);
 
@@ -75,13 +76,17 @@ void main() {
     core.members.failWith = const AppError(kind: AppErrorKind.conflict);
     await expectLater(
       c.read(membersProvider.notifier).deactivate('m1'),
-      throwsA(isA<AppError>()),
+      // the repositories throw what Dio throws; the screens read it with
+      // AppError.of
+      throwsA(
+        predicate((Object e) => AppError.of(e).kind == AppErrorKind.conflict),
+      ),
     );
   });
 
   test('member search query drives the list request', () async {
     final core = FakeCore(
-      members: FakeMembersRepository([
+      members: MembersData([
         member('m1', 'Casey Coach'),
         member('m2', 'Pat Parent'),
       ]),

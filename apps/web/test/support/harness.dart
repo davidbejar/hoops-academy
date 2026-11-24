@@ -18,7 +18,6 @@ import 'package:hoops_app/core/auth/mock_auth_service.dart';
 import 'package:hoops_app/core/connectivity/connectivity_providers.dart';
 import 'package:hoops_app/core/storage/preferences.dart';
 import 'package:hoops_app/core/ui/deferred_screen.dart';
-import 'package:hoops_app/features/admin/application/admin_providers.dart';
 import 'package:hoops_app/features/me/application/me_providers.dart';
 import 'package:hoops_app/features/roster/application/roster_providers.dart';
 import 'package:hoops_app/features/me/data/me_repository.dart';
@@ -224,7 +223,6 @@ class Harness {
         onlineProvider.overrideWith((ref) => online.stream),
         ...backend.overrides,
         if (core != null) ...[
-          membersRepositoryProvider.overrideWithValue(core!.members),
           teamsRepositoryProvider.overrideWithValue(core!.teams),
           playersRepositoryProvider.overrideWithValue(core!.players),
         ],

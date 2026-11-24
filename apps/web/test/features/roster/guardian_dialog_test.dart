@@ -6,103 +6,48 @@ import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/features/admin/application/admin_providers.dart';
 import 'package:hoops_app/features/admin/data/members_repository.dart';
-import 'package:hoops_app/features/roster/data/guardians_repository.dart';
 import 'package:hoops_app/features/roster/presentation/guardian_dialog.dart';
 
 import '../../support/core_fixtures.dart';
 import '../../support/fake_repos.dart';
+import '../../support/mock_backend.dart';
 import '../../support/kit_harness.dart';
 import '../../support/pump_helpers.dart';
 import '../../support/server_pages.dart';
 import 'players_test.dart' show coreWithPlayers;
 
-/// What `POST /api/core/guardians` and the guardian's first login return (WP58, core 2.8.0).
-class FakeGuardiansRepository implements GuardiansRepository {
-  FakeGuardiansRepository(this.members);
-  final FakeMembersRepository members;
-  final List<Map<String, String?>> created = [];
-  final List<String> issuedFor = [];
-
-  /// The password of a login the server creates; null: the e-mail already signs in elsewhere.
-  String? newLoginPassword = 'Guardian-temp-1';
-  Object? failWith;
-
-  @override
-  Future<api.GuardianLinkWithPassword> create({
-    required String playerId,
-    required String givenName,
-    required String familyName,
-    String? email,
-  }) async {
-    if (failWith != null) throw failWith!;
-    created.add({
-      'playerId': playerId,
-      'givenName': givenName,
-      'familyName': familyName,
-      'email': email,
-    });
-    final link = api.GuardianLink(
-      (b) => b
-        ..id = 'l-new-${created.length}'
-        ..guardian.replace(
-          personRef('g${created.length}', '$givenName $familyName'),
-        )
-        ..player.replace(playerRef(playerId, 'Ana Ruiz'))
-        ..createdAt = DateTime.utc(2026, 11, 6),
-    );
-    members.links.add(link);
-    return api.GuardianLinkWithPassword(
-      (b) => b
-        ..id = link.id
-        ..guardian.replace(link.guardian)
-        ..player.replace(link.player)
-        ..createdAt = link.createdAt
-        ..temporaryPassword = email == null ? null : newLoginPassword,
-    );
-  }
-
-  @override
-  Future<api.MemberWithPassword> issueTemporaryPassword(String personId) async {
-    issuedFor.add(personId);
-    final m = members.members.firstWhere((m) => m.personId == personId);
-    final linked = m.rebuild(
-      (b) => b
-        ..userId = 'u-$personId'
-        ..invitationStatus = api.InvitationStatus.PENDING
-        ..temporaryPasswordStatus = api.TemporaryPasswordStatus.ACTIVE,
-    );
-    members.members[members.members.indexOf(m)] = linked;
-    return FakeMembersRepository.withPassword(linked, 'First-login-1');
-  }
-}
-
-DioException emailTaken() => DioException(
-  requestOptions: RequestOptions(path: '/guardians'),
-  type: DioExceptionType.badResponse,
-  response: Response<dynamic>(
-    requestOptions: RequestOptions(path: '/guardians'),
-    statusCode: 409,
-    data: {'status': 409, 'code': 'EMAIL_TAKEN', 'title': 'Conflict'},
-  ),
-);
+const _guardians = '/api/core/guardians';
 
 void main() {
   late FakeCore core;
-  late FakeGuardiansRepository guardians;
+  late MockBackend backend;
 
-  setUp(() {
-    core = coreWithPlayers();
-    guardians = FakeGuardiansRepository(core.members);
-  });
+  setUp(() => core = coreWithPlayers());
 
-  Future<void> openPlayer(WidgetTester tester, {Set<TenantRole>? roles}) =>
-      pumpAs(
-        tester,
-        roles: roles ?? {TenantRole.admin},
-        core: core,
-        location: '/players/p1',
-        overrides: [guardiansRepositoryProvider.overrideWithValue(guardians)],
-      );
+  Future<void> openPlayer(
+    WidgetTester tester, {
+    Set<TenantRole>? roles,
+    void Function(MockBackend backend)? prepare,
+  }) async {
+    final h = await pumpAs(
+      tester,
+      roles: roles ?? {TenantRole.admin},
+      core: core,
+      location: '/players/p1',
+      prepare: prepare,
+    );
+    backend = h.backend;
+  }
+
+  /// The guardians the dialog created, as sent.
+  List<Map<String, Object?>> created() => [
+    for (final r in backend.requestsTo(_guardians, method: 'POST'))
+      MockBackend.bodyOf(r),
+  ];
+
+  String? answeredPassword(String path) =>
+      (backend.lastAnswer(path, method: 'POST')! as Map)['temporaryPassword']
+          as String?;
 
   Future<void> fillGuardian(WidgetTester tester, {String? email}) async {
     await tapKey(tester, 'player-guardian-add');
@@ -119,20 +64,21 @@ void main() {
       await openPlayer(tester);
       await fillGuardian(tester, email: 'gala@example.org');
 
-      expect(guardians.created.single, {
+      expect(created().single, {
         'playerId': 'p1',
         'givenName': 'Gala',
         'familyName': 'Ruiz',
         'email': 'gala@example.org',
       });
+      final password = answeredPassword(_guardians)!;
       final dialog = find.byKey(const Key('temp-password-dialog'));
       expect(dialog, findsOneWidget);
       expect(
-        find.descendant(of: dialog, matching: find.text('Guardian-temp-1')),
+        find.descendant(of: dialog, matching: find.text(password)),
         findsOneWidget,
       );
       await tapKey(tester, 'temp-password-done');
-      expect(find.text('Guardian-temp-1'), findsNothing);
+      expect(find.text(password), findsNothing);
       expect(find.text('Gala Ruiz'), findsOneWidget); // the list was reloaded
       expect(find.text('Tutor añadido'), findsOneWidget);
     });
@@ -140,8 +86,10 @@ void main() {
     testWidgets('an e-mail that already signs in: no dialog, only the note', (
       tester,
     ) async {
-      guardians.newLoginPassword = null;
-      await openPlayer(tester);
+      await openPlayer(
+        tester,
+        prepare: (b) => b.core.loginsElsewhere.add('known@example.org'),
+      );
       await fillGuardian(tester, email: 'known@example.org');
 
       expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
@@ -152,7 +100,7 @@ void main() {
       await openPlayer(tester);
       await fillGuardian(tester);
 
-      expect(guardians.created.single['email'], isNull);
+      expect(created().single['email'], isNull);
       expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
       expect(find.text('Tutor añadido'), findsOneWidget);
       expect(find.textContaining('contraseña actual'), findsNothing);
@@ -166,13 +114,21 @@ void main() {
       await enter(tester, 'guardian-email', 'not-an-email');
       await tapKey(tester, 'form-submit');
 
-      expect(guardians.created, isEmpty);
+      expect(created(), isEmpty);
       expect(find.byKey(const Key('guardian-given')), findsOneWidget);
     });
 
     testWidgets('a server error keeps the dialog open', (tester) async {
-      guardians.failWith = emailTaken();
-      await openPlayer(tester);
+      // A deactivated member has the e-mail (the mock keeps none: injected).
+      await openPlayer(
+        tester,
+        prepare: (b) => b.fail(
+          _guardians,
+          method: 'POST',
+          status: 409,
+          code: 'EMAIL_TAKEN',
+        ),
+      );
       await fillGuardian(tester, email: 'taken@example.org');
 
       expect(find.byKey(const Key('guardian-given')), findsOneWidget);
@@ -192,14 +148,16 @@ void main() {
       await openPlayer(tester);
       await tapKey(tester, 'guardian-login-m2');
 
-      expect(guardians.issuedFor, ['m2']);
+      const issue = '/api/core/members/m2/temporary-password';
+      expect(backend.requestsTo(issue, method: 'POST'), hasLength(1));
+      final password = answeredPassword(issue)!;
       final dialog = find.byKey(const Key('temp-password-dialog'));
       expect(
-        find.descendant(of: dialog, matching: find.text('First-login-1')),
+        find.descendant(of: dialog, matching: find.text(password)),
         findsOneWidget,
       );
       await tapKey(tester, 'temp-password-done');
-      expect(find.text('First-login-1'), findsNothing);
+      expect(find.text(password), findsNothing);
     });
 
     testWidgets('a guardian who signs in already has no login action', (
