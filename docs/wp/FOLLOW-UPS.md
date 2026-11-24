@@ -5,7 +5,8 @@ Collected from the WP handovers and the WP20 review (2026-11-02); reconciled wit
 the WP43–WP51 handovers (third round) later that evening, with the WP52–WP71 handovers (fourth round) that night and
 with the WP72–WP90 handovers (fifth round) on 2026-11-07, with the WP91–WP103 handovers (sixth round) on 2026-11-10,
 with the WP104–WP109 handovers (seventh round) on 2026-11-14, with the WP111–WP124 handovers (eighth round) on
-2026-11-16 (WP125) and with the WP126–WP139 handovers (ninth round) on 2026-11-24 (WP140).
+2026-11-16 (WP125), with the WP126–WP139 handovers (ninth round) on 2026-11-24 (WP140) and with the WP142–WP146
+handovers (tenth round) on 2026-11-25 (WP147).
 Grouped by area; **[v2]** marks items that are out of v1 by decision (PLAN §8, roadmap); **→ WPnn** marked an item the plans below assigned to a work package (all closed). Resolved items are listed at the bottom with the WP or decision that
 closed them. The statement-by-statement status of the spec is in [`../conformance.md`](../conformance.md).
 
@@ -512,7 +513,10 @@ The pins go first because the upgrade wants the current CloudNativePG; the datab
 run beside them; the upgrade runs alone (it moves the database under every suite and is the kind user); the trigram
 index and the kind and CI hardening follow on the new version; the docs pass closes. At the WP144 merge the
 orchestrator moves the owner's compose stack: a dump of the old database outside the repo, the old volume kept, a
-fresh volume, the seeds, the checks and the e2e journey; on failure back to the old image and volume.
+fresh volume, the seeds, the checks and the e2e journey; on failure back to the old image and volume. **All done**:
+merged into `main` on 2026-11-24 and 2026-11-25 in this order: the hook fix 4ed1a1e4 (orchestrator, below), WP142
+(c9daa73e), WP143 (status commit b2e269f5), WP144 (status commit 1781cfcb), WP145 and WP146 (status commit
+d6539fc6); then the docs pass WP147. What the orchestrator ran at merge time is under "Resolved", "Tenth round".
 
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
@@ -563,23 +567,26 @@ fresh volume, the seeds, the checks and the e2e journey; on failure back to the 
   create", `just events-drift` equal). Any other stack (another machine, kind, the cloud): `just finance-up` (roles,
   migrations to V22), `just events-backfill force` (finance's academy slug and team names, game's academy names, which
   only arrive with a `tenant.changed` / `team.changed`; until then the match sheet prints "Hoops Academy"), then
-  `just seed-academy`.
+  `just seed-academy`. Since WP144 (ADR-0073) a compose stack still on PostgreSQL 17 (`hoops_pgdata`) moves with
+  `scripts/pg-major-move.sh` (`docs/runbooks/postgresql-major.md`), then the seeds as above.
 - **IDR minor digits** (WP121, WP124; owner decision open): finance stores IDR with 2 minor digits (ISO 4217, the
   service's currency table), and the web shows whole amounts without decimals (`Rp150.000`, intl's default). The brief
   said "IDR has no decimals"; if the owner wants 0, the service's table (`currencies.go`) and the web's copy change
   together, before the first real IDR due (the currency is fixed by the first due).
-- **bump-pins PR #21 closed** (2026-11-24, with the owner): opened before the ninth round, it conflicted with `main`
-  (`deploy/kind/up.sh`, common-quarkus' `microprofile-config.properties`, a chart snapshot). Nothing is lost:
-  `scripts/bump-pins.sh --check` on `main` reads the moved pins in `deploy/lib/platform.sh` and reports 12 of 16
-  pins outdated (distroless java25, Redis 8.12.0, Redpanda v26.3.1, Mailpit v1.34.0, otel-lgtm 0.41.1, Trivy
-  0.76.2, Semgrep 1.186.0, oras v1.4.0, the ZAP digest, CloudNativePG 1.30.2, Reloader 2.2.21). The next weekly
-  run opens a fresh PR; close and reopen a `GITHUB_TOKEN` PR so `ci` / `e2e` start. (PR #6 was merged on
-  2026-11-22.)
 - **Dependabot PR #22** (pub, two updates, 2026-11-23); the eighth round's #8, #9, #10, #12, #13 are closed and #11,
   #14–#18 merged. Review as usual; a pdf-service bump must pass `just test-rust` (Clippy pedantic, `cargo deny`).
 - **Workflow-file pins by hand** (f96389a3): Trivy, Semgrep and the ZAP digest live in workflow files, which the weekly
-  PR only lists; bump them with `scripts/bump-pins.sh --apply` and `actionlint`. Optional: a fine-grained PAT
-  (contents, pull requests, workflows) so the PR carries them and starts its own checks.
+  PR only lists (the Actions token cannot push workflow files); WP142 applied today's (Trivy 0.76.2, Semgrep 1.186.0,
+  the ZAP digest) with `scripts/bump-pins.sh --apply`. The next ones again by hand, then `actionlint`. Optional: a
+  fine-grained PAT (contents, pull requests, workflows) so the PR carries them and starts its own checks.
+- **The PostgreSQL 17 volume and its dump** (WP144, orchestrator at the merge, 2026-11-24): the owner's compose stack
+  runs PostgreSQL 19.0 on the fresh volume `hoops_pgdata-19`; the old volume `hoops_pgdata` (17) and the dump in
+  `~/hoops-backups/pg17` are kept as the way back (`docs/runbooks/postgresql-major.md`). Removing them is the owner's
+  decision, once 19 has proven itself; nothing in the repository removes them. `podman volume rm hoops_pgdata` now
+  deletes the way back, not the live database.
+- **More vCPUs for the Podman VM** (WP146, ADR-0076): a fresh kind install beside a Maven build (VM load 50 or more)
+  still misses helm's 15 minutes on the 2-vCPU VM that also runs the compose stack. `podman machine set --cpus` would
+  help but stops the owner's stack: the owner's call. Until then: do not build while `up.sh --deploy` runs.
 - **Real-browser checks nobody ran** (WP97, WP99, WP101, WP115, WP121, WP122, WP124): `superadmin@hoops-academy.com`
   (no academy membership, checked in the database: a pure super admin) should land on the application admin hub
   (decision 71; WP99 found no code path to the audit trail); the hub and the context switcher against the real stack
@@ -590,7 +597,8 @@ fresh volume, the seeds, the checks and the e2e journey; on failure back to the 
   mock only: language and theme on the academy chooser (WP115); **the two PDF buttons** (a real download, the file
   name from `Content-Disposition` through the gateway, the PDF opening; WP122); **the whole Finance area** against the
   real finance-service: the admin's settings, fee plans, dues, payments, expenses, balance and both CSV exports
-  (WP121, WP124), the coach's "Dues up to date" section on a team and the families' "Dues" tab (WP124). The compose
+  (WP121, WP124), the coach's "Dues up to date" section on a team and the families' "Dues" tab (WP124); the season
+  rollover wizard of WP141 (in the demo, create the next season first). The compose
   nginx does not serve the web app: start it locally (`./start.sh` or `flutter run`, README) to sign in.
 - **Podman machine re-init path** (WP93): `just doctor`'s real write-and-restart branch for the drop-in ran only
   against stubs, and `podman machine init --playbook infra/podman/machine-playbook.yml` was never run (whether Podman
@@ -716,6 +724,11 @@ fresh volume, the seeds, the checks and the e2e journey; on failure back to the 
   "SQL Injection" alert for `/api/core/audit-events:export?...&to=to+AND+1%3D1+--+...`, which `.zap/api-core.conf` does
   not accept; the next runs did not raise it. Most likely the same differential false positive as the accepted one on
   `/platform/academy-requests` (core binds every parameter), but nobody checked; accept it with a date if it recurs.
+- **Ids in exception messages on spans** (orchestrator's Tempo proof at the WP143 merge, 2026-11-24): three server
+  spans of game-service carry an exception event whose message holds an id ("Match <uuid> not found", "Player <uuid>
+  not found", `NotFoundException`). Pre-existing and outside the database spans (which carry no value). Open question
+  for P-11 / ADR-0043: are ids in exception messages acceptable on spans, or do the messages lose the id? Also
+  untested (WP143): a driver or server message that echoes refused input could reach a Java exception event.
 - **ZAP API scan as a member** (WP83): the scan signs in as the super admin, who is in no academy, so tenant endpoints
   stop at 404/400; a member token with `X-Tenant-Id` (an e2e-created admin) would reach the academy logic.
 - **SAST drift** (WP83): the Semgrep registry rulesets (`p/java`, `p/owasp-top-ten`) are fetched at run time, so the
@@ -836,8 +849,8 @@ fresh volume, the seeds, the checks and the e2e journey; on failure back to the 
   removal is marked, not cascaded.
 - **Outside PIT** (WP88): athlete `HealthAccess` / `TrainingAccess` / `PlanAccess`, core `RolloverSeason`,
   `EligibilityEngine`, `ManageTenantAdmins` (tested through `@QuarkusTest` only); candidates for pure unit tests.
-- **Trigram index for the item search** (WP78, ADR-0041): needs `pg_trgm` created in `infra/db/init` and the chart's
-  init (the migrator cannot create extensions); not needed at today's sizes.
+- **`app.enable_tenant_rls(regclass)` keeps PUBLIC's `EXECUTE`** (WP144, seen, unchanged; as on 17): besides the
+  explicit grants to the migrators; it runs with the caller's rights, so only a table owner can use it.
 - **Keycloak ahead of the database** (WP22, as ADR-0013): a commit failure right after a successful login update leaves
   Keycloak with the new e-mail; no repair job detects `app_user.email` ≠ Keycloak e-mail yet.
 - **Entitlement seam** has no test of a denial path (the noop implementation always allows).
@@ -853,15 +866,12 @@ fresh volume, the seeds, the checks and the e2e journey; on failure back to the 
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
-- **PostgreSQL 19** (owner, 2026-11-24: upgrade to the latest major): the project runs PostgreSQL 17 and 19.0 is
-  published (`docker.io/library/postgres:19`; 18 was never adopted). The major is pinned in five places that move
-  together: `infra/compose/compose.yaml`, the `databases` sub-chart's `values.yaml` (CloudNativePG image),
-  `PostgresRlsResource` in common-quarkus' test-jar, finance-service's `pgtest.go` and `.github/workflows/images.yml`;
-  `scripts/bump_pins.py` does not track it. To plan as a work package: check that CloudNativePG, Keycloak, Flyway,
-  the JDBC driver and pgx support 19; read the 18 and 19 release notes for RLS, `set_config` and role changes (the
-  tenancy suites are the proof); decide how existing data moves (the compose volume and the Keycloak database need
-  a dump and restore or `pg_upgrade`; CloudNativePG has its own major-upgrade path); then the kind proof and an ADR
-  amendment for the stack line in `CLAUDE.md`.
+- **PostgreSQL 19 leftovers** (WP144, ADR-0073): CloudNativePG 1.30.2 and Keycloak 26.8.2 do not list 19 yet and
+  Flyway 12.0.0 warns ("newer than the version Flyway has been verified with"); none refuses it. When CloudNativePG
+  1.31 (about 2026-12-01), a Keycloak or a Flyway release lists 19, update ADR-0073's table. The CloudNativePG path
+  for a cluster that holds data (import into a new cluster) is described in `docs/runbooks/postgresql-major.md`, never
+  run (no such cluster exists); `pg-major-move.sh --apply` past the dump and the way back ran against stubs only (the
+  orchestrator's run on the owner's stack covered the forward path).
 - **Cloud slice: unproven until the first apply** (WP104, ADR-0050; the apply itself is a Pending user action). Only
   written, every step marked NOT YET RUN in `docs/runbooks/cloud.md`: plan, apply, cloud-init, the kubeconfig fetch,
   `install.sh`, seed and smoke through `with-cloud.sh`, destroy; the `docker run` Trivy fallback in CI. To check at the
@@ -876,13 +886,16 @@ fresh volume, the seeds, the checks and the e2e journey; on failure back to the 
   certificates (cert-manager / Let's Encrypt), real SMTP, CloudNativePG backups to object storage, External Secrets
   against a real store, real users. Before real academies use a public deployment: minors' health data on the
   internet brings GDPR obligations that kind does not have.
-- **Observability leftovers** (WP120, ADR-0046 amendment): no database spans in any service (core, game and athlete
-  need `quarkus.datasource.jdbc.telemetry=true`, a build-time property; finance's pgx has no tracer), so a trace ends
-  at the service; pdf-service and finance-service trace their own `/q/health` probes and `/q/metrics` scrapes (the
+- **Observability leftovers** (WP120, WP143; ADR-0046 amendments, ADR-0074): pdf-service and finance-service trace their own `/q/health` probes and `/q/metrics` scrapes (the
   dashboard filters them, Tempo still stores them) and have no request metrics of their own (only span metrics);
   once, under VM load 40, core's spans of one trace were stored twice (same span id, most likely an OTLP retry); the
   memory of the `lgtm` pod (working set 529-677 Mi, peak 1257 Mi) fits kind only with compose stopped. Alerting on
-  `hoops_authz_denied_total` and the audit lines is not built.
+  `hoops_authz_denied_total` and the audit lines is not built. Since WP143 (database spans): the scheduled jobs start
+  no trace (`quarkus.scheduler.tracing.enabled` would give the nightly jobs traces with their SQL; a separate
+  decision), so a job's database spans have no parent and are dropped; the per-poll span count
+  of core's outbox is not measured (a probe showed 0 database spans, cause not established);
+  `quarkus.otel.traces.sampler` must stay `parentbased_traceidratio` while `DatabaseSpansNeedAParent` exists (the
+  bean refuses to start otherwise).
 - **Test Academy demo data** (WP107): the seeded live match (Tigres) stays LIVE for ever with the first run's start
   time; measurements and test results are found by "the player has any", so their dates stay those of the first run;
   the mock's names ("Academia Demo", the pictured players) are not representable on the `test*` logins (jersey
@@ -899,8 +912,12 @@ fresh volume, the seeds, the checks and the e2e journey; on failure back to the 
   -C`, `cd` in the command) or document running the checks there. Ninth round: agents of WP126–WP139 again ran both
   checks by hand; a `git commit` inside a helper script is not seen by the hook at all (WP128's commits 9c001434 to
   a45475a6; `wp-round` Traps), and under load the hook's Keycloak start timed out several times (WP127, WP128, WP135).
-- **Chart leftovers** (WP100, WP111, WP118, WP120, WP136, WP139): chart 0.15.0 (library chart `hoops-lib`) was proven
-  on kind only with `smoke.sh` (57 checks, WP139); WP136's own proof never reached a Ready stack on the loaded VM.
+  Tenth round: WP143, WP144 and WP145 ran both checks by hand in their worktrees; the hook timed out under load in
+  WP142, and once failed in the main checkout while WP146's kind cluster ran (its Keycloak Testcontainer not ready in
+  time; passed once the cluster was gone).
+- **Chart leftovers** (WP100, WP111, WP118, WP120, WP136, WP139, WP144, WP146): chart 0.15.0 (library chart `hoops-lib`)
+  was proven on kind only with `smoke.sh` (57 checks: WP139; WP144 on PostgreSQL 19.0; WP146 on a quiet VM after
+  its probe changes); WP136's own proof never reached a Ready stack on the loaded VM; `up.sh --eso` not run since.
   `tilt ci` last ran on chart 0.9.0; not re-run on 0.10.0 to 0.15.0,
   so the Tilt resources `pdf-service`, `finance-service` and `lgtm` (port 3000, replacing `jaeger`) are unproven;
   the e2e journey did not run on kind this round (the round's kind proofs are `smoke.sh` runs: WP111 on 0.11.0, WP118
@@ -915,21 +932,33 @@ fresh volume, the seeds, the checks and the e2e journey; on failure back to the 
   the compose nginx needs `HOOPS_FINANCE_BIND=0.0.0.0` on Linux (3f964fb2; macOS works with the default 127.0.0.1). The journey's first real core -> pdf-service and game
   -> pdf-service calls ran on compose on 2026-11-16 (the orchestrator's `just e2e` after the WP123 merge: 38 tests, 0
   failures, `JourneyTest` 32 steps, none skipped).
-- **kind install under VM load** (WP139): `deploy/kind/up.sh --deploy` failed its `helm --wait` once: Keycloak's first
-  start re-augments (about 150 s at load 31 on the 2-CPU Podman VM), the probes restarted it twice and its Deployment
-  missed the progress deadline; the same `helm upgrade --install` passed once Keycloak was Ready, then `smoke.sh` 57/57.
-  A longer `startupProbe` or `progressDeadlineSeconds` for Keycloak on kind would make it robust.
-- **Database bootstrap from the one role list, fresh compose volume not run** (WP139, INF-03): proven in two
-  throwaway `postgres:17` containers (old and new bootstrap identical, 43 rows), on kind (CNPG) and by `db-roles.sh` on
-  the existing compose volume, not by `just up` on a fresh `hoops_pgdata` volume. `db-roles.sh` re-applies every
-  role's password from `.env` (the database follows `.env`).
-- **Shell tests outside CI**: `scripts/tests/env-jdk.test.sh` (fails 2 of 3 on Linux: it needs a real JDK 25 outside
-  `PATH`) and `scripts/hooks/tenancy-gate.test.sh` (fails 1 of 55 on Linux: a string cut at a multi-byte character)
-  run only in `just test-hooks` on macOS; the `ci` job `scripts` runs the Python tests and the doctor drop-in test only
-  (checked in `ci.yml`, WP133). `scripts/tests/events-drift.test.sh` (`just events-drift-test`) is not in any workflow
-  either.
-- **Infra findings left** (WP139, WP136): the Keycloak realm retrofit in `infra/keycloak/seed-users.sh` stays until the
-  owner's Keycloak volume is rebuilt from the current realm file, then delete it (INF-07); the realm JSON keeps its
+- **kind install under VM load** (WP139, WP146, ADR-0076): Keycloak's deadline and the probes are fixed for kind
+  (Resolved), but a fresh `up.sh --deploy` beside a Maven build at a VM load of 50-123 on the 2-vCPU VM still missed
+  helm's 15 minutes in all three of WP146's runs (core, game, athlete killed by their probes, the kube-apiserver
+  restarted); the same cluster passed `up.sh`, seed and smoke (57) once the build had ended. Raising helm's timeout
+  would only hide it; more vCPUs is a Pending user action. otel-collector and lgtm also restart under load (5-6
+  times); their probes are unchanged (not app workloads).
+- **kind smoke's outbox wait has no test** (WP144, WP146): `deploy/kind/smoke.sh` waits for core's published counter
+  to grow by academy B's two events before reading finance (WP144's race fix, 5b71693c); the two failing smoke runs
+  were its only red, and no committed test covers the wait.
+- **Timing-sensitive tests under load**: core's `TenantUsageResourceTest.aPeerSlowerThanTheTimeoutCountsAsUnavailable`
+  (a wall-clock bound, 3583 ms > 3400 ms) failed once in WP143's run while the commit hook's Keycloak check ran beside
+  it, and once in WP146's runs (orchestrator's note; WP146's handover does not name it); core's
+  `PlatformEventBackfillTest.withoutATenantEveryAcademyIsBackfilled` failed once with a 30 s `SocketTimeoutException`
+  during WP146's first kind run (WP146 open point 3). Both green alone and in the fresh runs; not investigated.
+- **A Keycloak admin login 401 in `just seed-users`** (orchestrator, WP142 merge): the first e2e attempt stopped on
+  the script's second admin login (401); the retry passed and it did not recur. Cause not established.
+- **Maven's resolver prefix filter** (WP144, WP145, orchestrator 4ed1a1e4): even with `-o`, Maven fetched
+  `prefixes.txt` from repository.jboss.org and hung on its socket while that host answered 503 (2026-11-24). The hooks
+  now run Maven offline first (`scripts/hooks/_common.sh`, `maven_offline_first`, tested since WP146) but do not set
+  `-Daether.remoteRepositoryFilter.prefixes=false`; a plain `./mvnw -o` and `build-images.sh --from-host` need it
+  while jboss is down.
+- **`env.sh` with no JDK 25 anywhere** (WP146): it keeps a wrong-major `JAVA_HOME` (with a warning); unchanged and
+  untested, because macOS always finds one through `java_home`.
+- **Infra findings left** (WP139, WP136, WP144): the Keycloak realm retrofit in `infra/keycloak/seed-users.sh` (INF-07)
+  is no longer needed by the owner's stack, whose Keycloak database was created fresh from the current realm file at
+  the WP144 merge (2026-11-24); deleting it (with `test_local_stack.py`'s
+  `test_the_retrofit_reads_the_realm_file_with_one_helper`) is a candidate, unless other stacks with old realms remain; the realm JSON keeps its
   per-client audience mappers, only guarded by `test_local_stack.py` (INF-08: worth it only with a fourth client); the
   tofu outputs and rules were not merged (INF-11: merging renames resources through `moved` blocks for no behaviour
   change); MailHog has no release after v1.0.1 (2020, amd64 only), kind already uses Mailpit, and moving compose to
@@ -1001,6 +1030,55 @@ fresh volume, the seeds, the checks and the e2e journey; on failure back to the 
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+Tenth round (WP142–WP146, 2026-11-24 and 2026-11-25; decisions 114–118; each line names the open item it closed):
+- WP144 (decisions 114, 115): **PostgreSQL 19** (owner's wish of 2026-11-24): PostgreSQL 19.0 everywhere
+  (`postgres:19.0-trixie` in compose, the test harnesses and `images.yml`; CloudNativePG `19.0-minimal-trixie` in the
+  chart), one minor pinned in all five places and bumped only when both registries publish it; a compose volume per
+  major (`hoops_pgdata-19`); `scripts/pg-major-move.sh` dumps and recreates a compose stack; a CloudNativePG cluster
+  with data moves by import (runbook `postgresql-major.md`) (ADR-0073). No dependency refused 19, so the 18.7
+  fall-back was not taken. Leftovers under "Infra, CI, e2e" (PostgreSQL 19 leftovers).
+- WP144, orchestrator at the merge (decision 115): **database bootstrap from the one role list on a fresh compose
+  volume** (WP139, INF-03): `scripts/pg-major-move.sh --out ~/hoops-backups/pg17 --apply` on the owner's stack
+  (2026-11-24): dump made, stack on PostgreSQL 19.0 on the fresh volume `hoops_pgdata-19`; then `just seed-users`,
+  `just services-up`, `just seed-academy`, `just finance-up`, `just events-backfill force` (60 events appended, 0
+  failed), `just events-drift` ("the replicas equal core"), the eight app and migrator roles present, e2e 38/38,
+  isolation check 6 + 4 passed. The old volume and the dump are kept (Pending user actions).
+- WP145 (decision 116): **trigram index for the item search** (WP78, ADR-0041): not built, by measurement. Decision 116
+  asked for the index; WP145 measured on PostgreSQL 19.0 that under RLS the app role's non-leakproof `lower(…) like`
+  is never an index condition, so a GIN trigram index leaves the plans unchanged, and the searches take under 1 ms
+  through the RLS owner index (ADR-0075, amends ADR-0041 §5). A decision changed by evidence; revisit only if an
+  academy's own exercises or items reach tens of thousands.
+- WP143 (decision 116): **no database spans in any service** (Observability leftovers): core, game and athlete report
+  their SQL through `quarkus.datasource.jdbc.telemetry=true` in common-quarkus, finance through its own pgx
+  `QueryTracer`; `db.statement` is the parameterised text, the `set_config` span is kept, a database span without a
+  parent is dropped (ADR-0074, amends ADR-0046). Orchestrator's Tempo proof on the owner's compose stack at the merge
+  (the e2e journey with `QUARKUS_OTEL_SDK_DISABLED=false QUARKUS_OTEL_TRACES_SAMPLER_ARG=1.0
+  HOOPS_OTEL_SDK_DISABLED=false` and `just observability-up`): e2e 38/38; 189 traces with database spans, 1,660
+  database spans (core 770, athlete 409, game 397, finance 84), no database span as a trace root, no e-mail address
+  and no quoted literal in any `db.statement`. Found on the way: ids in game's exception events (Security).
+- WP146 (decision 116): **the shell tests outside CI**: `env-jdk.test.sh` and `tenancy-gate.test.sh` were test
+  assumptions that failed on Linux (a stub JDK 25 on `PATH`; globs instead of byte cuts), and the `ci` job `scripts`
+  now runs every tracked `*.test.sh` (`ShellTestsRunInCi` in `test_workflows.py`), with `events-drift.test.sh` and the
+  new `kind-cnpg-patch.test.sh`. Proven in an `ubuntu:24.04` container; on GitHub's runner from the d6539fc6 run on.
+- WP146 (decision 116): **Keycloak's start on kind under load** (WP139, kind install under VM load): on kind only,
+  Keycloak, the five services and the CloudNativePG operator get 5 s probe answers, a kill after a minute and 5
+  minutes to start; Keycloak's progress deadline equals helm's 15 minutes; `up.sh` waits for the operator before
+  helm (ADR-0076). Keycloak survived twice WP139's load; the install beside a build still misses 15 minutes
+  (Infra, CI, e2e).
+- WP142 (decision 116): **the outdated pins and the stale bump-pins PR #21**: the 12 outdated pins applied with
+  `scripts/bump-pins.sh --apply`, workflow files included (distroless java25 digest, Redis 8.12.0, Redpanda v26.3.1,
+  Mailpit v1.34.0, otel-lgtm 0.41.1, Trivy 0.76.2, Semgrep 1.186.0, oras v1.4.0, the ZAP digest, CloudNativePG
+  1.30.2, Reloader chart 2.2.21); the bump script tracks PostgreSQL. The owner's Redpanda volume moved to v26.3.1 in
+  place at the merge (one way: the release notes name no downgrade path). CI on c9daa73e ran Trivy 0.76.2, Semgrep
+  1.186.0 and the ZAP API scans with the new digest green (`ci` 45389069608, `semgrep` 45389069425, `e2e`
+  45389069367).
+- WP147: the docs that named PostgreSQL 17 as current; `docs/runbooks/release.md` §6 lists the PostgreSQL pin and
+  `docs/security/sast-dast.md` reads the Semgrep image from `semgrep.yml` (WP142 open point 2).
+- Orchestrator (no work package): **4ed1a1e4 `fix(hooks)`**: repository.jboss.org answered 503 for hours on
+  2026-11-24 and Maven waited on it although nothing needed downloading, so the commit and push hooks timed out;
+  `scripts/hooks/_common.sh` runs Maven offline first and goes online only when the local repository lacks an
+  artifact (tests added by WP146).
+
 Ninth round (WP126–WP139, 2026-11-23 and 2026-11-24; from the audit of 2026-11-23, decisions 104–113; each work
 package's handover ends with an ID-by-ID table of its findings):
 - WP129 (decision 105): **the family tab lists the first 50 dues** (Finance leftovers): `playerDues` reads every page
