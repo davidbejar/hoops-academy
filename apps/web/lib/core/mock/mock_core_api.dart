@@ -152,6 +152,12 @@ class MockCoreApi {
     return known ? null : _mockPassword();
   }
 
+  /// E-mails whose login signs in to another academy too (an active member there): linked, never given a new
+  /// password, and not reset from here (`LOGIN_SHARED`).
+  final Set<String> _loginsElsewhere = {};
+  @visibleForTesting
+  Set<String> get loginsElsewhere => _loginsElsewhere;
+
   /// The e-mail a requested player's login is created with when the request is approved, by player id.
   final Map<String, String> _requestedLogins = {};
   @visibleForTesting
