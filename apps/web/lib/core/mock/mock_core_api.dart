@@ -147,6 +147,7 @@ class MockCoreApi {
   String? _newLogin(String email) {
     final known =
         _playerLogins.contains(email) ||
+        _loginsElsewhere.contains(email) ||
         _members.any((m) => m['email'] == email);
     _playerLogins.add(email);
     return known ? null : _mockPassword();
@@ -1227,18 +1228,23 @@ class MockCoreApi {
       ]);
     }
     if (id == null && method == 'POST') {
-      final m =
-          _member(
-              _id('m'),
-              b['givenName']! as String,
-              b['familyName']! as String,
-              (b['roles']! as List).cast<String>(),
-            )
-            ..['email'] = b['email']
-            ..['invitationStatus'] = 'PENDING'
-            ..['temporaryPasswordStatus'] = 'ACTIVE';
+      final m = _member(
+        _id('m'),
+        b['givenName']! as String,
+        b['familyName']! as String,
+        (b['roles']! as List).cast<String>(),
+      )..['email'] = b['email'];
+      final email = b['email'] as String?;
+      final password = email == null || b['sendInvitation'] == false
+          ? null
+          : _newLogin(email);
+      m
+        ..['userId'] = email == null ? null : 'u-${m['personId']}'
+        ..['invitationStatus'] = password == null ? 'ACCEPTED' : 'PENDING'
+        ..['temporaryPasswordStatus'] = password == null ? 'NONE' : 'ACTIVE';
+      if (email == null) m['invitationStatus'] = 'NONE';
       _members.add(m);
-      return MockResult.json(201, {...m, 'temporaryPassword': _mockPassword()});
+      return MockResult.json(201, {...m, 'temporaryPassword': ?password});
     }
     final m = _members.where((m) => m['personId'] == id).firstOrNull;
     if (m == null)
@@ -1272,9 +1278,18 @@ class MockCoreApi {
           m['email'] != null &&
           (m['roles']! as List).contains('PARENT');
       if (firstGuardianLogin) {
-        m
-          ..['userId'] = 'u-${m['personId']}'
-          ..['invitationStatus'] = 'PENDING';
+        m['userId'] = 'u-${m['personId']}';
+        if (_loginsElsewhere.contains(m['email'])) {
+          // the e-mail already signs in elsewhere: linked, its password untouched
+          m
+            ..['invitationStatus'] = 'ACCEPTED'
+            ..['temporaryPasswordStatus'] = 'NONE';
+          return MockResult.json(200, m);
+        }
+        m['invitationStatus'] = 'PENDING';
+      }
+      if (m['userId'] != null && _loginsElsewhere.contains(m['email'])) {
+        return mockProblem(409, 'Conflict', code: 'LOGIN_SHARED');
       }
       if (m['invitationStatus'] != 'PENDING') {
         return const MockResult.json(409, {
@@ -1292,6 +1307,7 @@ class MockCoreApi {
   /// `POST /api/core/guardians`: a PARENT member linked to the player; a login (shown once) with an e-mail.
   MockResult _addGuardian(Map<String, Object?> b) {
     final email = b['email'] as String?;
+    final password = email == null ? null : _newLogin(email);
     final m =
         _member(
             _id('m'),
@@ -1301,8 +1317,10 @@ class MockCoreApi {
           )
           ..['email'] = email
           ..['userId'] = email == null ? null : 'u-${_id('login')}'
-          ..['invitationStatus'] = email == null ? 'NONE' : 'PENDING'
-          ..['temporaryPasswordStatus'] = email == null ? 'NONE' : 'ACTIVE';
+          ..['invitationStatus'] = email == null
+              ? 'NONE'
+              : (password == null ? 'ACCEPTED' : 'PENDING')
+          ..['temporaryPasswordStatus'] = password == null ? 'NONE' : 'ACTIVE';
     _members.add(m);
     final p = _playerById(b['playerId']! as String);
     final l = {
@@ -1315,10 +1333,7 @@ class MockCoreApi {
       'createdAt': _now(),
     };
     _links.add(l);
-    return MockResult.json(201, {
-      ...l,
-      if (email != null) 'temporaryPassword': _mockPassword(),
-    });
+    return MockResult.json(201, {...l, 'temporaryPassword': ?password});
   }
 
   int _passwordCount = 0;
