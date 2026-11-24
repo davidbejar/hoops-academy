@@ -154,6 +154,51 @@ Not yours: generated clients; goldens change only if the seeded data must differ
   - **Athlete, game, finance:** unchanged since part 1 (they need the roster above in the mock; finance needs
     explicit finance seeds).
 
+### Part 3 (2026-11-24)
+- **Built**
+  - **Members.** `MembersData` (`core_seed.dart`) seeds members and guardian links and afterwards reads back the
+    mock's state and what the app sent (`invited`, `updates`, `reissuedFor`, `lastQuery`, `calls`, the last
+    password); `loginsElsewhere` seeds e-mails that sign in to another academy. `FakeMembersRepository` and the
+    guardian dialog's local `FakeGuardiansRepository` go (guardians and first logins are the mock's).
+  - **Teams and players.** `TeamsData` / `PlayersData` do the same for teams, rosters (the players' assignments),
+    staff and players (`lastCreate`, `lastUpdate`, `rosters`, `lastPreferred`, exports, `noServerFileName`).
+    `FakeTeamsRepository` and `FakePlayersRepository` go; `fake_repos.dart` keeps only `FakeCore` (a data bundle) and
+    the `Faulty` mixin of the athlete and game fakes. `MockBackend` also records file answers (`lastFile`) and can
+    drop a response header (`dropHeaders`). The whole core side of the app now runs on the mock in every widget test.
+  - Verdicts the fakes were told are now the mock's, from coherent seeds: birth years place players in categories
+    (play-up, too old, gender policy), the jersey rules come from a preferred or a previous number. One fake verdict
+    was impossible (a gender-policy reason in a mixed team): that test now opens a girls' team where it holds.
+- **Mock and fake differed (decided against `core.yaml`, red test first, the fake was right, mock fixed):**
+  7. an e-mail that already signs in elsewhere got a new login and password (`inviteMember`, a guardian's first
+     login, `createGuardian`): now linked, ACCEPTED, no password; re-issuing such a shared login is 409
+     `LOGIN_SHARED`; 8. a coach who is not staff of a team got 404 for the team, its roster, staff and taken numbers
+     (all "any member"); 9. team staff saw only their teams' players (`listPlayers` / `getPlayer`: team staff see
+     all; pending ones only to their requester); 10. `listEligibleTeams` listed ineligible teams; 11. a taken jersey
+     number was accepted on update (409 `TEAM_PLAYER_CONFLICT`). The mock's own role tests
+     (`mock_roles_persistence_test`), which pinned the older rules, now follow the contract.
+- **Expectations that follow the mock where a fake made data up:** a linked player shows the player's name ("Leo
+  Gil", not "Player p2"); passwords and the roster PDF's server file name are read from the mock's answers; a
+  notifier test reads a failure with `AppError.of` as the screens do (the fake threw an `AppError` itself); provider
+  tests listen to auto-dispose providers like the screens. **Goldens re-recorded:** `jersey_dialog_*` (3) and
+  `assignment_outcome` / `assignment_none` (taken numbers in the contract's order, by value; the fake kept insertion
+  order).
+- **Verified** (fresh, 2026-11-24): `flutter analyze` no issues; `just web-format-check` clean; `just web-test`
+  **1953 passed, 0 failed** (part 3 started at 1944). +9 tests, none removed (5 member/guardian login rules, 4 roster rules).
+  Every migrated file keeps its test count; the suite was green after each feature commit (on a copy of the tree).
+  - Fake lines: 2,700 → **2,197** (`fake_repos` 588 → 85, of which the `FakeCore` data bundle and `Faulty`;
+    `fake_athlete` 1,529, `fake_game` 326, `fake_finance` 257 unchanged). `core_seed.dart` grew to 617.
+- **Not done: athlete, game, finance.** I stopped here because my context budget ran out, not at a fake that cannot
+  go. What each needs:
+  - **Game** (`FakeMatchesRepository`, 12 files): the live-match screens take the box score from the matches
+    repository but post events through the events remote (`FakeGameServer`, the sync layer's contract fake, not one
+    of the seven files). On the mock, both must go through it (the real `EventsRemote` on the backend) so the box
+    score matches the events; `sync_worker_test` and the vectors test (WP137) keep `FakeGameServer`.
+  - **Athlete** (`fake_athlete.dart`, 1,529 lines, 20 files): the athlete mock needs the seeding accessors the core
+    mock got (sessions, schedules, attendance, plans, assignments, completions, exercises, injuries, measurements,
+    tests, norms) and data classes like `TeamsData` for its five repositories.
+  - **Finance** (`FakeFinanceRepository`, 11 files): it already wraps the real repository over the mock, but over the
+    demo seed; moving it means explicit finance seeds (plans, dues, payments, expenses) in the empty academy.
+
 | ID | Done / Skipped | What changed or why not |
 |---|---|---|
-| WEB-02 | Done (part) | Tests on the seeded demo mock (ADR-0070). Part 1: audit, academy-request and platform fakes deleted (628 lines). Part 2: academy, seasons, categories, approvals and cases fakes deleted (237 lines), `MockAuthService` out of the release build; 6 mock/contract differences fixed; members, teams, players, athlete, game and finance fakes (2,700 lines) left for follow-up |
+| WEB-02 | Done (part) | Tests on the seeded demo mock (ADR-0070). Part 1: audit, academy-request and platform fakes deleted. Part 2: academy, seasons, categories, approvals, cases; `MockAuthService` out of the release build. Part 3: members, guardians, teams and players: the whole core side runs on the mock. 11 mock/contract differences fixed. Left: athlete, game and finance fakes (2,112 lines; see part 3) |
