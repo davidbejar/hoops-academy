@@ -139,6 +139,19 @@ class MockCoreApi {
   @visibleForTesting
   List<Map<String, Object?>> get cases => _cases;
 
+  /// E-mails of the player logins created here (members' e-mails sign in too).
+  final Set<String> _playerLogins = {};
+
+  /// A new login's temporary password for [email], or null when the e-mail already signs in (it is linked, core
+  /// createPlayer / approveApprovalRequest).
+  String? _newLogin(String email) {
+    final known =
+        _playerLogins.contains(email) ||
+        _members.any((m) => m['email'] == email);
+    _playerLogins.add(email);
+    return known ? null : _mockPassword();
+  }
+
   /// The e-mail a requested player's login is created with when the request is approved, by player id.
   final Map<String, String> _requestedLogins = {};
   @visibleForTesting
@@ -1493,9 +1506,17 @@ class MockCoreApi {
         b['note'] as String?,
       );
       _approvals.add(a);
+      final email = b['email'] as String?;
+      String? password;
+      if (email != null && admin) {
+        password = _newLogin(email);
+      } else if (email != null) {
+        _requestedLogins[pid] = email;
+      }
       return MockResult.json(admin ? 201 : 202, {
         'player': _playerJson(p),
         'approvalRequest': a,
+        'temporaryPassword': ?password,
       });
     }
     final p = _players.where((p) => p['id'] == id).firstOrNull;
@@ -1553,11 +1574,9 @@ class MockCoreApi {
     final a = _approvals.where((a) => a['id'] == id).firstOrNull;
     if (a == null || !_mayReadApproval(a)) return _notFound;
     if (sub == null && method == 'GET') return MockResult.json(200, a);
-    if (a['status'] != 'PENDING')
-      return const MockResult.json(409, {
-        'title': 'Already decided',
-        'status': 409,
-      });
+    if (a['status'] != 'PENDING') {
+      return mockProblem(409, 'Already decided', code: 'NOT_PENDING');
+    }
     final pid = (a['player']! as Map)['id'] as String;
     switch (sub) {
       case 'approve':
@@ -1583,7 +1602,11 @@ class MockCoreApi {
     }
     a['decidedBy'] = _person(selfId, 'Casey Coach');
     a['decidedAt'] = _now();
-    return MockResult.json(200, a);
+    final email = _requestedLogins.remove(pid);
+    final password = sub == 'approve' && email != null
+        ? _newLogin(email)
+        : null;
+    return MockResult.json(200, {...a, 'temporaryPassword': ?password});
   }
 
   /// Convenience for the adapter: JSON bytes of [r].
