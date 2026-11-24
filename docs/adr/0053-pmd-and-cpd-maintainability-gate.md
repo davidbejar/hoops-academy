@@ -71,3 +71,9 @@ ADR-0066 takes the "later look" above for one rule: the membership rule that bui
 context lived in core, game and athlete. It is now written once in `com.hoopsacademy.common.authz` with one table test
 and one PIT entry; a copy of a tenant-isolation rule between Java modules is not accepted (the Go copy in
 finance-service is a language decision, ADR-0055). Other copies between modules keep the rule above.
+
+## Amendment 2026-11-24 (decision 104, WP137): generic plumbing between modules goes to common-quarkus
+ADR-0069 takes the "later look" for the generic plumbing (Problem exceptions and mappers, paging types, Accept-Language,
+the clock, the paged-query builder, the pdf-service client, shared settings, test support): a copy of such code between
+Java modules is not accepted; it lives in common-quarkus or its test-jar. Copies of domain code between modules (the two
+`PatchBody` classes among them) keep the rule above.

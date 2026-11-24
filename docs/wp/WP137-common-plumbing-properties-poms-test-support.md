@@ -81,3 +81,122 @@ do not rename them while moving properties.
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points, ID table (work-package skill). -->
+- **Built** (commits `442767a5`..`dddc01ab` plus this docs commit; behaviour changes after their red tests):
+  - **Dead filter (LIB-06)**: `TenantHeaderPropagationFilter`, its test, the wiring assertion and its PIT entries gone.
+  - **Properties (X-04, LIB-11, CORE-08, CORE-15, GAME-12, ATH-13)**: the 25 lines identical in the three
+    `application.properties` live in common's `microprofile-config.properties` (Dev Services topics, broker defaults,
+    db-kind, schema handling, OIDC role path, early tokens, OTel build keys, the test profile's OIDC / JaCoCo /
+    require-sub); `hoops.core.url`, the core health keys, `/q/health` and `/q/openapi` (defaults) are no longer
+    restated; the stale Kafka comment is fixed. `LibraryDefaultsContract` (test-jar, red first: game and athlete
+    restated `hoops.core.url`) shows each service sees the shared values and restates none. The `@ConfigProperty`
+    `defaultValue`s that repeated a property went (11 keys in core, roster/replica/retention keys, overtime, horizon,
+    zone); `hoops.keycloak.realm` stays (verification). athlete's calendar window reads `hoops.athlete.horizon-weeks`.
+    game and athlete check that the channel subscribes to every `RosterTopic`. With the OTel keys common's own tests
+    run like the services: its `/platform` probe got its own resource path (route template `//platform/...`).
+  - **Poms (LIB-10, CORET-07, GAME-11, ATH-17, CI-13)**: assertj, wiremock-standalone, json-schema-validator managed
+    in the root pom (were in 6, 3, 4 poms); surefire groups, the JaCoCo agent settings, the 90 % rule for
+    `com.hoopsacademy.*.domain*` (athlete's WP127 rule kept) and `keycloak-it` in the root; the services no longer
+    redeclare common's extensions; the dead failsafe management, `failsafe-plugin.version` and `skipITs` went.
+  - **Problem plumbing (LIB-03, X-09, CORE-18, ATH-06, GAME-10 part)**: `common.problem.InvalidRequestException`
+    (all violations) and its mapper replace three copies; `ProblemType.UNSUPPORTED_MEDIA_TYPE` (415) and
+    `IDENTITY_PROVIDER_UNAVAILABLE` (502, core.yaml's slug) end core's hand-built URN; the wrong-type body mapper moved
+    from athlete to common, so core and game now answer it with a `validation` Problem naming the field (was
+    `about:blank` 400); athlete's `JsonParseException` mapper was dead (Quarkus wraps the parse error first; malformed
+    JSON stays `about:blank` 400 in all three, test pins it); athlete's `TrainingRuleViolation` /
+    `TrainingStateConflict` replaced by common's types. pdf-service's guard (`problem.rs`) keeps only
+    `method-not-allowed` as its own slug.
+  - **Small shared types (LIB-04, X-13, X-07, GAME-09, ATH-09 part, X-12, X-06)**: `common.paging` `PageRequest`,
+    `PageResult`, `PageMeta`; `common.i18n` `AppLanguage` + `AcceptLanguage` (core's `AppLocale` and athlete's
+    `ContentLocale` map from it, game uses it directly); `common.time.ClockProducer` (`@DefaultBean`, UTC);
+    `common.client.PdfServiceClients` (client building, `%PDF-` check; core now refuses a non-PDF answer, red first,
+    and reads `hoops.pdf.*` like game; time-outs stay per service).
+  - **Paged-query builder (scope 8)**: core's `PagedQuery` + `QueryConditions` moved to `common.persistence` and
+    serve athlete's five searches (athlete's builder gone); the three semgrep acceptances became one on the library
+    class (fingerprint `2406cf1d3bc267a0`).
+  - **Test support (LIB-05, X-10)**: `ContractFilters`, `LogCapture`, `RlsTestDatabase.bindTenant` (17 hand-written
+    `set_config` in tests gone), `NoBuiltInCredentialsContract` (core now runs it; exemption `quarkus.mailer.password`,
+    ADR-0044 §9).
+  - **Vectors (LIB-02, GAME-07)**: one copy in `libs/contracts/vectors`; game's and the web's copies, the two
+    byte-equality tests and `apps/web/tool/sync_vectors.sh` gone (-6,500 lines).
+  - **finance contract (scope 9)**: `finance.yaml` 1.1.0 declares 413 / 415 on its ten JSON-body operations; the two
+    `outside` marks in `TestInvalidRequestsAreProblemsNamingFieldsNeverValues` are gone; `apps/web/packages/finance`
+    regenerated with openapi-generator 7.27.0 (the pom's version; only README and pubspec changed after the
+    whitespace hooks) and `apps/web/pubspec.lock` follows it.
+  - **Rest (LIB-08, LIB-12)**: `pdf.yaml`'s unused `JerseyNumber` removed (no answer changed, stays 1.0.0); the four
+    exact spec-version pins are lower bounds through `OpenApiSpecs.version` / `release`.
+  - Docs: ADR-0069 (amends ADR-0053, ADR-0014), model pages, `docs/quality/mutation.md` scope rows, game README,
+    contracts vectors README.
+- **Verified** (2026-11-24, fresh, on `dddc01ab`):
+  - `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0`: BUILD SUCCESS, 13:21 min, all coverage, SpotBugs, PMD and
+    CPD gates met. Tests: contracts 346, common-quarkus 576 (was 492), core 1259, game 527, athlete 1025, e2e 38 (32
+    skipped); 0 failures, 0 errors. (Fewer service tests: the Accept-Language, query-builder and credentials tests now
+    run once in common.)
+  - The inherited domain rule bites for athlete: `jacoco:check@check -Djacoco.domain.line.minimum=1.01` on
+    athlete reports `Rule violated for package com.hoopsacademy.athlete.domain`, BUILD FAILURE.
+  - `just mutation`: common-quarkus 486/487 (99.8 %, threshold 99), core 920/921 (99.9 %, 99), game 505/507 (99.6 %,
+    99), athlete 620/620 (100 %, 100).
+  - `just web-test`: 1920 tests, all passed (vectors read from `libs/contracts/vectors`). `just test-rust` (after
+    `problem.rs` and `pdf.yaml`): 105 tests, coverage 95.72 % / 99.80 %, cargo deny ok. `just test-go` (after
+    finance.yaml 1.1.0 and the test change): green, coverage 88.66 % / 98.84 %, govulncheck clean.
+  - `python3 -I -m unittest discover -s scripts/tests`: 71 tests OK (1 skipped) after the root pom change.
+  - Semgrep as `semgrep.yml` runs it (pinned image under Podman): rule tests 11/11; scan + `scripts/sarif-gate.py
+    --fail-on error`: 26 ERROR findings, 26 accepted, gate passed.
+  - `just isolation-check` (by hand, worktree, via the root `keycloak-it` profile): 6 tests + 4 finance Go tests
+    passed. `just db-role-check`: 13 tests + 2 finance Go tests passed.
+  - `scripts/model-diagrams.sh` regenerated `athlete-model.md` and `game-model.md`, then `--check`: up to date.
+    `just docs-build` (strict): no issues.
+  - Contract versions: finance.yaml 1.0.0 -> 1.1.0 (413 / 415 declared). No other spec changed version (`pdf.yaml`
+    lost an unused schema only).
+- **Decisions/ADRs**: ADR-0069 (what is shared, what stays per service and why), indexed; amendments appended to
+  ADR-0053 and ADR-0014.
+- **Open points / for the orchestrator**:
+  - Root files changed: `pom.xml`, `.semgrep/accepted.json` (three PagedQuery entries became one), `docs/adr/README.md`,
+    `docs/quality/mutation.md` (scope rows of common and athlete).
+  - Web (WP138's area, not edited): `apps/web/README.md:186` still names `tool/sync_vectors.sh`; `apps/web/pubspec.lock`
+    changed one line (hoops_finance_api 1.1.0); a merge with WP138 may need `flutter pub get`.
+  - finance (not mine): `internal/adapters/in/rest/api_test.go:105-106` still says 413/415 are not declared yet.
+  - Client-visible changes to note in the release: core and game answer a wrong-type body value with a `validation`
+    Problem (`violations[0].code` `INVALID_VALUE`); core refuses a pdf-service answer that is not a PDF (503).
+  - `kafka.sasl.jaas.config` carries `password="${KAFKA_SASL_PASSWORD:}"` in all three services; the credentials
+    check does not see it (not a `*.password` key); left as it was (PLAINTEXT default needs no password).
+  - Commit `c13c3bdd` was staged from a verified snapshot of the tree (`git --work-tree=<copy> add`) and committed
+    without a path list, to keep it apart from the test-support changes made meanwhile; the hook ran as usual.
+
+| ID | Done / Skipped | What changed or why not |
+|---|---|---|
+| LIB-02 | Done | One copy in `libs/contracts/vectors`; copies, sync script and byte checks gone |
+| LIB-03 | Done | `InvalidRequestException`, 415/502 `ProblemType`s, wrong-type body mapper in common; the parse-error mapper was dead |
+| LIB-04 | Done | `PageRequest`, `PageResult`, `PageMeta` in `common.paging` |
+| LIB-05 | Done (part) | Contract filters, LogCapture, tenant binding in the test-jar; the core-event builders stay per service (ATH-08) |
+| LIB-06 | Done | Filter, tests, PIT entries deleted |
+| LIB-07 | Skipped | Moving components into `common.yaml` renames generated Dart types while WP138 changes the web app, for no answer that changes; for a contract round |
+| LIB-08 | Done | `JerseyNumber` removed from `pdf.yaml` |
+| LIB-10 | Done | Versions and build blocks in the root pom; redeclared extensions dropped |
+| LIB-11 | Done | require-sub and `hoops.core.url` once; stale comment fixed |
+| LIB-12 | Done | Lower bounds through `OpenApiSpecs.version` |
+| LIB-13 | Skipped | Verification: not worth doing on its own (every consumer's schema loading, Go embeds copies); the test guards the copies |
+| X-04 | Done | 25 shared keys in the library, `LibraryDefaultsContract` |
+| X-06 | Done (as corrected) | `PdfServiceClients`, one key family, PDF check in core; time-outs stay per service |
+| X-07 | Done | `AppLanguage` + `AcceptLanguage` in common |
+| X-09 | Done | As LIB-03; athlete's exception pair replaced |
+| X-10 | Done (part) | LogCapture, credentials check (core too), contract filters; WireMock resources, `TokenAudienceKeycloakTest`, `HealthEndpointsTest` left: different keys / stubs, Keycloak-only, small gain |
+| X-12 | Done | `ClockProducer` in common |
+| X-13 | Done | As LIB-04 |
+| CORE-07 | Done (part) | `PageMeta` shared; the 12 page/size parameter pairs and per-resource page records stay (one record per contract schema) |
+| CORE-08 | Done | As X-04 |
+| CORE-15 | Done (as corrected) | `defaultValue`s dropped; `hoops.keycloak.realm` kept (verification); the withdrawn retention stays read as a `String` and parsed to a calendar `Period`, which the code needs |
+| CORE-18 | Done | As LIB-03 |
+| CORET-07 | Done | As LIB-10 |
+| GAME-07 | Done | As LIB-02 |
+| GAME-09 | Done | As X-07 |
+| GAME-10 | Done | Clock, InvalidRequest, LogCapture, Contract; WireMock resource stays |
+| GAME-11 | Done | As LIB-10 |
+| GAME-12 | Done | Restated defaults gone; topics test against `RosterTopic` |
+| ATH-06 | Done | `DomainRuleViolation` / `ConflictException` |
+| ATH-08 | Skipped | Verification PARTLY: two builder APIs over two replicas, test-only, low impact |
+| ATH-09 | Done (part) | Accept-Language, InvalidRequest, Jackson mapper, PageResult; `PatchBody` excluded (X-08) |
+| ATH-13 | Done | Defaults, topics, horizon injected |
+| ATH-17 | Done | As LIB-10 |
+| CI-13 | Done | Dead failsafe management removed (root pom) |
+| Scope 8 | Done | One `PagedQuery` in common; semgrep acceptances moved |
+| Scope 9 | Done | finance.yaml 1.1.0, outside marks gone, package regenerated |
