@@ -1809,7 +1809,7 @@ metadata:
     helm.sh/chart: databases-0.1.0
 spec:
   instances: 1
-  imageName: ghcr.io/cloudnative-pg/postgresql:17
+  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-minimal-trixie
   enableSuperuserAccess: false
   storage:
     size: 5Gi
@@ -1952,7 +1952,7 @@ metadata:
     helm.sh/chart: databases-0.1.0
 spec:
   instances: 1
-  imageName: ghcr.io/cloudnative-pg/postgresql:17
+  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-minimal-trixie
   enableSuperuserAccess: false
   storage:
     size: 1Gi

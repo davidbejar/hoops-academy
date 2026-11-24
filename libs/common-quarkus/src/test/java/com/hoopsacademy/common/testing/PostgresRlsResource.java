@@ -10,9 +10,9 @@ import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 /**
- * Starts {@code postgres:17} with the production bootstrap ({@code infra/db/init/01_roles_schemas.sql} and
- * {@code 02_passwords.sh}) and wires the service so that the default datasource connects as the NON-owner
- * {@code <svc>_app} role while Flyway migrates as {@code <svc>_migrator}.
+ * Starts {@code IMAGE} (the PostgreSQL of compose, ADR-0073) with the production bootstrap
+ * ({@code infra/db/init/01_roles_schemas.sql} and {@code 02_passwords.sh}) and wires the service so that the default
+ * datasource connects as the NON-owner {@code <svc>_app} role while Flyway migrates as {@code <svc>_migrator}.
  *
  * <p>Init args: {@code service} (default {@code core}); {@code initDir} (default: {@code infra/db/init} found by
  * walking up from the working directory, or system property {@code hoops.db.init-dir}).
@@ -29,7 +29,7 @@ public class PostgresRlsResource implements QuarkusTestResourceLifecycleManager 
     static final String INIT_DIR_PROPERTY = "hoops.db.init-dir";
     private static final String DEFAULT_SERVICE = "core";
     private static final DockerImageName IMAGE =
-            DockerImageName.parse("docker.io/library/postgres:17").asCompatibleSubstituteFor("postgres");
+            DockerImageName.parse("docker.io/library/postgres:19.0-trixie").asCompatibleSubstituteFor("postgres");
     private static final String INIT_TARGET = "/docker-entrypoint-initdb.d/";
 
     private String service = DEFAULT_SERVICE;

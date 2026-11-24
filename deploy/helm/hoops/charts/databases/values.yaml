@@ -1,5 +1,7 @@
-# PostgreSQL 17 (PLAN decision). Pin a minor tag for reproducibility in real environments.
-imageName: ghcr.io/cloudnative-pg/postgresql:17
+# PostgreSQL 19 (ADR-0073), the version of compose and the test harnesses (scripts/bump_pins.py). CloudNativePG's
+# MM.mm-TYPE-OS tag: `minimal` (no extension is used; JIT is off by default from 19), Debian trixie like the official
+# image. A cluster with data changes major by import, not by editing this line (docs/runbooks/postgresql-major.md).
+imageName: ghcr.io/cloudnative-pg/postgresql:19.0-minimal-trixie
 hoopsDb:
   name: hoops-db
   instances: 1

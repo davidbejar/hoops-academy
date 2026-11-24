@@ -1,4 +1,4 @@
-// Package pgtest gives every database test of finance-service a PostgreSQL: postgres:17 with the production bootstrap
+// Package pgtest gives every database test of finance-service a PostgreSQL (Image) with the production bootstrap
 // (infra/db/init: roles, schemas, RLS helpers, passwords), migrated as finance_migrator. Tests connect as finance_app
 // (non-owner, no BYPASSRLS) for everything the service does, and as finance_migrator only where the Java harness does
 // (fixtures of the generic isolation suite). Never as a superuser (rule 2).
@@ -34,7 +34,7 @@ import (
 )
 
 // Image is the same PostgreSQL as compose and the Java services' PostgresRlsResource.
-const Image = "docker.io/library/postgres:17"
+const Image = "docker.io/library/postgres:19.0-trixie"
 
 // TemplateEnv names the superuser URL (database postgres) of a running server whose database `hoops` is bootstrapped
 // and migrated: the test binaries copy it instead of starting a container each.
@@ -119,7 +119,7 @@ func rolesOf(sql string) ([]string, error) {
 	return roles, nil
 }
 
-// Server is a running postgres:17 with database `hoops` bootstrapped and migrated.
+// Server is a running PostgreSQL (Image) with database `hoops` bootstrapped and migrated.
 type Server struct {
 	// AdminURL connects as the container's superuser to the database postgres: only to copy and drop databases.
 	AdminURL  string

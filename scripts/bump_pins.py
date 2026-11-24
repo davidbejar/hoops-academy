@@ -41,10 +41,12 @@ class Pin:
 #   deploy/lib/platform.sh Envoy Gateway, CNPG     | GitHub releases API (kind/up.sh and cloud/install.sh source it)
 #   kind/up.sh             ESO                        | GitHub releases API
 #   deploy/lib/platform.sh Reloader chart+digest+image digest | skopeo (OCI chart, appVersion)
-#   compose.yaml databases values.yaml PostgresRlsResource pgtest.go images.yml  PostgreSQL tag (one pin over the five
-#                          files; docker.io/library/postgres and ghcr.io/cloudnative-pg/postgresql) | skopeo list-tags.
-#                          Minor of the pinned major only; a pin naming the major alone ("17") stays and a newer major is
-#                          only reported. The version itself moves by hand (WP144).
+#   compose.yaml databases values.yaml PostgresRlsResource pgtest.go images.yml  PostgreSQL version (one pin over the
+#                          five files; docker.io/library/postgres:<v>-trixie, ghcr.io/cloudnative-pg/postgresql:
+#                          <v>-minimal-trixie: the flavour stays outside the group) | skopeo list-tags of both registries:
+#                          a version counts only when every registry publishes it in its flavour. Minor of the pinned
+#                          major only; a pin naming the major alone ("19") stays and a newer major is only reported. The
+#                          major moves by hand (WP144, ADR-0073).
 # Recorded from the pins, not pins themselves: the chart snapshots (deploy/helm/tests/run.sh --update) and the
 # ExternalSecret schema of the ESO version (deploy/helm/tests/schemas/update-eso.sh). bump-pins.yml re-records both.
 # Gateway API (platform.sh) is NOT bumped here: it must match Envoy Gateway's compatibility matrix (ADR-0031), by hand.
@@ -69,13 +71,15 @@ PINS = [
         "image", repo="docker.io/redpandadata/redpanda", tag_re=SEMVER),
     Pin("redpanda (Dev Services)", ["libs/common-quarkus/src/main/resources/META-INF/microprofile-config.properties"],
         r"redpandadata/redpanda:(?P<tag>[\w.\-]+)$", "image", repo="docker.io/redpandadata/redpanda", tag_re=SEMVER),
-    # Five places pin the same major (WP142); scripts/tests/test_postgres_pin.py checks that none is missing.
+    # Five places pin the same version (WP142, WP144); scripts/tests/test_postgres_pin.py checks that none is missing and
+    # that each registry is named in its flavour.
     Pin("postgresql",
         ["infra/compose/compose.yaml", "deploy/helm/hoops/charts/databases/values.yaml",
          "libs/common-quarkus/src/test/java/com/hoopsacademy/common/testing/PostgresRlsResource.java",
          "services/finance-service/internal/testsupport/pgtest/pgtest.go", ".github/workflows/images.yml"],
-        r"(?:library/postgres|cloudnative-pg/postgresql):(?P<tag>\d+(?:\.\d+)?)(?![\w.\-])", "image",
-        repo="docker.io/library/postgres", tag_re=r"^(\d+(?:\.\d+)?)$", major_only_stays=True),
+        r"(?:library/postgres|cloudnative-pg/postgresql):(?P<tag>\d+(?:\.\d+)?)(?:-[a-z]+)*(?![\w.\-])", "image",
+        repo="docker.io/library/postgres", tag_re=r"^(\d+(?:\.\d+)?)$", major_only_stays=True,
+        flavours={"docker.io/library/postgres": "{}-trixie", "ghcr.io/cloudnative-pg/postgresql": "{}-minimal-trixie"}),
     Pin("mailpit (chart)", ["deploy/helm/hoops/values.yaml"],
         r"repository: docker\.io/axllent/mailpit, tag: (?P<tag>[\w.\-]+)\}", "image",
         repo="docker.io/axllent/mailpit", tag_re=SEMVER),
@@ -126,6 +130,19 @@ def skopeo(*args):
     return done.stdout
 
 
+def list_tags(repo):
+    return json.loads(skopeo("list-tags", f"docker://{repo}"))["Tags"]
+
+
+def published_everywhere(flavours):
+    """The versions every registry publishes in its flavour ({repo: "{}-minimal-trixie"}), as bare version tags."""
+    found = []
+    for repo, flavour in flavours.items():
+        rx = re.compile("^" + re.escape(flavour).replace(r"\{\}", r"(\d+(?:\.\d+)?)") + "$")
+        found.append({m.group(1) for t in list_tags(repo) if (m := rx.match(t))})
+    return sorted(set.intersection(*found), key=vtuple)
+
+
 def image_digest(repo, tag):
     return skopeo("inspect", "--format", "{{.Digest}}", f"docker://{repo}:{tag}").strip()
 
@@ -163,10 +180,10 @@ def resolve(pin, current, major):
         if "floating" in o:
             new["digest"] = image_digest(o["repo"], o["floating"])
         else:
-            tags = json.loads(skopeo("list-tags", f"docker://{o['repo']}"))["Tags"]
+            tags = published_everywhere(o["flavours"]) if "flavours" in o else list_tags(o["repo"])
             new["tag"], anyv = pick(tags, o["tag_re"], current["tag"], major, o.get("even_minor", False))
             if o.get("major_only_stays") and len(vtuple(current["tag"])) == 1 and not major:
-                new["tag"] = current["tag"]  # a floating major ("17") has no minor to bump
+                new["tag"] = current["tag"]  # a floating major ("19") has no minor to bump
             if "digest" in current:
                 new["digest"] = image_digest(o["repo"], new["tag"])
             note = f"major {anyv} available (--major)" if vtuple(anyv)[0] > vtuple(new["tag"])[0] and not major else ""
