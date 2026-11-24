@@ -130,3 +130,11 @@ V10-V19 WP119, V20-V29 WP123. goose and golang-migrate were not chosen: their fi
 - The Go tests start a Postgres (and once a Redpanda) per test binary: `-p 2` in `check.sh` keeps the 2-CPU VM usable.
 - `.env` needs `FINANCE_MIGRATOR_PASSWORD`, `FINANCE_APP_PASSWORD` and `REDPANDA_FINANCE_SERVICE_PASSWORD` for kind
   (`deploy/kind/env-keys.sh` requires them) and `just finance-up`.
+
+## Amendment (WP139, 2026-11-24): finance's passwords required like every role's
+The finance roles' passwords were optional in compose (`${FINANCE_*_PASSWORD:-}`, a second branch in `02_passwords.sh`)
+so that a `.env` from before finance still started the stack, and `infra/compose/finance-db.sh` set them a third way.
+With the one role list of the bootstrap SQL (ADR-0006 amendment, INF-03) `02_passwords.sh` requires `<ROLE>_PASSWORD`
+for every listed role, compose requires both finance variables, and `infra/compose/db-roles.sh` (replacing
+`finance-db.sh`, run by `just finance-up` and `e2e/bin/services-up.sh`) re-applies the SQL and that one script on an
+existing compose database. `.env.example` has carried the two variables since WP118.
