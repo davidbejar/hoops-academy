@@ -117,9 +117,10 @@ class PlanJpaRepository implements PlanRepository {
             + "i.title)";
 
     /**
-     * Ad-hoc session plans are never listed. {@code q} matches the shown name or the shown title of an item; without a
-     * trigram index (the migrator may not create extensions, ADR-0041) the item side is a correlated EXISTS over
-     * {@code plan_item_plan_idx}, fine for the few hundred plans of an academy and the ten templates.
+     * Ad-hoc session plans are never listed. {@code q} matches the shown name or the shown title of an item; the RLS
+     * policy's owner condition is the index (one academy's plans plus the templates) and the item side is a correlated
+     * EXISTS over {@code plan_item_plan_idx}. A trigram index would not be used: under RLS a non-leakproof
+     * {@code lower(...) like} never becomes an index condition (ADR-0075).
      */
     @Override
     public PageResult<TrainingPlan> search(Search search) {

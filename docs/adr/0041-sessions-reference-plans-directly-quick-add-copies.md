@@ -38,6 +38,8 @@ had to be copied first. There is no exercise catalogue yet: exercises are the it
 5. **No trigram index.** `pg_trgm` is not installed and the migrator has no CREATE on the database, so it cannot
    install it; the item side of the search is a correlated `EXISTS` over `plan_item_plan_idx`, adequate for an academy's
    plan library plus ten templates. A trigram index needs the extension in `infra/db/init` and the chart (follow-up).
+   *Amended by ADR-0075 (WP145): no trigram index, because under RLS the app role's non-leakproof `lower(…) like` never
+   becomes an index condition; the policy's owner index already bounds the search to one academy.*
 6. **No new table.** The own plan is a `training_plan` row; its RLS (custom owner policies, `TemplateRlsIsolationTest`)
    is unchanged. The composite FK `(owner_tenant_id, ad_hoc_for_session) → training_session (tenant_id, id)` keeps it on
    a session of the same tenant (added `NOT VALID`: validation would scan the table under forced RLS without a tenant;
