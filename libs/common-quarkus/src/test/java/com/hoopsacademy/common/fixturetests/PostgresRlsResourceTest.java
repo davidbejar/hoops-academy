@@ -11,6 +11,7 @@ import jakarta.inject.Inject;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -48,6 +49,19 @@ class PostgresRlsResourceTest {
                 ResultSet rs = c.createStatement().executeQuery("select current_user")) {
             rs.next();
             assertThat(rs.getString(1)).isEqualTo("core_migrator");
+        }
+    }
+
+    @Test
+    void everyRoleOfTheListLogsInWithTheVariableNamedAfterIt() throws SQLException {
+        // 02_passwords.sh sets <ROLE>_PASSWORD for every role the SQL lists, finance's included (INF-03)
+        for (String role : List.of("core_migrator", "core_app", "core_platform", "game_migrator", "game_app",
+                "athlete_migrator", "athlete_app", "finance_migrator", "finance_app")) {
+            try (Connection c = RlsTestDatabase.fromConfig().openAs(role);
+                    ResultSet rs = c.createStatement().executeQuery("select current_user")) {
+                rs.next();
+                assertThat(rs.getString(1)).isEqualTo(role);
+            }
         }
     }
 }
