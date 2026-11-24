@@ -39,7 +39,7 @@ func TestTheDuesListShowsItsSQLUnderTheRequestSpanAndNoValue(t *testing.T) {
 	for _, span := range database {
 		operations = append(operations, span.Name())
 	}
-	fmt.Printf("WP143 finance dues list: %d spans, %d database spans %v\n", len(list), len(database), operations)
+	t.Logf("WP143 finance dues list: %d spans, %d database spans %v", len(list), len(database), operations)
 	if text := exportedText(recorder.Ended()); strings.Contains(text, "Quorrowby") || strings.Contains(text, l.id()) {
 		t.Errorf("a value or the tenant is on a span:\n%s", text)
 	}
@@ -85,12 +85,12 @@ func exportedText(spans []sdktrace.ReadOnlySpan) string {
 	for _, span := range spans {
 		fmt.Fprintf(&text, "%s | %s |", span.Name(), span.Status().Description)
 		for _, kv := range span.Attributes() {
-			fmt.Fprintf(&text, " %s=%s", kv.Key, kv.Value.Emit())
+			fmt.Fprintf(&text, " %s=%s", kv.Key, kv.Value.String())
 		}
 		for _, event := range span.Events() {
 			fmt.Fprintf(&text, " | %s", event.Name)
 			for _, kv := range event.Attributes {
-				fmt.Fprintf(&text, " %s=%s", kv.Key, kv.Value.Emit())
+				fmt.Fprintf(&text, " %s=%s", kv.Key, kv.Value.String())
 			}
 		}
 		text.WriteString("\n")

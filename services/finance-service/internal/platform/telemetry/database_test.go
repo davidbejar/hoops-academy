@@ -53,7 +53,7 @@ func TestAStatementIsAClientSpanUnderTheCallerWithTheParameterisedText(t *testin
 	db := spans[0]
 	attributes := map[string]string{}
 	for _, kv := range db.Attributes() {
-		attributes[string(kv.Key)] = kv.Value.Emit()
+		attributes[string(kv.Key)] = kv.Value.String()
 	}
 	if db.Name() != "SELECT" || db.SpanKind() != trace.SpanKindClient || db.Parent().SpanID() != parent.SpanContext().SpanID() {
 		t.Errorf("span %s kind %v parent %v", db.Name(), db.SpanKind(), db.Parent().SpanID())
@@ -88,8 +88,8 @@ func TestARefusedStatementKeepsItsSQLStateNotTheServersText(t *testing.T) {
 		t.Errorf("no exception event (the driver's text may quote a value): %v", db.Events())
 	}
 	for _, kv := range db.Attributes() {
-		if strings.Contains(kv.Value.Emit(), "Quorrowby") {
-			t.Errorf("%s carries a value: %s", kv.Key, kv.Value.Emit())
+		if strings.Contains(kv.Value.String(), "Quorrowby") {
+			t.Errorf("%s carries a value: %s", kv.Key, kv.Value.String())
 		}
 	}
 }
