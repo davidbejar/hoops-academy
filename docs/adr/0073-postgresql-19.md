@@ -15,8 +15,8 @@ compose database is dumped, a fresh volume is bootstrapped and reseeded, not res
 - CloudNativePG's registry publishes 19 only as flavoured tags (`19.0-minimal-trixie`, `19.0-standard-trixie`,
   `19.0-system-trixie`, the same on bookworm); there is no plain `19`. The chart's old `postgresql:17` was one of the
   deprecated rolling tags: it still pointed at **17.11 on Debian bullseye** (built 2026-08-31, no 17.12 security fix).
-- From 18 the official image keeps its cluster in `/var/lib/postgresql/<major>/docker` (19: `PGDATA=
-  /var/lib/postgresql/19/docker`) and declares the volume at `/var/lib/postgresql`; compose mounted `.../data`.
+- From 18 the official image keeps its cluster in `/var/lib/postgresql/<major>/docker` (19: `PGDATA` is
+  `/var/lib/postgresql/19/docker`) and declares the volume at `/var/lib/postgresql`; compose mounted `.../data`.
 
 ## What was checked (sources read on 2026-11-24)
 | Component | Version here | Source | Verdict |
@@ -26,7 +26,7 @@ compose database is dumped, a fresh volume is bootstrapped and reseeded, not res
 | Keycloak (server) | 26.8.2 | `docs/guides/server/templates/databases.adoc` at tag 26.8.2: PostgreSQL "18.x, 17.x, 16.x, 15.x, 14.x", tested 18 (`pom.xml` `postgresql.version` 18); db guide: "not a supported configuration if the … Hibernate dialect allows the use of a version that differs" | **Not listed**, no refusal. **Works here**: fresh schema (Liquibase, 101 tables) and realm import of `realm-academy.json` on 19.0 (compose-like throwaway), and on kind (production mode, `keycloak-db`) |
 | Keycloak's JDBC driver | pgjdbc 42.7.13 | Keycloak `pom.xml` 26.8.2 | see pgjdbc |
 | Flyway (Quarkus BOM 3.40.1.2) | 12.0.0 (`flyway-database-postgresql`) | bytecode of `PostgreSQLDatabase.ensureSupported`: `recommendFlywayUpgradeIfNecessaryForMajorVersion("18")`, which only logs `Log.warn`; the same "18" in 12.10.0 and 13.13.0 (newest on Maven Central) | **Warns, does not refuse** ("Using PostgreSQL 19.0 which is newer than the version Flyway has been verified with"); no Flyway release knows 19 yet, so no bump helps. **Works here**: every migration of core, game, athlete in `just test` |
-| PostgreSQL JDBC driver | 42.7.13 | pgjdbc README ("compatible with PostgreSQL 8.4 and higher", regression tests against every version since 9.1 and master); CHANGELOG 42.7.10: "fix: non-standard strings failing test for version 19"; 42.7.4+: protocol 3.2 cancel keys | **Supported** |
+| PostgreSQL JDBC driver | 42.7.13 | pgjdbc README ("compatible with PostgreSQL 8.4 and higher", regression tests against every version since 9.1 and master); CHANGELOG 42.7.10: "fix: non-standard strings failing test for version 19"; 42.7.6: protocol 3.2 and wider cancel keys | **Supported** |
 | pgx (finance-service) | v5.13.0 | pgx README "Supported Go and PostgreSQL Versions": the PostgreSQL majors of the last five years, "PostgreSQL 14 and higher" | **Supported** |
 | finance-service migrations | own runner | `internal/adapters/out/persistence/migrate.go` (no version check) | **Works here** (`just test-go`) |
 | Testcontainers (Java 2.x, Go v0.45.0) | — | `PostgreSQLContainer` and the Go module pass the image through; no data volume | **Works here** |
@@ -40,8 +40,8 @@ Version 19"):
 | 18: `initdb` enables data checksums by default | `data_checksums = on` on the fresh compose bootstrap and on both kind clusters (CloudNativePG 1.30.2 keeps the default). No effect on behaviour |
 | 18: MD5 passwords deprecated (warnings); 19: a warning after MD5 authentication | Every role has a SCRAM-SHA-256 verifier (`password_encryption = scram-sha-256`; checked on the fresh bootstrap) |
 | 18: RESTRICT foreign-key violations report `23001` instead of `23503` | No `ON DELETE/UPDATE RESTRICT` in any migration; the tests that expect `23503` insert a child without its parent (unchanged) |
-| 18: AFTER triggers run as the role active when the event was queued | Only finance's `BEFORE` trigger on `audit_event`; no role switch inside a transaction |
-| 18: VACUUM/ANALYZE process inheritance children; unlogged partitioned tables refused; `COPY` CSV `\.` | Not used |
+| 18: AFTER triggers run as the role active when the event was queued | No `AFTER` trigger: only `BEFORE` triggers (core `season_no_overlap`, core and finance `audit_event_append_only`) |
+| 18: VACUUM/ANALYZE process inheritance children; unlogged partitioned tables refused; `COPY` CSV `\.`; 19: `inet`/`cidr` opclasses, `json_array()` on no rows, `COPY FROM … WHERE` on system columns | Not used (grep of every migration, the init SQL and the Java/Go sources) |
 | 18/19: full text search and pg_trgm follow the database's locale provider | Not used (`V7__session_plans.sql`: no pg_trgm); the provider is libc anyway |
 | 19: `standard_conforming_strings` always on | Already on; `scripts/pg-major-move.sh` refuses a dump while it is off |
 | 19: JIT off by default; `max_locks_per_transaction` 64 → 128; `io_workers` removed; RADIUS removed | No setting of these anywhere |
@@ -52,8 +52,8 @@ Version 19"):
    yet and Flyway warns; the suites, the fresh bootstrap and the kind smoke ran on 19 without a difference, so the
    fall-back to 18.7 is not taken. When CloudNativePG 1.31 or a Keycloak release lists 19, nothing changes here.
 2. **One minor in five places, a flavour per registry**: `docker.io/library/postgres:19.0-trixie` (compose,
-   `PostgresRlsResource`, finance's `pgtest.go`, the images workflow) and `ghcr.io/cloudnative-pg/postgresql:
-   19.0-minimal-trixie` (the `databases` sub-chart). `scripts/bump_pins.py` reads the version out of the flavoured tags
+   `PostgresRlsResource`, finance's `pgtest.go`, the images workflow) and
+   `ghcr.io/cloudnative-pg/postgresql:19.0-minimal-trixie` (the `databases` sub-chart). `scripts/bump_pins.py` reads the version out of the flavoured tags
    and applies a newer minor only when **both** registries publish it in the pinned flavour (CloudNativePG publishes
    later than Docker Hub); a new major is only reported. `scripts/tests/test_postgres_pin.py` holds the five places, the
    flavours and the major together.
@@ -66,8 +66,11 @@ Version 19"):
    the new major), then the reseed of decision 115. Runbook: `docs/runbooks/postgresql-major.md`.
 5. **A CloudNativePG cluster with data** does not change major by editing `imageName`: CloudNativePG's offline in-place
    upgrade needs the same Debian distribution on both sides and the old tag is bullseye, for which no 19 image exists.
-   It moves by import into a new cluster (`bootstrap.initdb.import`, or logical replication), described in the runbook.
-   Only throwaway kind clusters exist today; the cloud VM was never applied.
+   It moves by CloudNativePG's offline import into new Clusters (`hoops-db`: `monolith` with the nine roles, then the
+   idempotent bootstrap SQL once more; `keycloak-db`: `microservice`), with a temporary superuser on the old Clusters
+   (FORCE RLS rules out a non-superuser dump) and Cluster manifests written by hand (the chart has no `import` stanza),
+   or by logical replication; described in the runbook, not run. Only throwaway kind clusters exist today; the cloud VM
+   was never applied.
 
 ## Consequences
 - Flyway logs `WARN Using PostgreSQL 19.0 which is newer than the version Flyway has been verified with. The latest

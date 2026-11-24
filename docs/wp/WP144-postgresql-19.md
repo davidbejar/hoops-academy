@@ -93,7 +93,7 @@ smoke ran on 19 without a difference, so the 18.7 fall-back was not taken (ADR-0
   - **The pin** (`scripts/bump_pins.py`, red test first): the regex takes the version out of flavoured tags
     (`19.0-trixie`, `19.0-minimal-trixie` are one mention each, tag `19.0`); option `flavours` resolves a version only
     when **every** registry publishes it in the pinned flavour (CloudNativePG publishes later than Docker Hub); a newer
-    major is reported, applied only with `--major`; a major-only pin still stays. `test_postgres_pin.py` (17 tests):
+    major is reported, applied only with `--major`; a major-only pin still stays. `test_postgres_pin.py` (16 tests):
     the five places, one minor of major 19, the flavour per registry, the one-registry-only minor not applied, the
     rewrite keeps the flavours, the compose volume. The repo now pins a **minor** in all five places.
   - **The five places** on 19.0: `compose.yaml`, the `databases` sub-chart (`19.0-minimal-trixie`: no extension used,
@@ -103,12 +103,13 @@ smoke ran on 19 without a difference, so the 18.7 fall-back was not taken (ADR-0
   - **Compose volume per major**: `pgdata-19` (`hoops_pgdata-19`) mounted at `/var/lib/postgresql` (the 18+ image's
     `PGDATA` is `/var/lib/postgresql/19/docker`). `hoops_pgdata` is no longer declared: compose neither reuses nor drops
     it; it is the way back.
-  - **`scripts/pg-major-move.sh`** (red test first, `test_pg_major_move.py`, 14 tests with stub `podman`/`just`): dry run
-    by default; `--apply` checks (container running on the old volume, older major than compose, `standard_conforming_
-    strings` on, new volume absent), `pg_dumpall` with the old server's tools inside its container (socket, no password)
+  - **`scripts/pg-major-move.sh`** (red tests first, `test_pg_major_move.py`, 15 tests with stub `podman`/`just`): dry run
+    by default; `--apply` checks (container running on the old volume, older major than compose,
+    `standard_conforming_strings` on, new volume absent), `pg_dumpall` with the old server's tools inside its container (socket, no password)
     under `umask 077` into `--out` (absolute, outside the repo, 0700; dump 0600 + `.sha256`), then `just down`, `just up`,
-    check of the new major and that the old volume is still there; prints next steps and the way back. Never removes a
-    volume, never prints a password or verifier (tested). `--dump-only`, `--container`, `--old-volume`.
+    check of the new major and that the old volume is still there; prints next steps and the way back; a failed `just up`
+    after `just down` stops with what to do by hand. Never removes a volume, never prints a password or verifier
+    (tested). `--dump-only`, `--container`, `--old-volume`.
   - **ADR-0073**, runbook `docs/runbooks/postgresql-major.md` (compose move and way back; the CloudNativePG path for a
     cluster with data: import into a new cluster, not an `imageName` flip, because in-place `pg_upgrade` needs the same
     Debian base and the old tag is bullseye), runbooks naming 17 / `hoops_pgdata` updated (local-stack, kind,
@@ -116,20 +117,27 @@ smoke ran on 19 without a difference, so the 18.7 fall-back was not taken (ADR-0
   - **kind smoke race fixed** (`deploy/kind/smoke.sh`): academy B's checks waited for a consumer lag of 0, true before
     core's outbox (1 s poll) has published; on 19 finance answered 404 "no membership" 20 ms before it applied B's
     events, 2 runs of 2 (data correct right after: `finance.person_ref`/`tenant_ref` rows present). The smoke now waits
-    for core's published counter to grow by B's two events. A timing bug of the script, not a database behaviour.
+    for core's published counter to grow by B's two events. A timing bug of the script, not a database behaviour
+    (timestamps: B created 13:38:39.08, events published 40.233, finance's 404s at 40.210, applied at 40.228). No control
+    run on 17 was made, and the fix has no committed red test (the two failing smoke runs were the red).
 - Verified (fresh, 2026-11-24, all on PostgreSQL 19.0):
-  - `./mvnw -o -B -ntp -T 1C verify -Dquarkus.http.test-port=0` (with `MAVEN_ARGS=-Daether.remoteRepositoryFilter.
-    prefixes=false`, see open points): **BUILD SUCCESS**: contracts 346, common-quarkus 585, core 1267, game 530,
-    athlete 1028 tests, 0 failures/errors (e2e module 38, 32 skipped as always); coverage gates passed; Flyway logged
-    "Using PostgreSQL 19.0 which is newer than the version Flyway has been verified with" and migrated everything.
-  - `just test-go`: rc 0, 15 packages ok (174 test functions, RLS + isolation suites, `DatabaseSpans` tests), coverage
+  - `./mvnw -o -B -ntp -T 1C verify -Dquarkus.http.test-port=0`, with
+    `MAVEN_ARGS=-Daether.remoteRepositoryFilter.prefixes=false` (see open points): **BUILD SUCCESS**: contracts 346,
+    common-quarkus 585, core 1267, game 530, athlete 1028 tests, 0 failures/errors (e2e module: 38, of which the 32
+    `JourneyTest` journeys skip without a running stack); WP143's `DatabaseSpansTest` ran (core 5, game 2, athlete 2);
+    coverage gates passed; Flyway logged "Using PostgreSQL 19.0 which is newer than the version Flyway has been verified
+    with" and migrated everything.
+  - `just test-go`: rc 0, 15 packages ok (174 test functions, RLS + isolation suites, the dues-list tracing test), coverage
     88.75 % / domain 98.84 %, govulncheck ok. `just test-rust`: rc 0, 105 tests, coverage 95.72 % / domain 99.80 %,
     cargo deny ok.
   - `just isolation-check` (worktree): 6 Java + 4 Go tests passed. `just db-role-check` (worktree): 13 Java + 2 Go tests
     passed. Both start the worktree's pinned image (19.0-trixie).
   - `python3 -I -m unittest discover -s scripts/tests`: 138 tests OK (1 skipped, as before). `deploy/helm/tests/run.sh`:
     ALL CHART TESTS PASSED. `just docs-build`: no issues. `actionlint images.yml`, `shellcheck pg-major-move.sh`: clean.
-    `scripts/bump-pins.sh --check` (live): `ok postgresql: 19.0`, 0 outdated of 17.
+    `scripts/bump-pins.sh --check` (live): `ok postgresql: 19.0`, 0 outdated of 17. On the compose image (19.0):
+    `scripts/model-diagrams.sh --check` "pages up to date" (catalog-derived ER diagrams unchanged),
+    `scripts/tests/events-drift.test.sh` 49 passed. `podman compose --env-file .env.example ... config`: volume
+    `pgdata-19` → `hoops_pgdata-19`, target `/var/lib/postgresql`.
   - **Fresh bootstrap** (throwaway `wp144-pg` from `postgres:19.0-trixie`, compose's three init mounts and environment,
     own port 55439, network and volume at `/var/lib/postgresql`, generated passwords never printed; all removed after):
     `PGDATA=/var/lib/postgresql/19/docker`, `data_checksums=on`, `password_encryption=scram-sha-256`. Roles: the nine
@@ -155,22 +163,27 @@ smoke ran on 19 without a difference, so the 18.7 fall-back was not taken (ADR-0
      `hoops_pgdata-19`)
   2. `scripts/pg-major-move.sh --out "$HOME/hoops-pg17-dump" --apply` (dump, `just down`, `just up` on 19)
   3. `just seed-users`, `just services-up`, `just seed-academy`, `just finance-up`, `just events-backfill force`
-  4. `just isolation-check && just db-role-check`
+  4. `just events-drift` (exit 0), and `podman exec hoops-postgres psql -XAt -U postgres -d hoops -c 'show
+     server_version'` (19.0) plus the roles query of the runbook. (`just isolation-check` / `db-role-check` use their
+     own Testcontainers database: they prove the code on 19, not the owner's stack; both are green above.)
   - **Way back**: `git checkout <pre-WP144 commit> -- infra/compose/compose.yaml` (or revert the merge), `just down &&
     just up` (17 on the untouched `hoops_pgdata`), `just events-backfill force`. The dump is a second copy. Remove
     `hoops_pgdata` by hand only once 19 has proven itself. `.env` needs no change.
-- Not run: the move on the owner's stack (orchestrator, above); `just up` from this worktree (would recreate the
+- Not run: the move on the owner's stack (orchestrator, above); `--apply` past the dump (`just down`, `just up`, the
+  major check) and the way back ran only against stubs; `just up` from this worktree (would recreate the
   owner's containers); a CloudNativePG cluster with data moved by import (described only; no such cluster exists);
   the images workflow and CI on 19 (CI runs them); the compose `observability` profile.
 - Open points:
+  0. **Urgent at merge**: README.md (line 82), `docs/HANDOVER.md` (line 289) and older WP notes (WP32, WP139) still say
+     `podman volume rm hoops_pgdata` as the reset command. After the move that deletes the way back (17's data), not the
+     live database: the live volume is `hoops_pgdata-19`. The runbooks of this package already say `hoops_pgdata-19`.
   1. INF-07: after step 2 Keycloak imports the current `realm-academy.json` into a fresh database, so the realm
      retrofit in `infra/keycloak/seed-users.sh` (the `kc`/`kcadm` login, `client_id_of`, `realm_file` and the four
      blocks bearer-only, audiences, admin-scope, hardening, about lines 19-100) and its test in `test_local_stack.py`
      (`test_the_retrofit_reads_the_realm_file_with_one_helper`) can go once the owner's stack is rebuilt, unless other
      stacks with old realms remain. Not deleted here.
-  2. Docs pass (WP147): README.md (line 32 "PostgreSQL 17", line 82 `hoops_pgdata`), `docs/HANDOVER.md`, PLAN, architecture,
-     conformance, threat model, ADR-0055/0063 prose still name 17 or `hoops_pgdata`; the volume to remove is now
-     `hoops_pgdata-19`.
+  2. Docs pass (WP147): README.md (line 32 "PostgreSQL 17"), `docs/HANDOVER.md`, PLAN, architecture, conformance,
+     threat model, ADR-0055/0063 prose still name 17. `.dependency-check-suppressions.xml` no longer names a version.
   3. Maven: even with `-o` the resolver's prefix filter fetched `prefixes.txt` from repository.jboss.org and hung on its
      socket (thread dump); `MAVEN_ARGS=-Daether.remoteRepositoryFilter.prefixes=false` avoids it. The hooks and
      `build-images.sh --from-host` would need it while jboss is down (not changed: outside scope).
