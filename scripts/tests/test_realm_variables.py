@@ -15,6 +15,12 @@ REALM_URL, ADMIN_URL = "OIDC_AUTH_SERVER_URL", "KEYCLOAK_ADMIN_URL"
 REALM_DEFAULT, ADMIN_DEFAULT = "http://localhost:8080/auth/realms/academy", "http://localhost:8080/auth"
 # Old names and the stale port. History (ADRs, work-package records) keeps them; this file names them on purpose.
 RETIRED = r"(^|[^A-Z_])(KEYCLOAK_URL|E2E_KEYCLOAK_ADMIN_URL)([^A-Z_]|$)|localhost:8180([^0-9]|$)"
+# Files that name an old variable on purpose: this one, and the two Java tests that set it to show it has no effect.
+PROVE_THE_OLD_NAME_IS_IGNORED = [
+    "scripts/tests/test_realm_variables.py",
+    "libs/common-quarkus/src/test/java/com/hoopsacademy/common/testing/LibraryDefaultsContract.java",
+    "services/core-service/src/test/java/com/hoopsacademy/core/config/KeycloakAdminUrlTest.java",
+]
 LIBRARY = "libs/common-quarkus/src/main/resources/META-INF/microprofile-config.properties"
 SERVICES = ["core", "game", "athlete"]
 
@@ -32,7 +38,7 @@ def text(rel):
 
 class RetiredNames(unittest.TestCase):
     def test_no_tracked_file_names_an_old_variable_or_port_8180(self):
-        hits = git_grep(RETIRED, ".", ":!docs/adr", ":!docs/wp", ":!scripts/tests/test_realm_variables.py")
+        hits = git_grep(RETIRED, ".", ":!docs/adr", ":!docs/wp", *(f":!{rel}" for rel in PROVE_THE_OLD_NAME_IS_IGNORED))
         self.assertEqual(hits, [])
 
 

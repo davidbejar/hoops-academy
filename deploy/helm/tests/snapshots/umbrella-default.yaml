@@ -20,7 +20,7 @@ data:
   ATHLETE_ROSTER_SOURCE: "rest"
   HOOPS_CORE_URL: "http://core-service:8081"
   HOOPS_CORS_ORIGINS: "http://localhost:8090"
-  KEYCLOAK_URL: "http://keycloak:8080/auth"
+  OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"
   QUARKUS_OTEL_SDK_DISABLED: "true"
 ---
 # Source: hoops/charts/core/templates/configmap.yaml
@@ -45,7 +45,7 @@ data:
   GAME_SERVICE_URL: "http://game-service:8082"
   HOOPS_CORS_ORIGINS: "http://localhost:8090"
   HOOPS_PUBLIC_URL: "http://localhost:8090"
-  KEYCLOAK_URL: "http://keycloak:8080/auth"
+  KEYCLOAK_ADMIN_URL: "http://keycloak:8080/auth"
   MAIL_FROM: "Hoops Academy <no-reply@hoops.localhost>"
   OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"
   PDF_SERVICE_URL: "http://pdf-service:8084"
@@ -74,7 +74,7 @@ data:
   GAME_ROSTER_SOURCE: "rest"
   HOOPS_CORE_URL: "http://core-service:8081"
   HOOPS_CORS_ORIGINS: "http://localhost:8090"
-  KEYCLOAK_URL: "http://keycloak:8080/auth"
+  OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"
   PDF_SERVICE_URL: "http://pdf-service:8084"
   QUARKUS_OTEL_SDK_DISABLED: "true"
 ---
@@ -109,7 +109,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         helm.sh/chart: athlete-0.9.0
       annotations:
-        checksum/env: cbbf912a01a65f5ff0188f7ae4521356bc86e45cc0eaf9d82304008590c33fa4
+        checksum/env: 2490cac1c68992db646d375b42e31a8dea429bb49c5bbaf4af56d872139677e0
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8083"
@@ -216,7 +216,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         helm.sh/chart: core-0.9.0
       annotations:
-        checksum/env: 5e8a6243da307723df727ed5cf0be9a3d12e6296c935754eef0104d6a16227b7
+        checksum/env: d1a4655158627d16cd08243d9db2411ac8f71d71b2cc8f02b83ab5082d818cb5
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8081"
@@ -334,7 +334,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         helm.sh/chart: game-0.9.0
       annotations:
-        checksum/env: 344e3576b337deca755e8c6ea7344755d6c8281f030642a632b4eb8652756c18
+        checksum/env: 61d0992eacf71013bd6d2803373f26d736166ce8948702e27d606396e63cc1db
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8082"

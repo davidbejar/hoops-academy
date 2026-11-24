@@ -22,6 +22,15 @@ global:
   # (kind: deploy/kind/up.sh installs it); without one the annotation does nothing. Global: the subcharts read it too.
   reloader:
     enabled: false
+  # Environment of the three Quarkus services (core, game, athlete; values are templated), before each one's own env,
+  # which may override a key (DEP-07). OpenTelemetry and the event broker client come from the chart (global.observability,
+  # global.events).
+  quarkusEnv:
+    # Browser origin allowed by the services' CORS filter (same-origin through the gateway needs none; keep it equal to
+    # the public URL).
+    HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
+    # The realm as the pods reach it (ADR-0071; the issuer in the tokens stays the public URL, KC_HOSTNAME).
+    OIDC_AUTH_SERVER_URL: http://keycloak:8080/auth/realms/academy
   # OpenTelemetry (WP86, ADR-0046): the services export traces and logs over OTLP gRPC (SDK on, logs on, parent-based
   # ratio sampling) and the Envoy proxy traces the edge, all to the chart's collector (observability.collector) or, with
   # otlpEndpoint set, to the platform's own. Off: the SDK stays off (QUARKUS_OTEL_SDK_DISABLED=true), nothing rendered.
@@ -286,11 +295,8 @@ core:
       - {name: platform-audit-export, path: "/platform/audit-events(:|%3[Aa])export", rpm: 10, rps: 2}
   env:
     CORE_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
-    # Browser origin allowed by the services' CORS filter (same-origin through the gateway needs none; keep it
-    # equal to the public URL). OpenTelemetry: global.observability (WP86).
-    HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
-    OIDC_AUTH_SERVER_URL: http://keycloak:8080/auth/realms/academy
-    KEYCLOAK_URL: http://keycloak:8080/auth
+    # Keycloak's base for core's Admin API client (ADR-0071)
+    KEYCLOAK_ADMIN_URL: http://keycloak:8080/auth
     GAME_SERVICE_URL: http://game-service:8082
     ATHLETE_SERVICE_URL: http://athlete-service:8083
     # pdf-service (ADR-0052, decision 89): core renders the team roster there (WP116); set whether or not pdf.enabled.
@@ -333,10 +339,6 @@ game:
       - {name: events-batch, path: "/api/game/matches/[^/]+/events(:|%3[Aa])batch", rpm: 120, rps: 20}
   env:
     GAME_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
-    # Browser origin allowed by the services' CORS filter (same-origin through the gateway needs none; keep it
-    # equal to the public URL). OpenTelemetry: global.observability (WP86).
-    HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
-    KEYCLOAK_URL: http://keycloak:8080/auth
     HOOPS_CORE_URL: http://core-service:8081
     # pdf-service (ADR-0052, decision 89): game renders the match sheet there (WP117); set whether or not pdf.enabled.
     PDF_SERVICE_URL: http://pdf-service:8084
@@ -364,10 +366,6 @@ athlete:
     health: {enabled: true, prefix: /api/athlete}
   env:
     ATHLETE_DB_URL: jdbc:postgresql://hoops-db-rw:5432/hoops
-    # Browser origin allowed by the services' CORS filter (same-origin through the gateway needs none; keep it
-    # equal to the public URL). OpenTelemetry: global.observability (WP86).
-    HOOPS_CORS_ORIGINS: '{{ .Values.global.publicUrl }}'
-    KEYCLOAK_URL: http://keycloak:8080/auth
     HOOPS_CORE_URL: http://core-service:8081
     ATHLETE_ROSTER_SOURCE: '{{ .Values.rosterSource | default (ternary "replica" "rest" (include "hoops-lib.eventsEnabled" . | eq "true")) }}'
   # Where the roster and the authorisation context come from (ADR-0037, WP69): rest = core's /internal API, replica = the

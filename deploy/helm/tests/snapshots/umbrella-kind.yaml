@@ -538,7 +538,7 @@ data:
   KAFKA_BOOTSTRAP_SERVERS: "redpanda.hoops.svc.cluster.local:9092"
   KAFKA_SASL_USERNAME: "athlete-service"
   KAFKA_SECURITY_PROTOCOL: "SASL_PLAINTEXT"
-  KEYCLOAK_URL: "http://keycloak:8080/auth"
+  OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"
   QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.hoops.svc.cluster.local:4317"
   QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "service.namespace=hoops-academy,deployment.environment.name=kind,k8s.namespace.name=hoops"
   QUARKUS_OTEL_SDK_DISABLED: "false"
@@ -568,7 +568,7 @@ data:
   KAFKA_BOOTSTRAP_SERVERS: "redpanda.hoops.svc.cluster.local:9092"
   KAFKA_SASL_USERNAME: "core-service"
   KAFKA_SECURITY_PROTOCOL: "SASL_PLAINTEXT"
-  KEYCLOAK_URL: "http://keycloak:8080/auth"
+  KEYCLOAK_ADMIN_URL: "http://keycloak:8080/auth"
   MAIL_FROM: "Hoops Academy <no-reply@hoops.localhost>"
   OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"
   PDF_SERVICE_URL: "http://pdf-service:8084"
@@ -774,7 +774,7 @@ data:
   KAFKA_BOOTSTRAP_SERVERS: "redpanda.hoops.svc.cluster.local:9092"
   KAFKA_SASL_USERNAME: "game-service"
   KAFKA_SECURITY_PROTOCOL: "SASL_PLAINTEXT"
-  KEYCLOAK_URL: "http://keycloak:8080/auth"
+  OIDC_AUTH_SERVER_URL: "http://keycloak:8080/auth/realms/academy"
   PDF_SERVICE_URL: "http://pdf-service:8084"
   QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.hoops.svc.cluster.local:4317"
   QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "service.namespace=hoops-academy,deployment.environment.name=kind,k8s.namespace.name=hoops"
@@ -2840,7 +2840,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         helm.sh/chart: athlete-0.9.0
       annotations:
-        checksum/env: 60566e7cf005330cfe7effcf2b021758ffb0119209500ee21bada10c84ffe1ab
+        checksum/env: 941a67271b4c1a125604b4cb4a2f87a06ebfe1c7a0fe7f7167bfe0010174c9e1
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8083"
@@ -2956,7 +2956,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         helm.sh/chart: core-0.9.0
       annotations:
-        checksum/env: f4bced40d3bf3efcc1d670b467069d1fa8d1267225047a8a746637fbb30917f3
+        checksum/env: e4a5c7d5547ebfa42bfb4200fcdb9f45abf95569766a7e2c3f68f89c5d8b5c00
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8081"
@@ -3178,7 +3178,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         helm.sh/chart: game-0.9.0
       annotations:
-        checksum/env: e261e32da6893295dace9b46ab3f0555e2e75217d221cab5bdbe6135656401d8
+        checksum/env: dc8845e41a272c2ced5889e2ee9ff9fb787589ad66bec1e74d4a17cdf96a1cf5
         prometheus.io/scrape: "true"
         prometheus.io/path: "/q/metrics"
         prometheus.io/port: "8082"

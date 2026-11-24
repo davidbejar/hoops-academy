@@ -36,6 +36,10 @@ env may override these (e.g. a per-service ratio).
 {{- else }}
 {{- $_ := set $env "QUARKUS_OTEL_SDK_DISABLED" "true" }}
 {{- end }}
+{{- /* the umbrella's global.quarkusEnv (DEP-07: CORS allow-list, realm URL), then the service's own env */}}
+{{- range $k, $v := dig "quarkusEnv" dict (.Values.global | default dict) }}
+{{- $_ := set $env $k (tpl (toString $v) $) }}
+{{- end }}
 {{- range $k, $v := .Values.env }}
 {{- $_ := set $env $k (tpl (toString $v) $) }}
 {{- end }}
