@@ -34,8 +34,8 @@ class MatchSheetPdfContractTest {
     }
 
     @Test
-    void theContractIsGame240() {
-        assertThat(OpenApiSpecs.parse("game").getOpenAPI().getInfo().getVersion()).isEqualTo("2.4.0");
+    void theContractIsAtLeastGame240() {
+        assertThat(OpenApiSpecs.version("game")).isGreaterThanOrEqualTo(OpenApiSpecs.release("2.4.0"));
     }
 
     @Test

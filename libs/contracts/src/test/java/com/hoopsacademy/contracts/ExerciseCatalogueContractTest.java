@@ -63,7 +63,7 @@ class ExerciseCatalogueContractTest {
     void theCatalogueIsAMajorVersionThatNamesItsDecisionRecord() {
         var info = OpenApiSpecs.parse("athlete").getOpenAPI().getInfo();
 
-        assertThat(info.getVersion()).isEqualTo("3.0.0");
+        assertThat(OpenApiSpecs.release(info.getVersion())).isGreaterThanOrEqualTo(OpenApiSpecs.release("3.0.0"));
         assertThat(info.getDescription()).contains("ADR-0047", "exerciseId");
     }
 

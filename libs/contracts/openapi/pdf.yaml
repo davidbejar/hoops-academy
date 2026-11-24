@@ -163,10 +163,6 @@ components:
           maxLength: 64
           description: IANA zone id of the academy (e.g. `Europe/Madrid`); every date and time is printed in it.
           example: Asia/Jakarta
-    JerseyNumber:
-      type: string
-      pattern: '^[0-9]{1,2}$'
-      example: '7'
 
     # ---------------- match sheet (shapes of game.yaml)
     MatchSheetRequest:
