@@ -24,10 +24,14 @@ needed>.
 
 ## Working rules
 - Work only in your worktree on your branch; `source scripts/env.sh` first. Do not touch `main`, do not push.
-- Commit: `gitleaks protect --staged`, then `git commit --no-verify` with explicit paths (never `git add -A`).
-  Conventional Commits. A Claude Code hook runs a ~40 s tenant-isolation test before every commit (it resyncs the
-  Podman VM clock itself); it is expected, do not try to bypass it. End every commit message with the line
-  `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
+- Commit: `gitleaks protect --staged`, then a plain `git commit` with explicit paths, one at a time and not from a
+  helper script (never `git add -A`, never `--no-verify`: the session refuses it). The pre-commit hooks run and may
+  trim whitespace: re-add and commit again. Conventional Commits. A Claude Code hook runs a ~40 s tenant-isolation
+  test before every commit (it resyncs the Podman VM clock itself); it is expected, do not try to bypass it; if it
+  times out under load, retry when a build has finished. End every commit message with a `Co-Authored-By:` line
+  naming the model that did the work.
+- If your context runs low, stop at a green commit, append a handover part (what is done, what comes next in order)
+  and report; a fresh agent continues in this worktree.
 - Other agents build at the same time: on a Testcontainers "localhost:2375 failed to respond" or a port clash, re-run
   that module alone with `-Dquarkus.http.test-port=0`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.

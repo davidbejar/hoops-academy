@@ -22,7 +22,10 @@ Always `source scripts/env.sh` first; `just doctor` verifies the setup.
   machine and never restarts the service while containers run). Do not restart `podman.service` while other builds use it.
 
 ## Compose
-`podman compose` delegates to `podman-compose` (installed by bootstrap). Use `--wait` with healthchecks.
+`podman compose` delegates to an external compose provider: `podman-compose` (installed by bootstrap) or, when
+Docker.app is installed, Docker's `docker-compose` (on the owner's Mac v2.15.1; `podman compose version` shows which).
+That `docker-compose` refuses `up --no-deps --build` ("no such service: keycloak"), so build in its own call, then
+`up --no-deps` (as `e2e/bin/services-up.sh` does since b8443244). Use `--wait` with healthchecks.
 Volumes with `:Z` labels are harmless on macOS. Never run compose from the OneDrive folder.
 
 ## kind (WP16)

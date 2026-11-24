@@ -43,8 +43,16 @@ lib/
 - **Mobile-first**: design for 360 px width; test goldens at 360×780 and 1024×768.
 
 ## Tests per feature (TDD)
-1. Provider/notifier unit tests with mocked repositories.
+Tests run the app's real repositories and generated clients against the demo mock, started empty and seeded per test
+(ADR-0070): the `Harness` / `pumpAs` installs a `MockBackend` (`test/support/mock_backend.dart`); seed through the
+area's data class (`core_seed.dart`, `athlete_seed.dart`, `game_seed.dart`, `finance_seed.dart`, `audit_seed.dart`,
+`platform_seed.dart`) and inject what the mock cannot produce (`fail`, `hang`, `networkDown`, `heal`). Never write a
+repository fake; if the mock lacks an operation or a rule, add it to the mock (and its seeding hook), deciding any
+difference against `libs/contracts/openapi` with a red test on the mock first. A release build must not hold the
+mock (`tool/verify_no_mock.dart`).
+1. Provider/notifier tests on the app's `Api*Repository` over a seeded backend.
 2. Widget tests for each screen: loading, empty, error, populated, and role variants.
 3. Golden test for the main screen (both breakpoints).
-4. If offline: Drift repository tests + sync worker tests using WP7 JSON vectors in `test/fixtures/`.
+4. If offline: Drift repository tests + sync worker tests (`fake_game_server.dart`, the sync worker's contract fake)
+   and the projection vectors in `libs/contracts/vectors` (the one copy, read by the tests).
 Run `flutter analyze && flutter test` before claiming done.

@@ -52,13 +52,15 @@ State lives in `docs/wp/FOLLOW-UPS.md` and `docs/HANDOVER.md`; this skill is onl
    cannot see `/tmp`). Never switch branches in a shared checkout; a session without the main checkout pushes with
    `git push origin <branch>:main`.
 2. Agent prompt: the brief path, the skills to apply, who else is running and what they own.
-3. Agents commit with `gitleaks protect --staged`, then `git commit --no-verify` with explicit paths: the pre-commit
-   stash conflicts with concurrent edits, and the Claude Code hook (isolation check) still runs.
+3. Agents commit with `gitleaks protect --staged`, then a plain `git commit` with explicit paths, one commit at a time
+   (`--no-verify` is refused since the seventh round, see Traps); the pre-commit hooks and the Claude Code hook
+   (isolation check) run.
 4. On a report:
    1. In the worktree, `git rebase main`; check its exit status and `git status` (see Traps).
    2. Re-verify only when the combined tree was never built, i.e. another WP of the same area landed since the
       branch was cut: `./mvnw -B -ntp -T 1C clean verify -Dquarkus.http.test-port=0` plus
-      `cd apps/web && flutter test`. Otherwise the agent's fresh results stand.
+      `cd apps/web && flutter test`. Otherwise the agent's fresh results stand. When the WP moved build properties or
+      chart inputs, also run `deploy/helm/tests/run.sh` (see Traps).
    3. In the main checkout, `git merge --ff-only <wp-slug>` on `main`, then `git push` (after every merge, not
       once per wave).
    4. Watch CI with the Monitor tool (`gh run list -b main -L 5`, `gh run watch <id> --exit-status`).
@@ -98,6 +100,15 @@ State lives in `docs/wp/FOLLOW-UPS.md` and `docs/HANDOVER.md`; this skill is onl
 - A first CI run of a new toolchain or image job fails for setup reasons more often than for code (Go installed
   after CodeQL init, rootless Podman cleanup, a loopback-published port on Linux): read the failed step before
   suspecting the WP. `dependency-check` fails on NVD 503s: re-run the job.
+- An agent that runs out of context mid-package hands back at a green commit with a handover part (what is done,
+  what comes next in order); merge that part, then a fresh agent continues in the same worktree from the handover
+  (WP138 ran in five parts this way).
+- The checks under `deploy/helm/tests` read files outside what a service package builds (`run.sh` reads the
+  services' and common-quarkus' properties): a package that moves build properties can leave `ci`'s
+  `helm-chart-tests` red although its own verify was green (WP137, fixed by bf586552). Run `deploy/helm/tests/run.sh`
+  at merge when a package moves build properties.
+- `git commit` inside a helper script (stage, gitleaks, commit) hides the commit from the Claude hook, so its isolation
+  check does not run (WP128). Agents commit one at a time with a plain `git commit` in the Bash call itself.
 - Usage limits and network outages stop every agent at once; the notice says so. Resume each with SendMessage in its
   own worktree ("check `git status` and the log first, continue, do not start over"); a recurring CronCreate watchdog
   covers the case where the orchestrator is stopped too. Stop (TaskStop) a finished agent that keeps re-sending its

@@ -25,6 +25,11 @@ description: How an agent starts, executes and hands over a Hoops Academy work p
   matrix, `ADOPTED` in a contract test) append at the end, one entry per line; commit `pubspec.lock` only with a
   generated-package version bump.
 - Do not reformat files you did not change.
+- Commit one at a time with a plain `git commit` in the Bash call itself, never through a helper script: the Claude
+  hook's isolation check only sees a `git commit` it can parse (WP128). In a worktree the hook checks the main
+  checkout, so after tenancy changes run `just isolation-check` and `just db-role-check` there by hand.
+- If your context runs low, stop at a green commit, append a handover part (done, next in order) and report; a fresh
+  agent continues in the same worktree (WP138).
 
 ## Finish (verification-before-completion)
 1. Run the full command(s): `just test` (and `just web-test` for Flutter) — fresh, complete; read the output.

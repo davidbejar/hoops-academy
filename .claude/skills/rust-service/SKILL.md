@@ -46,12 +46,14 @@ crates/adapters     pdf-adapters      http (axum router, auth middleware, handle
   `tests/common`. Fixtures (valid request bodies): `crates/adapters/tests/fixtures/*.json`; WP116 / WP117 and
   `deploy/kind/smoke.sh` reuse them.
 - Problem type slugs and the token clock leeway follow the Java services (ADR-0064): a unit test in `problem.rs` reads
-  `ProblemType.java`; a slug the enum lacks (`unsupported-media-type`, `method-not-allowed`) is listed there as pdf's own.
+  `ProblemType.java`; a slug the enum lacks (only `method-not-allowed` since WP137 added `unsupported-media-type`) is
+  listed there as pdf's own.
 
 ## Contract first
 1. Change `libs/contracts/openapi/pdf.yaml` (OpenAPI 3.0.3, no `allOf`, `additionalProperties: false` on bodies,
    `nullable` for optional values, `maxItems` for every list, bump `info.version`).
-2. A failing test: `tests/contract.rs` (`the_contracts_limits_are_the_domains`, the refusal cases) and the HTTP test.
+2. A failing test: `tests/api/contract.rs` (`the_contracts_limits_are_the_domains`, the refusal cases) and the HTTP
+   test.
 3. Domain limits and checks (`MAX_*` constants equal the contract's), DTO with `deny_unknown_fields`, labels.
 4. Callers (core, game) validate their requests against `classpath:openapi/pdf.yaml` (contracts jar).
 
@@ -74,10 +76,13 @@ DTO, handler, route in `http::router`, the operation in `pdf.yaml`. Never accept
 
 ## Image, compose, chart, kind
 - `deploy/containers/pdf.Containerfile` (context `services/pdf-service`): `cargo auditable` on the pinned rust image,
-  distroless `cc-debian13:nonroot`; bump the toolchain, the builder tag+digest and the runtime digest together.
+  distroless `cc-debian13:nonroot`; bump the toolchain, the builder tag+digest and the runtime digest together
+  (`scripts/tests/test_toolchain_pins.py` checks that `rust-toolchain.toml` and the builder image agree).
   `scripts/build-images.sh pdf-service`, CI `images.yml` job `pdf` (Trivy gate, SBOM).
 - Compose: `just pdf-up` (profile `pdf`, :8084). Callers on the host use `PDF_SERVICE_URL` from `.env`.
 - Chart: sub-chart `charts/pdf-service` (alias `pdf`, `pdf.enabled`), no HTTPRoute, NetworkPolicy for `callers` only.
+  Its templates are one `include` each of the library chart `charts/hoops-lib` (ADR-0068) plus the hook
+  `pdf-service.ingressFrom`; change shared shape in `hoops-lib`, not in the sub-chart.
   A new caller: add it to `pdf.callers` and give its client the audience mapper in `infra/keycloak/realm-academy.json`
   (and the expected audiences in core's `RealmTokenPolicyTest`). Chart tests: `deploy/helm/tests/run.sh`
   (`--update` re-records snapshots).

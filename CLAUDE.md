@@ -7,7 +7,9 @@ is `docs/SPEC.md` (verbatim), the plan `docs/PLAN.md` (see its implementation no
 
 ## Stack (fixed decisions — see docs/adr)
 - Java 25, Quarkus 3.x, Maven multi-module, hexagonal layering per service. Three services: `core-service`,
-  `game-service`, `athlete-service`. Shared code in `libs/common-quarkus`; API contracts in `libs/contracts`.
+  `game-service`, `athlete-service`. Shared code in `libs/common-quarkus` (tenancy, Problem+JSON, paging and
+  `PagedQuery`, the roster replica pipeline, the membership rule, the settings all three share; ADR-0062, ADR-0066,
+  ADR-0069); domain code stays per service. API contracts in `libs/contracts`.
 - `pdf-service` in Rust (ADR-0051, ADR-0052): Cargo workspace `services/pdf-service` outside the reactor (crates =
   layers), toolchain pinned in `rust-toolchain.toml`; internal only, called by core and game. Skill `rust-service`.
 - `finance-service` in Go (ADR-0051, ADR-0055, ADR-0056): module `services/finance-service` outside the reactor
@@ -16,9 +18,10 @@ is `docs/SPEC.md` (verbatim), the plan `docs/PLAN.md` (see its implementation no
   Skill `go-hexagonal-service`.
 - PostgreSQL 17, one database, schema per service, `tenant_id` + Row-Level Security (RLS). App roles are
   NON-OWNER roles (`core_app`, `game_app`, `athlete_app`, `finance_app`); Flyway (finance: its Go runner) runs as
-  `*_migrator`.
+  `*_migrator`. The roles are listed once, in `infra/db/init/01_roles_schemas.sql` (ADR-0006 amendment).
 - Keycloak = authentication only (realm `academy`). Tenant roles (`ADMIN`, `COACH`, `ASSISTANT_COACH`,
-  `PARENT`, `PLAYER`) live in `core.membership_role`. Platform `super_admin` is a Keycloak realm role.
+  `PARENT`, `PLAYER`) live in `core.membership_role`. Platform `super_admin` is a Keycloak realm role. The realm URL
+  is `OIDC_AUTH_SERVER_URL` everywhere, the Admin API base `KEYCLOAK_ADMIN_URL` (ADR-0071).
 - Flutter Web PWA in `apps/web` (es / en / id). No Node anywhere.
 - Podman, not Docker. `podman compose` locally; kind + Helm + Tilt for k8s.
 

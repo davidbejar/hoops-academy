@@ -45,6 +45,15 @@ If a table needs special fixtures, override `fixtureOverrides()` in the service'
   profile, no env) is `<svc>_app`, differs from the Flyway user, and passes `DatabaseRoleCheck` (not a superuser or
   BYPASSRLS, not owner of or member of the owner of any table, no CREATE on any schema). A new service or a new
   named datasource needs a subclass and nothing else. Runs before Claude's `git push`: `just db-role-check`.
+- **The role list** (ADR-0006 amendment, WP139): the rows between `-- roles: begin` / `-- roles: end` of
+  `infra/db/init/01_roles_schemas.sql` are the one list of service roles; they drive the grants, `02_passwords.sh`
+  (`<ROLE>_PASSWORD` for every role), `infra/compose/db-roles.sh`, `infra/db/roles.sh` and the Java and Go test
+  harnesses (`BootstrapRoles`, `TestRolePasswords`, Go `pgtest.BootstrapRoles`). A new service role is one row there;
+  `scripts/tests/test_db_roles.py` then lists what else names it (compose, `.env.example`, chart CNPG roles, kind).
+- **The membership rule** (who is a member, staff, guardian or the player) is one class, common's
+  `authz.MembershipRule` (ADR-0066); `MembershipRuleContract` (test-jar) runs the authz-matrix cases against a
+  service's reads. finance-service keeps a Go copy (ADR-0055): change both in the same PR.
+- In a test that binds a tenant by hand, use `RlsTestDatabase.bindTenant`, not a hand-written `set_config`.
 - Why not just `select current_user` in a `@QuarkusTest`: `PostgresRlsResource` forces the user to `<svc>_app` at
   test time, and Quarkus exposes that as a generated `startup-override/application.properties` on the classpath.
   Read the source file, never `application.properties` from the classpath (that masked a wrong default once).
