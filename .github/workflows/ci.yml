@@ -120,6 +120,8 @@ jobs:
         run: scripts/hooks/tenancy-gate.test.sh
       - name: events-drift against a throwaway PostgreSQL
         run: scripts/tests/events-drift.test.sh
+      - name: kind's patch of the CloudNativePG operator (jq only)
+        run: scripts/tests/kind-cnpg-patch.test.sh
 
   # docs/domain/*-model.md are generated: ER diagrams from a throwaway PostgreSQL (Podman, on the runner) with the
   # Flyway files applied, class diagrams from the Java sources. Fails with a diff when a page is stale: `just diagrams`.
