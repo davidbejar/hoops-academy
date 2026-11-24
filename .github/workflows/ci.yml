@@ -102,9 +102,10 @@ jobs:
         run: scripts/check.sh
 
   # The Python tests of scripts/tests (the pin scripts and their guards for the JDK, Go, Rust, Trivy and the workflows,
-  # the SARIF and ZAP gates, the diagram generator) and the doctor's Podman drop-in test (stubbed). They used to run as a
-  # step of semgrep.yml. `just test-hooks` also runs env-jdk.test.sh and the Claude hook's tenancy-gate.test.sh: both
-  # assume a macOS developer machine (a real JDK 25 outside PATH; a locale-dependent string cut), so they stay local.
+  # the SARIF and ZAP gates, the diagram generator) and every tracked *.test.sh (test_workflows.py checks that each one is
+  # a step here, WP146): the doctor's Podman drop-in (stubbed), the JDK choice of env.sh (stub JDKs), the Claude hook's
+  # command matcher and helpers (stub gates, go and mvnw), and events-drift against a throwaway PostgreSQL (Podman, on
+  # the runner, like model-diagrams). They used to run as a step of semgrep.yml.
   scripts:
     runs-on: ubuntu-latest
     steps:
@@ -113,6 +114,12 @@ jobs:
         run: python3 -I -m unittest discover -s scripts/tests
       - name: Doctor's Podman drop-in step (stubbed)
         run: scripts/tests/doctor-podman-dropin.test.sh
+      - name: JDK choice of env.sh (stub JDKs)
+        run: scripts/tests/env-jdk.test.sh
+      - name: Claude hook's tenancy gate matcher and helpers (stubbed)
+        run: scripts/hooks/tenancy-gate.test.sh
+      - name: events-drift against a throwaway PostgreSQL
+        run: scripts/tests/events-drift.test.sh
 
   # docs/domain/*-model.md are generated: ER diagrams from a throwaway PostgreSQL (Podman, on the runner) with the
   # Flyway files applied, class diagrams from the Java sources. Fails with a diff when a page is stale: `just diagrams`.
