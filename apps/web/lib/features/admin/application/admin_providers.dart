@@ -318,14 +318,17 @@ class SeasonsNotifier extends AsyncNotifier<List<api.Season>>
     await reload();
   }
 
-  /// Runs the rollover and returns its result (orphans, opened cases).
+  /// Runs the rollover of [fromSeasonId] into the target [seasonId] and
+  /// returns its result (orphans, opened cases).
   Future<api.SeasonRolloverResult> rollover(
-    String fromSeasonId, {
+    String seasonId, {
+    required String fromSeasonId,
     bool cloneStaff = true,
     bool clonePlayers = true,
   }) async {
     final result = await _repo.rollover(
-      fromSeasonId,
+      seasonId,
+      fromSeasonId: fromSeasonId,
       cloneStaff: cloneStaff,
       clonePlayers: clonePlayers,
     );

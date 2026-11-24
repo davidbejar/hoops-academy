@@ -1284,8 +1284,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String rolloverIntro(String name) {
-    return 'The next season will be created from $name: teams are copied and players are re-checked.';
+    return 'The teams of $name are copied into the season you choose and players are re-checked.';
   }
+
+  @override
+  String get rolloverTarget => 'Target season';
+
+  @override
+  String get rolloverNoTarget =>
+      'Create the next season first: the teams are copied into a season that starts after this one.';
 
   @override
   String get rolloverCloneStaff => 'Copy team staff';
@@ -1295,6 +1302,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rolloverConfirm => 'Run rollover';
+
+  @override
+  String get rolloverErrorTargetNotEmpty =>
+      'The target season already has teams.';
 
   @override
   String get rolloverDone => 'Rollover completed';

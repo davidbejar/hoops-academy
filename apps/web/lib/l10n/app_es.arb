@@ -561,7 +561,7 @@
   "seasonDatesInvalid": "La fecha de fin debe ser posterior a la de inicio",
   "seasonRollover": "Pasar a nueva temporada",
   "rolloverTitle": "Cambio de temporada",
-  "rolloverIntro": "Se creará la temporada siguiente a partir de {name}: se copian los equipos y se vuelven a comprobar los jugadores.",
+  "rolloverIntro": "Los equipos de {name} se copian a la temporada que elijas y se vuelven a comprobar los jugadores.",
   "@rolloverIntro": {
     "placeholders": {
       "name": {
@@ -569,9 +569,12 @@
       }
     }
   },
+  "rolloverTarget": "Temporada de destino",
+  "rolloverNoTarget": "Crea primero la temporada siguiente: los equipos se copian a una temporada que empiece después de esta.",
   "rolloverCloneStaff": "Copiar el cuerpo técnico",
   "rolloverClonePlayers": "Copiar las plantillas",
   "rolloverConfirm": "Ejecutar cambio de temporada",
+  "rolloverErrorTargetNotEmpty": "La temporada de destino ya tiene equipos.",
   "rolloverDone": "Cambio de temporada completado",
   "rolloverClonedTeams": "Equipos copiados: {count}",
   "@rolloverClonedTeams": {

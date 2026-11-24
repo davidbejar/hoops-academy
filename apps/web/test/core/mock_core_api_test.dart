@@ -131,7 +131,10 @@ void main() {
     );
     expect(created.name, '2027/28');
 
-    final result = await seasons.rollover('season-2026');
+    final result = await seasons.rollover(
+      created.id,
+      fromSeasonId: 'season-2026',
+    );
     expect(result.clonedTeams, isNotEmpty);
     expect(
       result.orphans.map((o) => o.player.displayName),

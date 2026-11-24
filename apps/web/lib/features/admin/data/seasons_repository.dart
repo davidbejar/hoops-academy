@@ -16,8 +16,12 @@ abstract class SeasonsRepository {
     required api.Date endsOn,
     required int referenceYear,
   });
+
+  /// Copies the teams of [fromSeasonId] into the season [seasonId] (the
+  /// target, core.yaml), which must start later and have no teams yet.
   Future<api.SeasonRolloverResult> rollover(
-    String fromSeasonId, {
+    String seasonId, {
+    required String fromSeasonId,
     bool cloneStaff = true,
     bool clonePlayers = true,
   });
@@ -72,12 +76,13 @@ class ApiSeasonsRepository implements SeasonsRepository {
 
   @override
   Future<api.SeasonRolloverResult> rollover(
-    String fromSeasonId, {
+    String seasonId, {
+    required String fromSeasonId,
     bool cloneStaff = true,
     bool clonePlayers = true,
   }) async => (await _api.rolloverSeason(
     xTenantId: _t,
-    seasonId: fromSeasonId,
+    seasonId: seasonId,
     seasonRolloverRequest: api.SeasonRolloverRequest(
       (b) => b
         ..fromSeasonId = fromSeasonId

@@ -2365,8 +2365,20 @@ abstract class AppLocalizations {
   /// No description provided for @rolloverIntro.
   ///
   /// In es, this message translates to:
-  /// **'Se creará la temporada siguiente a partir de {name}: se copian los equipos y se vuelven a comprobar los jugadores.'**
+  /// **'Los equipos de {name} se copian a la temporada que elijas y se vuelven a comprobar los jugadores.'**
   String rolloverIntro(String name);
+
+  /// No description provided for @rolloverTarget.
+  ///
+  /// In es, this message translates to:
+  /// **'Temporada de destino'**
+  String get rolloverTarget;
+
+  /// No description provided for @rolloverNoTarget.
+  ///
+  /// In es, this message translates to:
+  /// **'Crea primero la temporada siguiente: los equipos se copian a una temporada que empiece después de esta.'**
+  String get rolloverNoTarget;
 
   /// No description provided for @rolloverCloneStaff.
   ///
@@ -2385,6 +2397,12 @@ abstract class AppLocalizations {
   /// In es, this message translates to:
   /// **'Ejecutar cambio de temporada'**
   String get rolloverConfirm;
+
+  /// No description provided for @rolloverErrorTargetNotEmpty.
+  ///
+  /// In es, this message translates to:
+  /// **'La temporada de destino ya tiene equipos.'**
+  String get rolloverErrorTargetNotEmpty;
 
   /// No description provided for @rolloverDone.
   ///

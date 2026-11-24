@@ -19,6 +19,11 @@ final _next = season(
   endsOn: api.Date(2028, 6, 30),
   referenceYear: 2027,
 );
+
+/// The current season and the next one, the default target of its rollover.
+FakeCore _withNext() =>
+    FakeCore(seasons: [season(seasonId, '2026/27', current: true), _next]);
+
 final _past = season(
   pastSeasonId,
   '2025/26',
@@ -113,7 +118,7 @@ void main() {
         final h = await pumpAs(
           tester,
           roles: {TenantRole.admin},
-          core: FakeCore(),
+          core: _withNext(),
           location: '/admin/seasons/$seasonId/rollover',
           size: const Size(360, 1100),
           prepare: (b) => b
@@ -126,7 +131,7 @@ void main() {
               ).rebuild((b) => b.birthDate = api.Date(2014, 3, 4)),
             ]),
         );
-        const rollover = '$_seasons/$seasonId/rollover';
+        const rollover = '$_seasons/$_nextSeasonId/rollover';
         expect(find.byKey(const Key('rollover-intro')), findsOneWidget);
         expect(h.backend.requestsTo(rollover, method: 'POST'), isEmpty);
 
@@ -157,10 +162,10 @@ void main() {
         final h = await pumpAs(
           tester,
           roles: {TenantRole.admin},
-          core: FakeCore(),
+          core: _withNext(),
           location: '/admin/seasons/$seasonId/rollover',
         );
-        h.backend.fail('$_seasons/$seasonId/rollover', status: 409);
+        h.backend.fail('$_seasons/$_nextSeasonId/rollover', status: 409);
         await tapKey(tester, 'rollover-run');
         expect(find.byKey(const Key('rollover-run')), findsOneWidget);
         expect(find.byKey(const Key('rollover-done')), findsNothing);
@@ -244,9 +249,7 @@ void main() {
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
-        core: FakeCore(
-          seasons: [season(seasonId, '2026/27', current: true), _next],
-        ),
+        core: _withNext(),
         location: '/admin/seasons/$seasonId/rollover',
         prepare: (b) => b.seedTeams([
           team('t1', 'Mini A'),
@@ -262,7 +265,7 @@ void main() {
     });
 
     testWidgets('no orphans shows the all-clear', (tester) async {
-      final core = FakeCore();
+      final core = _withNext();
       await pumpAs(
         tester,
         roles: {TenantRole.admin},

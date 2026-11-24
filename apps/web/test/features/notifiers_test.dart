@@ -147,10 +147,24 @@ void main() {
           teams: [assignment('t1', 'Mini A')],
         ).rebuild((b) => b.birthDate = api.Date(2014, 3, 4)),
       ]);
-    final core = FakeCore(seasons: [season(seasonId, 'S', current: true)]);
+    final core = FakeCore(
+      seasons: [
+        season(seasonId, 'S', current: true),
+        season(
+          'season-2027',
+          'Next',
+          startsOn: api.Date(2027, 9, 1),
+          endsOn: api.Date(2028, 6, 30),
+          referenceYear: 2027,
+        ),
+      ],
+    );
     final c = containerFor(core, backend: backend);
     await c.read(seasonsProvider.future);
-    final r = await c.read(seasonsProvider.notifier).rollover(seasonId);
+    final r = await c
+        .read(seasonsProvider.notifier)
+        .rollover('season-2027', fromSeasonId: seasonId);
+    expect(r.toSeasonId, 'season-2027');
     expect(r.orphans.single.player.displayName, 'Ana Ruiz');
     expect(r.openedCaseIds, hasLength(1));
     expect(backend.requestsTo('/api/core/seasons'), hasLength(2));

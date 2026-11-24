@@ -1286,8 +1286,15 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String rolloverIntro(String name) {
-    return 'Musim berikutnya dibuat dari $name: tim disalin dan pemain diperiksa ulang.';
+    return 'Tim $name disalin ke musim yang Anda pilih dan pemain diperiksa ulang.';
   }
+
+  @override
+  String get rolloverTarget => 'Musim tujuan';
+
+  @override
+  String get rolloverNoTarget =>
+      'Buat musim berikutnya terlebih dahulu: tim disalin ke musim yang dimulai setelah musim ini.';
 
   @override
   String get rolloverCloneStaff => 'Salin staf tim';
@@ -1297,6 +1304,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get rolloverConfirm => 'Jalankan pergantian musim';
+
+  @override
+  String get rolloverErrorTargetNotEmpty => 'Musim tujuan sudah memiliki tim.';
 
   @override
   String get rolloverDone => 'Pergantian musim selesai';

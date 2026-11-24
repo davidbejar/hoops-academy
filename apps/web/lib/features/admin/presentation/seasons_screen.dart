@@ -207,7 +207,9 @@ class _SeasonDialogState extends ConsumerState<SeasonDialog> {
   }
 }
 
-/// Rollover wizard: confirm -> run -> result with the orphan list.
+/// Rollover wizard: confirm -> run -> result with the orphan list. The opened
+/// season is the source; its teams go into a season that starts after it,
+/// the next one unless the user picks a later one (ADR-0072).
 class RolloverScreen extends ConsumerStatefulWidget {
   const RolloverScreen({super.key, required this.seasonId});
   final String seasonId;
@@ -220,15 +222,29 @@ class _RolloverScreenState extends ConsumerState<RolloverScreen> {
   bool _cloneStaff = true;
   bool _clonePlayers = true;
   bool _busy = false;
+  String? _targetId;
   api.SeasonRolloverResult? _result;
 
-  Future<void> _run() async {
+  /// The seasons that start after [source], the next one first: core
+  /// refuses any other target (ROLLOVER_SAME_SEASON, ROLLOVER_BACKWARDS).
+  static List<api.Season> _targetsAfter(
+    api.Season? source,
+    List<api.Season> seasons,
+  ) => source == null
+      ? const []
+      : (seasons
+            .where((s) => s.startsOn.compareTo(source.startsOn) > 0)
+            .toList()
+          ..sort((a, b) => a.startsOn.compareTo(b.startsOn)));
+
+  Future<void> _run(String targetId) async {
     setState(() => _busy = true);
     final ok = await runAction(context, () async {
       _result = await ref
           .read(seasonsProvider.notifier)
           .rollover(
-            widget.seasonId,
+            targetId,
+            fromSeasonId: widget.seasonId,
             cloneStaff: _cloneStaff,
             clonePlayers: _clonePlayers,
           );
@@ -241,10 +257,12 @@ class _RolloverScreenState extends ConsumerState<RolloverScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final seasons = ref.watch(seasonsProvider);
-    String? name;
-    for (final s in seasons.value ?? const <api.Season>[]) {
-      if (s.id == widget.seasonId) name = s.name;
-    }
+    final all = seasons.value ?? const <api.Season>[];
+    final source = all.where((s) => s.id == widget.seasonId).firstOrNull;
+    final targets = _targetsAfter(source, all);
+    final target =
+        targets.where((s) => s.id == _targetId).firstOrNull ??
+        targets.firstOrNull;
     final result = _result;
     return SubPage(
       title: l.rolloverTitle,
@@ -263,9 +281,32 @@ class _RolloverScreenState extends ConsumerState<RolloverScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        l.rolloverIntro(name ?? ''),
+                        l.rolloverIntro(source?.name ?? ''),
                         key: const Key('rollover-intro'),
                       ),
+                      formGap,
+                      if (target == null)
+                        Text(
+                          l.rolloverNoTarget,
+                          key: const Key('rollover-no-target'),
+                        )
+                      else
+                        DropdownButtonFormField<String>(
+                          key: const Key('rollover-target'),
+                          initialValue: target.id,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            labelText: l.rolloverTarget,
+                          ),
+                          items: [
+                            for (final s in targets)
+                              DropdownMenuItem(
+                                value: s.id,
+                                child: Text(s.name),
+                              ),
+                          ],
+                          onChanged: (id) => setState(() => _targetId = id),
+                        ),
                       CheckboxListTile(
                         key: const Key('rollover-clone-staff'),
                         value: _cloneStaff,
@@ -283,7 +324,9 @@ class _RolloverScreenState extends ConsumerState<RolloverScreen> {
                       const SizedBox(height: HoopsSpace.md),
                       FilledButton(
                         key: const Key('rollover-run'),
-                        onPressed: _busy ? null : _run,
+                        onPressed: _busy || target == null
+                            ? null
+                            : () => _run(target.id),
                         child: Text(l.rolloverConfirm),
                       ),
                     ],

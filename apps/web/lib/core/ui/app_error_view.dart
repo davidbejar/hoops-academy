@@ -19,6 +19,7 @@ extension AppErrorMessage on AppError {
   /// (members do for two codes) and falls back to this.
   String? _byCode(AppLocalizations l) => switch (code) {
     'SEASON_ENDED' => l.errorSeasonEnded,
+    'ROLLOVER_TARGET_NOT_EMPTY' => l.rolloverErrorTargetNotEmpty,
     // finance
     'DUE_NOT_OPEN' => l.financeErrorDueNotOpen,
     'CURRENCY_LOCKED' => l.financeErrorCurrencyLocked,

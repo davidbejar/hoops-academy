@@ -1290,8 +1290,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String rolloverIntro(String name) {
-    return 'Se creará la temporada siguiente a partir de $name: se copian los equipos y se vuelven a comprobar los jugadores.';
+    return 'Los equipos de $name se copian a la temporada que elijas y se vuelven a comprobar los jugadores.';
   }
+
+  @override
+  String get rolloverTarget => 'Temporada de destino';
+
+  @override
+  String get rolloverNoTarget =>
+      'Crea primero la temporada siguiente: los equipos se copian a una temporada que empiece después de esta.';
 
   @override
   String get rolloverCloneStaff => 'Copiar el cuerpo técnico';
@@ -1301,6 +1308,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get rolloverConfirm => 'Ejecutar cambio de temporada';
+
+  @override
+  String get rolloverErrorTargetNotEmpty =>
+      'La temporada de destino ya tiene equipos.';
 
   @override
   String get rolloverDone => 'Cambio de temporada completado';
