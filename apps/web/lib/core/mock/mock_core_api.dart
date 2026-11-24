@@ -139,6 +139,11 @@ class MockCoreApi {
   @visibleForTesting
   List<Map<String, Object?>> get cases => _cases;
 
+  /// The e-mail a requested player's login is created with when the request is approved, by player id.
+  final Map<String, String> _requestedLogins = {};
+  @visibleForTesting
+  Map<String, String> get requestedLogins => _requestedLogins;
+
   /// Staff rows by team id.
   @visibleForTesting
   Map<String, List<Map<String, Object?>>> get staff => _staff;
