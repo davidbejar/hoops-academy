@@ -11,15 +11,21 @@ import 'package:hoops_app/features/match/domain/pending_event.dart';
 import 'package:hoops_app/features/match/domain/stat_action.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
-import '../../../support/fake_game.dart';
+import '../../../support/core_fixtures.dart';
+import '../../../support/core_seed.dart';
+import '../../../support/fake_repos.dart';
+import '../../../support/fixtures.dart';
+import '../../../support/game_seed.dart';
+import '../../../support/mock_backend.dart';
 
 const m1 = 'm1';
 
-ProviderContainer containerFor(FakeGame game, {Capabilities? caps}) {
+ProviderContainer containerFor(GameData game, {Capabilities? caps}) {
   final c = ProviderContainer(
     retry: (_, _) => null,
     overrides: [
       ...game.overrides,
+      ...game.apiOverrides,
       capabilitiesProvider.overrideWithValue(
         caps ??
             const Capabilities(
@@ -38,12 +44,39 @@ ProviderContainer containerFor(FakeGame game, {Capabilities? caps}) {
   return c;
 }
 
-FakeGame liveGame() => FakeGame(
-  matches: FakeMatchesRepository(
-    matches: [gameMatch(m1)],
-    rosters: {m1: demoRoster},
-  ),
-);
+/// Match [m1] live, its roster the seven players of team A, seeded into a
+/// backend where person-me is the team's COACH or, with [parent], the
+/// guardian of p1 (the capabilities each test runs with).
+GameData liveGame({bool parent = false}) {
+  final game = GameData(matches: [gameMatch(m1)], rosters: {m1: demoRoster});
+  final role = parent ? TenantRole.parent : TenantRole.coach;
+  final backend = MockBackend(roles: {role});
+  FakeCore(
+    teams: TeamsData(
+      teams: [team(teamA, 'Mini A')],
+      rosters: {
+        teamA: [
+          for (final p in demoRoster)
+            teamPlayer(
+              teamA,
+              p.playerId,
+              p.displayName,
+              jersey: p.jerseyNumber,
+            ),
+        ],
+      },
+    ),
+  ).seed(backend);
+  backend.seedMembership(
+    membershipWithRoles(
+      {role},
+      staffTeamIds: parent ? const {} : const {teamA},
+      linkedPlayerIds: parent ? const {'p1'} : const {},
+    ),
+  );
+  game.seedInto(backend);
+  return game;
+}
 
 /// Opens the match the way its screen does: watched, so the auto-dispose
 /// provider lives until the container goes.
@@ -74,7 +107,7 @@ void main() {
     var c = containerFor(game);
     await settle(c);
     c.dispose();
-    game.matches.failWith = const AppError(kind: AppErrorKind.network);
+    game.networkDown();
     c = containerFor(game);
     final s = await settle(c);
     expect(s.fromCache, isTrue);
@@ -82,19 +115,20 @@ void main() {
   });
 
   test('offline without cache: a network error', () async {
-    final game = liveGame()
-      ..matches.failWith = const AppError(kind: AppErrorKind.network);
+    final game = liveGame()..networkDown();
     final c = containerFor(game);
     await expectLater(
       c.read(liveMatchProvider(m1).future),
-      throwsA(isA<AppError>()),
+      throwsA(
+        predicate<Object>((e) => AppError.of(e).kind == AppErrorKind.network),
+      ),
     );
   });
 
   test(
     'recording: period start, shot, opponent points, sub; projection is live',
     () async {
-      final game = liveGame()..server.offline = true;
+      final game = liveGame()..offline = true;
       final c = containerFor(game);
       await settle(c);
       final ctl = c.read(liveMatchProvider(m1).notifier);
@@ -121,7 +155,7 @@ void main() {
   );
 
   test('undo VOIDs the last own event (not a VOID, not voided)', () async {
-    final game = liveGame()..server.offline = true;
+    final game = liveGame()..offline = true;
     final c = containerFor(game);
     await settle(c);
     final ctl = c.read(liveMatchProvider(m1).notifier);
@@ -138,7 +172,7 @@ void main() {
   });
 
   test('parent mode: only linked players, no period / opponent / subs; VOID own only', () async {
-    final game = liveGame()..server.offline = true;
+    final game = liveGame(parent: true)..offline = true;
     final c = containerFor(
       game,
       caps: const Capabilities(
@@ -164,10 +198,14 @@ void main() {
       ctl.substitute(out: 'p1', into: 'p6', clock: 1),
       throwsA(isA<NotAllowed>()),
     );
-    // A coach's event pulled from the feed cannot be voided by the parent.
-    game.server.offline = false;
-    game.server.preload(m1, [
-      RecordedEventFixture.shot('0190b6a0-0000-7000-8000-0000000000c1'),
+    // A coach's event pulled from the feed cannot be voided by the parent
+    // (one of the linked player's: the feed carries no other player's).
+    game.offline = false;
+    game.preload(m1, [
+      RecordedEventFixture.shot(
+        '0190b6a0-0000-7000-8000-0000000000c1',
+        player: 'p1',
+      ),
     ], personId: 'coach');
     await c.read(syncWorkerProvider).syncNow(matchId: m1);
     await pumpEventQueue();
@@ -185,8 +223,8 @@ void main() {
   });
 
   test('parent events use the latest known period and clock', () async {
-    final game = liveGame();
-    game.server.preload(m1, [
+    final game = liveGame(parent: true);
+    game.preload(m1, [
       RecordedEventFixture.periodStart(period: 2, clock: 600),
     ], personId: 'coach');
     final c = containerFor(
@@ -212,9 +250,11 @@ void main() {
   });
 
   test('REJECTED: shown with its reason and can be discarded', () async {
-    final game = liveGame()..server.rejectWhen = (e) => 'NOT_AUTHORIZED';
+    final game = liveGame();
     final c = containerFor(game);
     await settle(c);
+    // Another device cancels the match: the service rejects what follows.
+    game.serverMatch(m1)['status'] = 'CANCELLED';
     final ctl = c.read(liveMatchProvider(m1).notifier);
     await ctl.recordStat('p1', StatAction.block, clock: 0);
     await c.read(syncWorkerProvider).syncNow();
@@ -222,7 +262,7 @@ void main() {
     var s = c.read(liveMatchProvider(m1)).requireValue;
     final entry = s.log.single;
     expect(entry.status, EventStatus.rejected);
-    expect(entry.rejectReason, 'NOT_AUTHORIZED');
+    expect(entry.rejectReason, 'MATCH_CANCELLED');
     await ctl.discard(entry.event.id);
     await pumpEventQueue();
     s = c.read(liveMatchProvider(m1)).requireValue;
@@ -257,13 +297,13 @@ void main() {
       ),
     );
 
-    FakeGame coachScored() => liveGame()
-      ..server.visiblePlayers = {'p1'}
-      ..server.preload(m1, [
-        RecordedEventFixture.periodStart(period: 1, clock: 600),
-        shot('0190b6a0-0000-7000-8000-0000000000d1', 'p2', 3, clock: 550),
-        shot('0190b6a0-0000-7000-8000-0000000000d2', 'p1', 2, clock: 540),
-      ], personId: 'coach');
+    /// The coach scored; the mock filters the feed by who asks (ADR-0030).
+    GameData coachScored({bool parent = true}) =>
+        liveGame(parent: parent)..preload(m1, [
+          RecordedEventFixture.periodStart(period: 1, clock: 600),
+          shot('0190b6a0-0000-7000-8000-0000000000d1', 'p2', 3, clock: 550),
+          shot('0190b6a0-0000-7000-8000-0000000000d2', 'p1', 2, clock: 540),
+        ], personId: 'coach');
 
     test('a parent never receives other players\' events; the score comes from the server box score', () async {
       final game = coachScored();
@@ -289,21 +329,21 @@ void main() {
       await settle(c);
       await c.read(syncWorkerProvider).syncNow(matchId: m1);
       await pumpEventQueue();
-      game.server.offline = true;
+      game.offline = true;
       await c
           .read(liveMatchProvider(m1).notifier)
           .recordStat('p1', StatAction.threeMade, clock: 530);
       await pumpEventQueue();
       expect(c.read(liveMatchProvider(m1)).requireValue.team.teamScore, 8);
 
-      game.server.offline = false;
+      game.offline = false;
       await c.read(syncWorkerProvider).syncNow(matchId: m1);
       await pumpEventQueue();
       var s = c.read(liveMatchProvider(m1)).requireValue;
       expect(s.own.single.status, EventStatus.accepted);
       expect(s.team.teamScore, 8, reason: 'stored now, counted once');
 
-      game.server.preload(m1, [
+      game.preload(m1, [
         shot('0190b6a0-0000-7000-8000-0000000000d3', 'p2', 2, clock: 520),
       ], personId: 'coach');
       await c.read(syncWorkerProvider).syncNow(matchId: m1);
@@ -322,13 +362,8 @@ void main() {
     });
 
     test('offline without a box score: the cached match score, period scores and totals unknown', () async {
-      final game = coachScored();
-      game.matches.matches[0] = gameMatch(
-        m1,
-        team: 5,
-      ).rebuild((b) => b.lastServerSeq = 3);
-      game.matches.boxScoreOf = (_) =>
-          throw const AppError(kind: AppErrorKind.network);
+      // The service's match has the score of the three events (5, seq 3).
+      final game = coachScored()..networkDown(GameData.boxScorePath);
       final c = containerFor(game, caps: parent);
       final s = await settle(c);
       expect(s.team.teamScore, 5);
@@ -339,7 +374,7 @@ void main() {
     test(
       'staff: team figures are the local projection, no box score request',
       () async {
-        final game = coachScored()..server.visiblePlayers = null;
+        final game = coachScored(parent: false);
         final c = containerFor(game);
         await settle(c);
         await c.read(syncWorkerProvider).syncNow(matchId: m1);
@@ -347,7 +382,7 @@ void main() {
         final s = c.read(liveMatchProvider(m1)).requireValue;
         expect(s.team.teamScore, 5);
         expect(s.team.teamScore, s.projection.summary.teamScore);
-        expect(game.matches.calls, isNot(contains('boxScore')));
+        expect(game.boxScoreCalls, 0);
       },
     );
   });
@@ -360,13 +395,13 @@ void main() {
         .read(liveMatchProvider(m1).notifier)
         .recordStat('p1', StatAction.defensiveRebound, clock: 0);
     await pumpEventQueue(times: 50);
-    expect(game.server.stored(m1).length, 1);
+    expect(game.stored(m1).length, 1);
   });
 }
 
 /// Server-side events of other scorers.
 abstract final class RecordedEventFixture {
-  static RecordedEvent shot(String id) => RecordedEvent(
+  static RecordedEvent shot(String id, {String player = 'p2'}) => RecordedEvent(
     Shot(
       EventMeta(
         id: id,
@@ -376,7 +411,7 @@ abstract final class RecordedEventFixture {
         clockSecondsRemaining: 500,
         recordedAtClient: DateTime.utc(2026, 11, 7, 10),
       ),
-      playerId: 'p2',
+      playerId: player,
       points: 2,
       made: true,
     ),

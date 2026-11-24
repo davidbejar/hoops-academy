@@ -19,8 +19,8 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../features/match/presentation/match_screens_test.dart'
-    show coreWithTeam, gameWith, seasonStatsFixture;
-import '../support/fake_game.dart' show teamA;
+    show coreWithTeam, gameWith, statsGame;
+import '../support/game_seed.dart' show GameData, teamA;
 import '../support/pump_helpers.dart';
 
 /// Match screens of WP74 (ADR-0040). Regenerate with
@@ -91,15 +91,14 @@ void main() {
       WidgetTester tester,
       String location, {
       Size size = phone,
+      GameData? game,
     }) async {
-      final game = gameWith();
-      game.matches.seasonStatsResult = seasonStatsFixture();
       await pumpAs(
         tester,
         roles: {TenantRole.coach},
         staffTeamIds: {teamA},
         core: coreWithTeam(),
-        game: game,
+        game: game ?? gameWith(),
         location: location,
         size: size,
       );
@@ -123,7 +122,7 @@ void main() {
     ]) {
       testWidgets('season statistics, $name', (tester) async {
         if (dark) brightness(tester, Brightness.dark);
-        await pumpCoach(tester, '/matches/stats/p1');
+        await pumpCoach(tester, '/matches/stats/p1', game: statsGame());
         await golden(name);
       });
     }

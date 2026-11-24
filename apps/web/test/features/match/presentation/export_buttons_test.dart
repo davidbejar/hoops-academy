@@ -11,9 +11,9 @@ import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 import '../../../support/core_fixtures.dart';
 import '../../../support/fake_athlete.dart';
 import '../../../support/fake_export.dart';
-import '../../../support/fake_game.dart';
 import '../../../support/core_seed.dart';
 import '../../../support/fake_repos.dart';
+import '../../../support/game_seed.dart';
 import '../../../support/export_overrides.dart';
 import '../../../support/pump_helpers.dart';
 
@@ -50,57 +50,30 @@ FakeCore coreWithTeam() => FakeCore(
   players: PlayersData([player('p1', 'Ana Ruiz')]),
 );
 
-FakeGame game() {
-  final g = FakeGame(
-    matches: FakeMatchesRepository(
-      matches: [
-        gameMatch(
-          fin,
-          status: gen.MatchStatus.FINISHED,
-          opponent: 'Lobos',
-          team: 0,
-          at: DateTime.utc(2026, 10, 31, 10),
-          seasonId: seasonId,
-        ),
-        gameMatch(
-          sched,
-          status: gen.MatchStatus.SCHEDULED,
-          opponent: 'Águilas',
-          at: DateTime.utc(2026, 11, 14, 10),
-          seasonId: seasonId,
-        ),
-      ],
-      rosters: {fin: demoRoster},
-      seasonStatsResult: gen.PlayerSeasonStats(
-        (b) => b
-          ..playerId = 'p1'
-          ..seasonId = seasonId
-          ..gamesPlayed = 1
-          ..gamesStarted = 1
-          ..totals.replace(_line(8))
-          ..averages.points = 8
-          ..averages.assists = 1
-          ..averages.rebounds = 2
-          ..averages.steals = 0
-          ..averages.blocks = 0
-          ..averages.turnovers = 0
-          ..averages.personalFouls = 1
-          ..averages.minutesPlayed = 10
-          ..matches.add(
-            gen.PlayerMatchLine(
-              (m) => m
-                ..matchId = fin
-                ..scheduledAt = DateTime.utc(2026, 10, 31, 10)
-                ..opponentName = 'Lobos'
-                ..status = gen.MatchStatus.FINISHED
-                ..wasStarter = true
-                ..stats.replace(_line(8)),
-            ),
-          ),
+/// A finished match against Lobos (Ana Ruiz scored 2 of the team's 5) and a
+/// scheduled one, in the academy's season: the season statistics are the
+/// mock's, from these events.
+GameData game() {
+  final g = GameData(
+    matches: [
+      gameMatch(
+        fin,
+        status: gen.MatchStatus.FINISHED,
+        opponent: 'Lobos',
+        at: DateTime.utc(2026, 10, 31, 10),
+        seasonId: seasonId,
       ),
-    ),
+      gameMatch(
+        sched,
+        status: gen.MatchStatus.SCHEDULED,
+        opponent: 'Águilas',
+        at: DateTime.utc(2026, 11, 14, 10),
+        seasonId: seasonId,
+      ),
+    ],
+    rosters: {fin: demoRoster},
   );
-  g.server.preload(fin, [
+  g.preload(fin, [
     RecordedEvent(PeriodStart(_meta('e1', 600))),
     RecordedEvent(
       Shot(_meta('e2', 500), playerId: 'p1', points: 2, made: true),
@@ -113,27 +86,6 @@ FakeGame game() {
   ], personId: 'coach');
   return g;
 }
-
-gen.StatLine _line(int points) => gen.StatLine(
-  (b) => b
-    ..points = points
-    ..fg1Made = 0
-    ..fg1Attempted = 0
-    ..fg2Made = points ~/ 2
-    ..fg2Attempted = points ~/ 2
-    ..fg3Made = 0
-    ..fg3Attempted = 0
-    ..assists = 1
-    ..offensiveRebounds = 0
-    ..defensiveRebounds = 2
-    ..turnovers = 0
-    ..steals = 0
-    ..blocks = 0
-    ..personalFouls = 1
-    ..technicalFouls = 0
-    ..unsportsmanlikeFouls = 0
-    ..secondsPlayed = 600,
-);
 
 Future<void> settleFeed(WidgetTester tester) async {
   await tester.runAsync(
@@ -153,7 +105,7 @@ void main() {
     WidgetTester tester,
     String location, {
     Set<TenantRole> roles = const {TenantRole.coach},
-    FakeGame? withGame,
+    GameData? withGame,
     FakeAthlete? athlete,
     bool excelOffline = false,
     Size size = const Size(360, 780),
@@ -344,7 +296,7 @@ void main() {
         withGame: g,
         athlete: athleteWithSessions(),
       );
-      g.matches.failWith = const AppError(kind: AppErrorKind.network);
+      g.networkDown();
       await choose(tester, 'ics');
       final text = utf8.decode(downloader.saved.single.bytes);
       expect(text, contains('UID:match-$fin@hoops-academy'));
@@ -355,8 +307,7 @@ void main() {
     testWidgets('matches unreadable, nothing cached: sessions only, said so', (
       tester,
     ) async {
-      final g = game()
-        ..matches.failWith = const AppError(kind: AppErrorKind.network);
+      final g = game()..networkDown();
       await pumpAt(
         tester,
         '/training',
@@ -376,8 +327,7 @@ void main() {
     testWidgets('both sources down: the error message, no file', (
       tester,
     ) async {
-      final g = game()
-        ..matches.failWith = const AppError(kind: AppErrorKind.network);
+      final g = game()..networkDown();
       final athlete = athleteWithSessions();
       await pumpAt(tester, '/training', withGame: g, athlete: athlete);
       athlete.training.failWith = const AppError(kind: AppErrorKind.network);

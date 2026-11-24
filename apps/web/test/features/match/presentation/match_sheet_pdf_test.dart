@@ -1,14 +1,13 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
 import '../../../support/export_overrides.dart';
 import '../../../support/fake_export.dart';
-import '../../../support/fake_game.dart';
-import '../../../support/fake_repos.dart';
+import '../../../support/game_seed.dart';
 import '../../../support/pump_helpers.dart';
+import 'match_screens_test.dart' show coreWithTeam;
 
 const _fin = 'm-fin';
 const _button = Key('match-sheet-pdf');
@@ -17,21 +16,19 @@ final _icon = find.descendant(
   matching: find.byType(IconButton),
 );
 
-FakeGame _game() => FakeGame(
-  matches: FakeMatchesRepository(
-    matches: [
-      gameMatch(
-        _fin,
-        status: gen.MatchStatus.FINISHED,
-        opponent: 'Lobos',
-        at: DateTime.utc(2026, 10, 31, 10),
-      ),
-    ],
-    rosters: {_fin: demoRoster},
-  ),
+GameData _game() => GameData(
+  matches: [
+    gameMatch(
+      _fin,
+      status: gen.MatchStatus.FINISHED,
+      opponent: 'Lobos',
+      at: DateTime.utc(2026, 10, 31, 10),
+    ),
+  ],
+  rosters: {_fin: demoRoster},
 );
 
-Future<(FakeGame, dynamic)> _pump(
+Future<(GameData, dynamic)> _pump(
   WidgetTester tester,
   FakeFileDownloader downloader, {
   Set<TenantRole> roles = const {TenantRole.coach},
@@ -45,7 +42,7 @@ Future<(FakeGame, dynamic)> _pump(
     staffTeamIds: roles.contains(TenantRole.coach) ? {teamA} : {},
     linkedPlayerIds: linked,
     ownPlayerId: ownPlayer,
-    core: FakeCore(),
+    core: coreWithTeam(),
     game: game,
     location: '/matches/$_fin',
     overrides: exportOverrides(downloader),
@@ -87,22 +84,29 @@ void main() {
       await tester.tap(find.byKey(_button));
       await tester.pumpAndSettle();
 
-      expect(game.matches.sheets, [(_fin, 'es')]);
+      final asked = game.requests(GameData.sheetPath).single;
+      expect(asked.path, '/api/game/matches/$_fin/box-score:pdf');
+      expect(asked.headers['Accept-Language'], 'es');
+      final served = game.backend.lastFile(GameData.sheetPath);
       final file = downloader.saved.single;
       expect(
-        file.fileName,
-        'hoops-role-test-match-sheet-mini-a-lobos-20261116.pdf',
+        served.headers['content-disposition']!.single,
+        'attachment; filename="${file.fileName}"',
       );
-      expect(file.bytes, game.matches.sheet.bytes);
+      expect(
+        file.fileName,
+        matches(r'^hoops-demo-match-sheet-lobos-\d{8}\.pdf$'),
+      );
+      expect(file.bytes, served.bytes);
       expect(file.mediaType, 'application/pdf');
-      expect(find.textContaining('Descargado hoops-role-test'), findsOneWidget);
+      expect(find.textContaining('Descargado hoops-demo'), findsOneWidget);
     });
 
     testWidgets('503 shows a try-later message and no crash', (tester) async {
       final downloader = FakeFileDownloader();
       final (game, _) = await _pump(tester, downloader);
-      game.matches.sheetFailure = const AppError(
-        kind: AppErrorKind.server,
+      game.fail(
+        path: GameData.sheetPath,
         status: 503,
         code: 'UPSTREAM_UNAVAILABLE',
       );
@@ -122,10 +126,7 @@ void main() {
     testWidgets('a 404 is shown like on other screens', (tester) async {
       final downloader = FakeFileDownloader();
       final (game, _) = await _pump(tester, downloader);
-      game.matches.sheetFailure = const AppError(
-        kind: AppErrorKind.notFound,
-        status: 404,
-      );
+      game.fail(path: GameData.sheetPath, status: 404);
 
       await tester.tap(find.byKey(_button));
       await tester.pumpAndSettle();

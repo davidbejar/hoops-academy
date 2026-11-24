@@ -6,7 +6,7 @@ import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 import '../support/core_fixtures.dart';
 import '../support/fake_export.dart';
 import '../support/export_overrides.dart';
-import '../support/fake_game.dart';
+import '../support/game_seed.dart';
 import '../support/core_seed.dart';
 import '../support/fake_repos.dart';
 import '../support/pump_helpers.dart';
@@ -36,18 +36,16 @@ void main() {
         roles: {TenantRole.coach},
         staffTeamIds: {teamA},
         core: FakeCore(teams: TeamsData(teams: [team(teamA, 'Mini A')])),
-        game: FakeGame(
-          matches: FakeMatchesRepository(
-            matches: [
-              gameMatch(
-                'm1',
-                status: gen.MatchStatus.SCHEDULED,
-                opponent: 'Lobos',
-                at: DateTime.utc(2026, 11, 14, 10),
-                seasonId: seasonId,
-              ),
-            ],
-          ),
+        game: GameData(
+          matches: [
+            gameMatch(
+              'm1',
+              status: gen.MatchStatus.SCHEDULED,
+              opponent: 'Lobos',
+              at: DateTime.utc(2026, 11, 14, 10),
+              seasonId: seasonId,
+            ),
+          ],
         ),
         timezone: 'Europe/Madrid',
         size: size,

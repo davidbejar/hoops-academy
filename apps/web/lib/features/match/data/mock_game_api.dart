@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import '../../../core/export/export_file_name.dart' show asciiSlug;
 import '../../../core/mock/mock_authz.dart';
 import '../../../core/mock/mock_core_api.dart';
@@ -228,6 +230,63 @@ class MockGameApi {
         .putIfAbsent(matchId, () => [])
         .add(_Stored(json, ++_serverSeq, person, name, DateTime.now().toUtc()));
   }
+
+  // ------------------------------------------------------------ test seeding
+  // The widget tests (ADR-0070) seed an empty academy with these instead of
+  // reading the demo's matches.
+
+  /// A match as the service keeps it (JSON of the contract's `Match`); its
+  /// score and last sequence follow its events.
+  @visibleForTesting
+  void seedMatch(Map<String, Object?> match) {
+    _matches
+      ..removeWhere((m) => m['id'] == match['id'])
+      ..add({...match});
+    _refreshScore(match['id']! as String);
+  }
+
+  /// The match's roster (JSON of the contract's `RosterEntry`).
+  @visibleForTesting
+  void seedRoster(String matchId, List<Map<String, Object?>> entries) {
+    _rosters[matchId] = [
+      for (final e in entries)
+        _entry(
+          e['playerId']! as String,
+          e['displayName']! as String,
+          e['jerseyNumber'] as String?,
+          e['isStarter'] == true,
+        ),
+    ];
+    if (_find(matchId) != null) _refreshScore(matchId);
+  }
+
+  /// An event another scorer ([person], [name]) recorded, stored with the
+  /// next sequence number (or [serverSeq], which moves the sequence on).
+  @visibleForTesting
+  void seedEvent(
+    String matchId,
+    Map<String, Object?> event, {
+    required String person,
+    String name = 'Otro anotador',
+    int? serverSeq,
+  }) {
+    if (serverSeq != null && serverSeq > _serverSeq + 1) {
+      _serverSeq = serverSeq - 1;
+    }
+    _store(matchId, event, person, name);
+    if (_find(matchId) != null) _refreshScore(matchId);
+  }
+
+  /// The match [id] as the service keeps it (null: none), to change it the
+  /// way another device would (cancel it, say).
+  @visibleForTesting
+  Map<String, Object?>? match(String id) => _find(id);
+
+  /// The events the service stored for [matchId], in order.
+  @visibleForTesting
+  List<Map<String, Object?>> eventsOf(String matchId) => [
+    for (final s in _events[matchId] ?? <_Stored>[]) s.json,
+  ];
 
   // ------------------------------------------------------------------ routes
 

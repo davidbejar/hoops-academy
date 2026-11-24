@@ -27,9 +27,9 @@ import 'package:hoops_app/features/tenant/domain/tenant_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_athlete.dart';
-import 'fake_game.dart';
 import 'fake_repos.dart';
 import 'core_seed.dart';
+import 'game_seed.dart';
 import 'mock_backend.dart';
 
 class FakeMeRepository implements MeRepository {
@@ -116,12 +116,12 @@ class Harness {
     Map<String, Object> prefs = const {},
     bool signedIn = true,
     this.core,
-    FakeGame? game,
+    GameData? game,
     FakeAthlete? athlete,
     MockBackend? backend,
     this.extraOverrides = const [],
   }) : backend = backend ?? _backendFor(me.user),
-       game = game ?? FakeGame(),
+       game = game ?? GameData(),
        athlete = athlete ?? FakeAthlete(),
        auth =
            auth ??
@@ -137,6 +137,7 @@ class Harness {
     if (first != null && first.tenantId == this.backend.tenantAId) {
       this.backend.seedMembership(first);
     }
+    this.game.seedInto(this.backend);
   }
 
   final FakeMeRepository me;
@@ -162,9 +163,9 @@ class Harness {
   /// In-memory admin / roster repositories (null: not needed by the test).
   final FakeCore? core;
 
-  /// In-memory game side (matches, events, Drift store); empty by default so
-  /// every screen that opens the match module works without a backend.
-  final FakeGame game;
+  /// The game side: matches, rosters and events seeded into [backend], the
+  /// device's Drift store and the sync timers; empty by default.
+  final GameData game;
 
   /// In-memory athlete-service side (training, plans, health, fitness).
   final FakeAthlete athlete;

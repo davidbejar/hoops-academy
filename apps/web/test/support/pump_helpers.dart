@@ -4,9 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import 'fake_athlete.dart';
-import 'fake_game.dart';
 import 'fake_repos.dart';
 import 'fixtures.dart';
+import 'game_seed.dart';
 import 'harness.dart';
 import 'mock_backend.dart';
 
@@ -22,7 +22,7 @@ Future<Harness> pumpAs(
   Size size = const Size(360, 780),
   bool settle = true,
   FakeTenantRepository? tenant,
-  FakeGame? game,
+  GameData? game,
   FakeAthlete? athlete,
   bool superAdmin = false,
   String? ownPlayerId,

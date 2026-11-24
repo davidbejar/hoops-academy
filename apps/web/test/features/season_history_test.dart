@@ -14,7 +14,7 @@ import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
 import '../support/core_fixtures.dart';
 import '../support/fake_athlete.dart';
-import '../support/fake_game.dart';
+import '../support/game_seed.dart';
 import '../support/core_seed.dart';
 import '../support/fake_repos.dart';
 import '../support/pump_helpers.dart';
@@ -44,26 +44,24 @@ FakeCore _core() => FakeCore(
   ),
 );
 
-FakeGame _game() => FakeGame(
-  matches: FakeMatchesRepository(
-    matches: [
-      gameMatch(
-        'm-old',
-        teamId: _tOld,
-        seasonId: _past,
-        status: gen.MatchStatus.FINISHED,
-        opponent: 'Lobos',
-      ),
-      gameMatch(
-        'm-new',
-        teamId: _tNew,
-        seasonId: seasonId,
-        status: gen.MatchStatus.SCHEDULED,
-        opponent: 'Osos',
-      ),
-    ],
-    rosters: {'m-old': demoRoster, 'm-new': demoRoster},
-  ),
+GameData _game() => GameData(
+  matches: [
+    gameMatch(
+      'm-old',
+      teamId: _tOld,
+      seasonId: _past,
+      status: gen.MatchStatus.FINISHED,
+      opponent: 'Lobos',
+    ),
+    gameMatch(
+      'm-new',
+      teamId: _tNew,
+      seasonId: seasonId,
+      status: gen.MatchStatus.SCHEDULED,
+      opponent: 'Osos',
+    ),
+  ],
+  rosters: {'m-old': demoRoster, 'm-new': demoRoster},
 );
 
 DioException _problem(int status, String code) {

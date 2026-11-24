@@ -1,18 +1,19 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/core/ui/kit.dart';
 import 'package:hoops_app/features/match/application/match_providers.dart';
 import 'package:hoops_app/features/match/domain/match_event.dart';
+import 'package:hoops_app/features/match/domain/projector/projector.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
 import '../../../support/core_fixtures.dart';
-import '../../../support/fake_game.dart';
 import '../../../support/core_seed.dart';
 import '../../../support/fake_repos.dart';
+import '../../../support/game_seed.dart';
 import '../../../support/harness.dart';
+import '../../../support/mock_backend.dart';
 import '../../../support/pump_helpers.dart';
 
 const live = 'm-live';
@@ -32,33 +33,62 @@ FakeCore coreWithTeam() => FakeCore(
   ),
 );
 
-FakeGame gameWith({List<gen.Match>? matches}) => FakeGame(
-  matches: FakeMatchesRepository(
-    matches:
-        matches ??
-        [
-          gameMatch(live, opponent: 'Tigres', team: 0),
-          gameMatch(
-            sched,
-            status: gen.MatchStatus.SCHEDULED,
-            opponent: 'Águilas',
-            at: DateTime.utc(2026, 11, 14, 10),
-          ),
-          gameMatch(
-            fin,
-            status: gen.MatchStatus.FINISHED,
-            opponent: 'Lobos',
-            team: 0,
-            at: DateTime.utc(2026, 10, 31, 10),
-          ),
-        ],
-    rosters: {live: demoRoster, fin: demoRoster},
-  ),
-);
+GameData gameWith({List<gen.Match>? matches, String season = 'season-1'}) =>
+    GameData(
+      matches:
+          matches ??
+          [
+            gameMatch(live, opponent: 'Tigres', seasonId: season),
+            gameMatch(
+              sched,
+              status: gen.MatchStatus.SCHEDULED,
+              opponent: 'Águilas',
+              seasonId: season,
+              at: DateTime.utc(2026, 11, 14, 10),
+            ),
+            gameMatch(
+              fin,
+              status: gen.MatchStatus.FINISHED,
+              opponent: 'Lobos',
+              seasonId: season,
+              at: DateTime.utc(2026, 10, 31, 10),
+            ),
+          ],
+      rosters: {live: demoRoster, fin: demoRoster},
+    );
+
+/// A season (the academy's current one) in which Ana Ruiz (p1) played the
+/// finished match as a starter (4 points) and sits on the bench of the live
+/// one: two matches, one started.
+GameData statsGame() {
+  final game = gameWith(season: seasonId)
+    ..setRoster(live, [
+      for (final p in demoRoster)
+        p.playerId == 'p1'
+            ? RosterPlayer(
+                playerId: p.playerId,
+                displayName: p.displayName,
+                jerseyNumber: p.jerseyNumber,
+                isStarter: false,
+              )
+            : p,
+    ]);
+  game.preload(fin, [
+    RecordedEvent(PeriodStart(_meta('s1', 600))),
+    RecordedEvent(
+      Shot(_meta('s2', 500), playerId: 'p1', points: 2, made: true),
+    ),
+    RecordedEvent(
+      Shot(_meta('s3', 400), playerId: 'p1', points: 2, made: true),
+    ),
+    RecordedEvent(PeriodEnd(_meta('s4', 0))),
+  ], personId: 'coach');
+  return game;
+}
 
 Future<Harness> pumpCoach(
   WidgetTester tester,
-  FakeGame game,
+  GameData game,
   String location, {
   bool settle = true,
   Size size = const Size(360, 780),
@@ -75,7 +105,7 @@ Future<Harness> pumpCoach(
 
 Future<Harness> pumpParent(
   WidgetTester tester,
-  FakeGame game,
+  GameData game,
   String location,
 ) => pumpAs(
   tester,
@@ -88,7 +118,7 @@ Future<Harness> pumpParent(
 
 Future<Harness> pumpPlayer(
   WidgetTester tester,
-  FakeGame game,
+  GameData game,
   String location,
 ) => pumpAs(
   tester,
@@ -132,20 +162,16 @@ Future<void> clearSnackBars(WidgetTester tester) async {
 void main() {
   group('match list', () {
     testWidgets('loading', (tester) async {
-      final game = gameWith()..matches.hang = true;
+      final game = gameWith()..hang();
       await pumpCoach(tester, game, '/matches', settle: false);
       expect(find.byType(CircularProgressIndicator), findsWidgets);
     });
 
     testWidgets('error with retry', (tester) async {
-      final game = gameWith()
-        ..matches.failWith = const AppError(
-          kind: AppErrorKind.forbidden,
-          status: 403,
-        );
+      final game = gameWith()..fail(status: 403);
       await pumpCoach(tester, game, '/matches');
       expect(find.text('Reintentar'), findsWidgets);
-      game.matches.failWith = null;
+      game.heal();
       await tester.tap(find.text('Reintentar').last);
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('match-$live')), findsOneWidget);
@@ -176,10 +202,9 @@ void main() {
 
       await h.go(tester, '/matches/$live');
       // The server counts what the coach records from here on.
-      game.matches.matches[0] = gameMatch(live, opponent: 'Tigres', team: 3);
       await tapKey(tester, 'period-start');
       await tapAction(tester, 'p1', '3pt-made');
-      expect(game.server.stored(live), isNotEmpty, reason: 'synced');
+      expect(game.stored(live), isNotEmpty, reason: 'synced');
 
       await h.go(tester, '/matches');
 
@@ -189,7 +214,7 @@ void main() {
     testWidgets('offline: cached list after a successful load', (tester) async {
       final game = gameWith();
       final h = await pumpCoach(tester, game, '/matches');
-      game.matches.failWith = const AppError(kind: AppErrorKind.network);
+      game.networkDown();
       h.container.invalidate(matchListProvider);
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('match-list-cached')), findsOneWidget);
@@ -210,7 +235,7 @@ void main() {
       await tapKey(tester, 'match-new');
       await enter(tester, 'match-new-opponent', 'Halcones');
       await tapKey(tester, 'form-submit');
-      expect(game.matches.calls, contains('create'));
+      expect(game.requests('/api/game/matches', method: 'POST'), hasLength(1));
       expect(find.text('vs Halcones'), findsOneWidget);
     });
   });
@@ -224,16 +249,19 @@ void main() {
         expect(find.byKey(const Key('setup-p1')), findsOneWidget);
         await tapKey(tester, 'setup-save');
         expect(find.text('Marca al menos un titular'), findsOneWidget);
-        expect(game.matches.replacedRosters, isEmpty);
+        expect(game.requests(GameData.rosterPath, method: 'PUT'), isEmpty);
 
         await tapKey(tester, 'setup-starter-p1');
         await tapKey(tester, 'setup-include-p3');
         await enter(tester, 'setup-jersey-p2', '12');
         await tapKey(tester, 'setup-save');
-        final saved = game.matches.replacedRosters.single;
-        expect(saved.map((e) => e.playerId), ['p1', 'p2']);
-        expect(saved.first.isStarter, isTrue);
-        expect(saved[1].jerseyNumber, '12');
+        final put = game.requests(GameData.rosterPath, method: 'PUT');
+        expect(put, hasLength(1));
+        final saved = (MockBackend.bodyOf(put.single)['entries']! as List)
+            .cast<Map<String, Object?>>();
+        expect(saved.map((e) => e['playerId']), ['p1', 'p2']);
+        expect(saved.first['isStarter'], isTrue);
+        expect(saved[1]['jerseyNumber'], '12');
         expect(
           (await tester.runAsync(
             () => game.store.roster(sched, tenantId: h.scope.tenantId),
@@ -264,14 +292,13 @@ void main() {
 
   group('live match (staff)', () {
     testWidgets('loading and error states', (tester) async {
-      final game = gameWith()..matches.hang = true;
+      final game = gameWith()..hang();
       await pumpCoach(tester, game, '/matches/$live', settle: false);
       expect(find.byType(CircularProgressIndicator), findsWidgets);
     });
 
     testWidgets('error without cache shows retry', (tester) async {
-      final game = gameWith()
-        ..matches.failWith = const AppError(kind: AppErrorKind.network);
+      final game = gameWith()..networkDown();
       await pumpCoach(tester, game, '/matches/$live');
       expect(find.text('Reintentar'), findsWidgets);
     });
@@ -289,7 +316,7 @@ void main() {
     testWidgets(
       'court, clock, period, shot, opponent points, substitution, undo, log',
       (tester) async {
-        final game = gameWith()..server.offline = true;
+        final game = gameWith()..offline = true;
         final h = await pumpCoach(tester, game, '/matches/$live');
         expect(find.byKey(const Key('game-clock')), findsOneWidget);
         expect(find.text('10:00'), findsOneWidget);
@@ -338,27 +365,29 @@ void main() {
     );
 
     testWidgets('reconnect: the banner retry syncs the queue', (tester) async {
-      final game = gameWith()..server.offline = true;
+      final game = gameWith()..offline = true;
       await pumpCoach(tester, game, '/matches/$live');
       await tapKey(tester, 'period-start');
       await tapAction(tester, 'p2', 'ast');
       expect(find.text('2 sin sincronizar'), findsOneWidget);
-      game.server.offline = false;
+      game.offline = false;
       await tapKey(tester, 'sync-retry');
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
       );
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('sync-banner')), findsNothing);
-      expect(game.server.stored(live).length, 2);
+      expect(game.stored(live).length, 2);
     });
 
     testWidgets('REJECTED events show their reason and can be discarded', (
       tester,
     ) async {
-      final game = gameWith()
-        ..server.rejectWhen = (e) => e is Block ? 'NOT_AUTHORIZED' : null;
+      final game = gameWith();
       final h = await pumpCoach(tester, game, '/matches/$live');
+      // Another device cancels the match meanwhile: the service rejects
+      // every event recorded after that.
+      game.serverMatch(live)['status'] = 'CANCELLED';
       await tapAction(tester, 'p1', 'blk');
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 50)),
@@ -366,7 +395,7 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('tab-log')));
       await tester.pumpAndSettle();
-      expect(find.text('Rechazada: sin permiso'), findsOneWidget);
+      expect(find.text('Rechazada: partido cancelado'), findsOneWidget);
       expect(find.text('1 rechazadas'), findsOneWidget);
       final id = (await tester.runAsync(
         () => game.store.ownEvents(
@@ -377,12 +406,12 @@ void main() {
       ))!.single.event.id;
       await tapKey(tester, 'log-discard-$id');
       await tapKey(tester, 'dialog-confirm');
-      expect(find.text('Rechazada: sin permiso'), findsNothing);
+      expect(find.text('Rechazada: partido cancelado'), findsNothing);
     });
 
     testWidgets('box score tab and finished match with copy', (tester) async {
       final game = gameWith();
-      game.server.preload(fin, [
+      game.preload(fin, [
         RecordedEvent(PeriodStart(_meta('e1', 600))),
         RecordedEvent(
           Shot(_meta('e2', 500), playerId: 'p1', points: 2, made: true),
@@ -430,7 +459,7 @@ void main() {
       tester,
     ) async {
       final game = gameWith();
-      game.server.preload(fin, [
+      game.preload(fin, [
         RecordedEvent(PeriodStart(_meta('e1', 600))),
         RecordedEvent(
           Shot(_meta('e2', 500), playerId: 'p1', points: 2, made: true),
@@ -451,12 +480,14 @@ void main() {
     });
 
     testWidgets('match menu: start a scheduled match', (tester) async {
-      final game = gameWith();
-      game.matches.rosters[sched] = demoRoster;
+      final game = gameWith()..setRoster(sched, demoRoster);
       await pumpCoach(tester, game, '/matches/$sched');
       await tapKey(tester, 'match-menu');
       await tapKey(tester, 'menu-start');
-      expect(game.matches.calls, contains('start'));
+      expect(
+        game.requests(RegExp(r'/m-sched/start$'), method: 'POST'),
+        hasLength(1),
+      );
       expect(
         find.byKey(const Key('status-LIVE')),
         findsNothing,
@@ -469,7 +500,7 @@ void main() {
     testWidgets(
       'other players disabled, clock/period/opponent hidden, linked player scores',
       (tester) async {
-        final game = gameWith()..server.offline = true;
+        final game = gameWith()..offline = true;
         final h = await pumpParent(tester, game, '/matches/$live');
         expect(find.byKey(const Key('parent-mode')), findsOneWidget);
         expect(find.byKey(const Key('game-clock')), findsNothing);
@@ -501,7 +532,7 @@ void main() {
 
     testWidgets('parent cannot void a coach event', (tester) async {
       final game = gameWith();
-      game.server.preload(live, [
+      game.preload(live, [
         RecordedEvent(
           Shot(_meta('c1', 500), playerId: 'p1', points: 2, made: true),
         ),
@@ -521,7 +552,7 @@ void main() {
   group('leaving the live match (WEB-01)', () {
     /// Fires every periodic timer still registered, as 30 s of fake time would
     /// (twice the 15 s cadence), and lets the pulls run.
-    Future<void> thirtySecondsLater(WidgetTester tester, FakeGame game) async {
+    Future<void> thirtySecondsLater(WidgetTester tester, GameData game) async {
       for (var i = 0; i < 2; i++) {
         await tester.runAsync(() async {
           for (final t in [...game.timers.periodic]) {
@@ -538,10 +569,10 @@ void main() {
       expect(game.timers.periodic, hasLength(1), reason: 'the worker pull');
 
       await h.go(tester, '/matches');
-      final feeds = game.server.feedCalls;
+      final feeds = game.feedCalls;
       await thirtySecondsLater(tester, game);
       expect(game.timers.periodic, isEmpty);
-      expect(game.server.feedCalls, feeds);
+      expect(game.feedCalls, feeds);
     });
 
     testWidgets('PARENT: neither the feed nor the box score is polled', (
@@ -556,22 +587,20 @@ void main() {
       );
 
       await h.go(tester, '/matches');
-      final feeds = game.server.feedCalls;
-      final boxScores = game.matches.calls.where((c) => c == 'boxScore').length;
+      final feeds = game.feedCalls;
+      final boxScores = game.boxScoreCalls;
       await thirtySecondsLater(tester, game);
       expect(game.timers.periodic, isEmpty);
-      expect(game.server.feedCalls, feeds);
-      expect(
-        game.matches.calls.where((c) => c == 'boxScore'),
-        hasLength(boxScores),
-      );
+      expect(game.feedCalls, feeds);
+      expect(game.boxScoreCalls, boxScores);
     });
   });
 
   group('filtered feed (ADR-0030)', () {
-    FakeGame coachScored() {
-      final game = gameWith()..server.visiblePlayers = {'p1'};
-      game.server.preload(live, [
+    /// The coach scored; the mock filters the feed by who asks (ADR-0030).
+    GameData coachScored() {
+      final game = gameWith();
+      game.preload(live, [
         RecordedEvent(PeriodStart(_meta('f1', 600))),
         RecordedEvent(
           Shot(_meta('f2', 550), playerId: 'p2', points: 3, made: true),
@@ -679,7 +708,7 @@ void main() {
     });
 
     testWidgets('staff keep court and bench', (tester) async {
-      final game = coachScored()..server.visiblePlayers = null;
+      final game = coachScored();
       await pumpCoach(tester, game, '/matches/$live');
       await settleFeed(tester);
 
@@ -692,13 +721,12 @@ void main() {
 
   group('season stats', () {
     testWidgets('populated, reached from the player detail', (tester) async {
-      final game = gameWith();
-      game.matches.seasonStatsResult = seasonStatsFixture();
+      final game = statsGame();
       await pumpAs(
         tester,
         roles: {TenantRole.coach},
         staffTeamIds: {teamA},
-        core: FakeCore(players: PlayersData([player('p1', 'Ana Ruiz')])),
+        core: coreWithTeam(),
         game: game,
         location: '/players/p1',
       );
@@ -706,22 +734,22 @@ void main() {
       expect(find.text('2 partidos · 1 de titular'), findsOneWidget);
       expect(find.byKey(const Key('avg-points')), findsOneWidget);
       expect(find.byKey(const Key('stats-match-$fin')), findsOneWidget);
-      expect(game.matches.lastSeasonStatsSeason, seasonId);
+      expect(
+        game.backend.lastQuery(GameData.seasonStatsPath).text('seasonId'),
+        seasonId,
+      );
     });
 
     testWidgets('empty and error', (tester) async {
-      final game = gameWith();
-      game.matches.seasonStatsResult = seasonStatsFixture(empty: true);
+      // No match of the season: nothing played.
+      final game = gameWith(matches: []);
       await pumpParent(tester, game, '/matches/stats/p1');
       expect(find.text('Sin partidos en esta temporada'), findsOneWidget);
     });
 
     testWidgets('error with retry', (tester) async {
       final game = gameWith()
-        ..matches.failWith = const AppError(
-          kind: AppErrorKind.notFound,
-          status: 404,
-        );
+        ..fail(path: GameData.seasonStatsPath, status: 404);
       await pumpParent(tester, game, '/matches/stats/p1');
       expect(find.text('Reintentar'), findsWidgets);
     });
@@ -797,7 +825,7 @@ void main() {
     testWidgets('sync banner: warning while unsynced, danger when rejected', (
       tester,
     ) async {
-      final game = gameWith()..server.offline = true;
+      final game = gameWith()..offline = true;
       await pumpCoach(tester, game, '/matches/$live');
       await tapKey(tester, 'period-start');
       final banner = tester.widget<NoticeBanner>(
@@ -811,7 +839,7 @@ void main() {
       tester,
     ) async {
       final game = gameWith();
-      game.server.preload(fin, [
+      game.preload(fin, [
         RecordedEvent(PeriodStart(_meta('e1', 600))),
         RecordedEvent(
           Shot(_meta('e2', 500), playerId: 'p1', points: 2, made: true),
@@ -842,9 +870,7 @@ void main() {
     testWidgets('season stats: averages as stat tiles, matches as rows', (
       tester,
     ) async {
-      final game = gameWith();
-      game.matches.seasonStatsResult = seasonStatsFixture();
-      await pumpParent(tester, game, '/matches/stats/p1');
+      await pumpParent(tester, statsGame(), '/matches/stats/p1');
       expect(find.byKey(const Key('avg-points')), findsOneWidget);
       expect(
         tester.widget(find.byKey(const Key('avg-points'))),
@@ -860,8 +886,7 @@ void main() {
     testWidgets('setup: a match without roster shows the empty state', (
       tester,
     ) async {
-      final game = gameWith();
-      game.matches.rosters.remove(live);
+      final game = gameWith()..setRoster(live, null);
       await pumpCoach(tester, game, '/matches/$live');
       expect(find.byType(EmptyState), findsOneWidget);
       expect(find.byKey(const Key('open-setup')), findsOneWidget);
@@ -880,57 +905,3 @@ EventMeta _meta(String id, int clock) => EventMeta(
   clockSecondsRemaining: clock,
   recordedAtClient: DateTime.utc(2026, 10, 31, 10, 10 - clock ~/ 100),
 );
-
-gen.StatLine _line(int points) => gen.StatLine(
-  (b) => b
-    ..points = points
-    ..fg1Made = 0
-    ..fg1Attempted = 0
-    ..fg2Made = points ~/ 2
-    ..fg2Attempted = points ~/ 2
-    ..fg3Made = 0
-    ..fg3Attempted = 0
-    ..assists = 1
-    ..offensiveRebounds = 0
-    ..defensiveRebounds = 2
-    ..turnovers = 0
-    ..steals = 0
-    ..blocks = 0
-    ..personalFouls = 1
-    ..technicalFouls = 0
-    ..unsportsmanlikeFouls = 0
-    ..secondsPlayed = 600,
-);
-
-gen.PlayerSeasonStats seasonStatsFixture({bool empty = false}) =>
-    gen.PlayerSeasonStats(
-      (b) => b
-        ..playerId = 'p1'
-        ..seasonId = seasonId
-        ..gamesPlayed = empty ? 0 : 2
-        ..gamesStarted = empty ? 0 : 1
-        ..totals.replace(_line(empty ? 0 : 12))
-        ..averages.points = empty ? 0 : 6
-        ..averages.assists = 1
-        ..averages.rebounds = 2
-        ..averages.steals = 0
-        ..averages.blocks = 0
-        ..averages.turnovers = 0
-        ..averages.personalFouls = 1
-        ..averages.minutesPlayed = 10
-        ..matches.addAll(
-          empty
-              ? const []
-              : [
-                  gen.PlayerMatchLine(
-                    (m) => m
-                      ..matchId = fin
-                      ..scheduledAt = DateTime.utc(2026, 10, 31, 10)
-                      ..opponentName = 'Lobos'
-                      ..status = gen.MatchStatus.FINISHED
-                      ..wasStarter = true
-                      ..stats.replace(_line(8)),
-                  ),
-                ],
-        ),
-    );

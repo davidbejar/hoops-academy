@@ -1,35 +1,43 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/app/router.dart';
-import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
-import '../../../support/fake_game.dart';
+import '../../../support/game_seed.dart';
+import '../../../support/mock_backend.dart';
 import '../../../support/pump_helpers.dart';
 import 'match_screens_test.dart';
 
 const sched = 'm-sched';
 
-FakeGame scheduledGame({String? venue}) => FakeGame(
-  matches: FakeMatchesRepository(
-    matches: [
-      gameMatch(
-        sched,
-        status: gen.MatchStatus.SCHEDULED,
-        opponent: 'Águilas',
-        at: DateTime.utc(2026, 11, 14, 10),
-      ).rebuild((b) => b.venue = venue),
-      gameMatch(
-        'm-fin',
-        status: gen.MatchStatus.FINISHED,
-        opponent: 'Lobos',
-        at: DateTime.utc(2026, 10, 31, 10),
-      ),
-    ],
-    rosters: {sched: demoRoster, 'm-fin': demoRoster},
-  ),
+GameData scheduledGame({String? venue}) => GameData(
+  matches: [
+    gameMatch(
+      sched,
+      status: gen.MatchStatus.SCHEDULED,
+      opponent: 'Águilas',
+      at: DateTime.utc(2026, 11, 14, 10),
+    ).rebuild((b) => b.venue = venue),
+    gameMatch(
+      'm-fin',
+      status: gen.MatchStatus.FINISHED,
+      opponent: 'Lobos',
+      at: DateTime.utc(2026, 10, 31, 10),
+    ),
+  ],
+  rosters: {sched: demoRoster, 'm-fin': demoRoster},
 );
+
+/// The one match update the app sent: the match and the body.
+(String, Map<String, Object?>) sentUpdate(GameData game) {
+  final sent = game.requests(
+    RegExp(r'^/api/game/matches/[^/]+$'),
+    method: 'PATCH',
+  );
+  expect(sent, hasLength(1));
+  return (sent.single.path.split('/').last, MockBackend.bodyOf(sent.single));
+}
 
 Future<void> openEdit(WidgetTester tester) async {
   await tapKey(tester, 'match-menu');
@@ -65,12 +73,15 @@ void main() {
     await tester.pump();
     await tapKey(tester, 'form-submit');
     await tester.pumpAndSettle();
-    final u = game.matches.updates.single;
-    expect(u.opponentName, 'Osos');
-    expect(u.venue, 'Pabellón');
-    expect(u.homeAway, gen.HomeAway.AWAY);
-    expect(u.periodMinutes, 8);
-    expect(u.scheduledAt, DateTime.utc(2026, 11, 14, 10));
+    final (_, u) = sentUpdate(game);
+    expect(u['opponentName'], 'Osos');
+    expect(u['venue'], 'Pabellón');
+    expect(u['homeAway'], gen.HomeAway.AWAY.name);
+    expect(u['periodMinutes'], 8);
+    expect(
+      DateTime.parse(u['scheduledAt']! as String),
+      DateTime.utc(2026, 11, 14, 10),
+    );
     expect(find.byKey(const Key('match-edit-opponent')), findsNothing);
   });
 
@@ -83,14 +94,16 @@ void main() {
     await tester.enterText(find.byKey(const Key('match-edit-venue')), '  ');
     await tapKey(tester, 'form-submit');
     await tester.pumpAndSettle();
-    expect(game.matches.updates.single.venue, isNull);
+    final (_, u) = sentUpdate(game);
+    expect(u['venue'], isNull);
+    expect(u['clear'], ['venue']);
   });
 
   testWidgets('a server error keeps the dialog open', (tester) async {
     final game = scheduledGame();
     await pumpCoach(tester, game, '/matches/$sched');
     await openEdit(tester);
-    game.matches.failWith = const AppError(kind: AppErrorKind.server);
+    game.fail(status: 500);
     await tapKey(tester, 'form-submit');
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('match-edit-opponent')), findsOneWidget);
@@ -112,9 +125,9 @@ void main() {
     );
     await tapKey(tester, 'form-submit');
     await tester.pumpAndSettle();
-    final u = game.matches.updates.single;
-    expect(u.periodCount, isNull);
-    expect(u.periodMinutes, isNull);
+    final (_, u) = sentUpdate(game);
+    expect(u['periodCount'], isNull);
+    expect(u['periodMinutes'], isNull);
   });
 
   testWidgets('parents and players do not get the edit action', (tester) async {
@@ -148,19 +161,17 @@ void main() {
       );
       await tapKey(tester, 'form-submit');
       await tester.pumpAndSettle();
-      expect(game.matches.updates.single.matchId, sched);
+      expect(sentUpdate(game).$1, sched);
       expect(find.byKey(const Key('match-edit-opponent')), findsNothing);
       expect(find.textContaining('Osos'), findsOneWidget);
       expect(h.container.read(routerProvider).state.uri.path, '/matches');
     });
 
     testWidgets('a cancelled match offers no edit', (tester) async {
-      final game = FakeGame(
-        matches: FakeMatchesRepository(
-          matches: [
-            gameMatch('m-x', status: gen.MatchStatus.CANCELLED, opponent: 'X'),
-          ],
-        ),
+      final game = GameData(
+        matches: [
+          gameMatch('m-x', status: gen.MatchStatus.CANCELLED, opponent: 'X'),
+        ],
       );
       await pumpCoach(tester, game, '/matches');
       expect(find.byKey(const Key('match-edit-m-x')), findsNothing);
