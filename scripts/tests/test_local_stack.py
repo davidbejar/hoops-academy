@@ -39,8 +39,8 @@ class Compose(unittest.TestCase):
         self.assertEqual(self.text.count("<<: *hardened"), 4)
 
     def test_the_environment_pdf_and_finance_share_is_written_once(self):
-        for line in ("OIDC_AUTH_SERVER_URL:", "OTEL_EXPORTER_OTLP_ENDPOINT:", "OTEL_RESOURCE_ATTRIBUTES:", "OTEL_SDK_DISABLED:"):
-            self.assertEqual(self.text.count(line), 1, line)
+        for name in ("OIDC_AUTH_SERVER_URL", "OTEL_EXPORTER_OTLP_ENDPOINT", "OTEL_RESOURCE_ATTRIBUTES", "OTEL_SDK_DISABLED"):
+            self.assertEqual(len(re.findall(rf"(?m)^\s+{name}:", self.text)), 1, name)
         self.assertEqual(self.text.count("<<: *service-env"), 2)
 
 
@@ -58,13 +58,13 @@ class Nginx(unittest.TestCase):
     def test_backends_are_named_once(self):
         conf = (ROOT / "infra/compose/nginx.conf").read_text()
         self.assertEqual(re.findall(r"proxy_pass http://host\.containers\.internal", conf), [])
-        upstreams = dict(re.findall(r"upstream (\w+) \{ server host\.containers\.internal:(\d+); \}", conf))
+        upstreams = dict(re.findall(r"upstream (\w+)\s+\{ server host\.containers\.internal:(\d+); \}", conf))
         self.assertEqual(upstreams, {"core": "8081", "game": "8082", "athlete": "8083", "finance": "8085"})
 
 
 class Keycloak(unittest.TestCase):
     def test_the_dev_users_are_listed_once(self):
-        self.assertEqual(git_grep("-l", "ensure_user superadmin"), ["infra/keycloak/dev-users.sh"])
+        self.assertEqual(git_grep("-l", "ensure_user superadmin", "--", ".", ":!scripts/tests"), ["infra/keycloak/dev-users.sh"])
         for wrapper in ("infra/keycloak/seed-users.sh", "deploy/kind/seed-users.sh"):
             self.assertIn("infra/keycloak/dev-users.sh", (ROOT / wrapper).read_text(), wrapper)
 

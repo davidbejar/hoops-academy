@@ -5,8 +5,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-WEB_PORT=5173
-SERVICE_PORTS="8081 8082 8083"
+# shellcheck source=scripts/lib/stack.sh
+. scripts/lib/stack.sh
 
 # Sends TERM, waits up to 10 s, then KILL.
 stop_pids() {
@@ -50,8 +50,9 @@ stop_web() {
 stop_services() {
   e2e/bin/services-down.sh
   # Leftovers: `quarkus:dev` runs or service jars whose pid file is gone.
-  local port pids
-  for port in $SERVICE_PORTS; do
+  local s port pids
+  for s in $JAVA_SERVICES; do
+    port=$(service_port "$s")
     pids=$(listeners "$port" 'java')
     # shellcheck disable=SC2086
     stop_pids "java on :$port" $pids
@@ -59,7 +60,7 @@ stop_services() {
 }
 
 stop_stack() {
-  if ! podman machine inspect --format '{{.State}}' 2>/dev/null | grep -q running; then
+  if ! machine_running; then
     echo "podman machine not running: compose stack already down"
     return 0
   fi

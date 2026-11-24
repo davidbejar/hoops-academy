@@ -2,6 +2,8 @@
 # Checks that the local toolchain matches what the build expects. Exit code 1 if anything blocking is missing.
 # Sourced by scripts/tests/doctor-podman-dropin.test.sh: the checks run only when executed.
 set -uo pipefail
+# shellcheck source=scripts/lib/stack.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/stack.sh"
 ok=0; fail=0
 check() { # name, command, [required]
   local name="$1" cmd="$2" req="${3:-required}"
@@ -44,7 +46,7 @@ check "maven"             "mvn -v | head -1"
 check "podman"            "podman --version"
 check "podman machine"    "podman machine inspect --format '{{.State}} rootful={{.Rootful}} cpus={{.Resources.CPUs}} mem={{.Resources.Memory}}MiB' | grep running"
 check "podman compose"    "podman compose version 2>/dev/null | grep -i version | head -1"
-if podman machine inspect --format '{{.State}}' 2>/dev/null | grep -q running; then
+if machine_running; then
   if out=$(ensure_podman_dropin); then printf '  \033[32m✔\033[0m %-26s %s\n' "podman API --time=0" "$out"; ok=$((ok+1));
   else printf '  \033[31m✘\033[0m %-26s %s\n' "podman API --time=0" "$out"; fail=$((fail+1)); fi
 fi

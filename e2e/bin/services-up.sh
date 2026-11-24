@@ -19,16 +19,16 @@ if [ "$build" = 1 ]; then
   ./mvnw -q -pl services/core-service,services/game-service,services/athlete-service -am package -DskipTests
 fi
 
-# bash 3.2 (macOS): no assoc arrays
-port() { case "$1" in core) echo 8081 ;; game) echo 8082 ;; athlete) echo 8083 ;; pdf) echo 8084 ;; finance) echo 8085 ;; esac; }
-for s in core game athlete; do
+# shellcheck source=scripts/lib/stack.sh
+. scripts/lib/stack.sh
+for s in $JAVA_SERVICES; do
   if [ -f "$OUT/$s.pid" ] && kill -0 "$(cat "$OUT/$s.pid")" 2>/dev/null; then echo "$s already running"; continue; fi
-  nohup java -Dquarkus.http.port="$(port $s)" -jar "services/$s-service/target/quarkus-app/quarkus-run.jar" \
+  nohup java -Dquarkus.http.port="$(service_port "$s")" -jar "services/$s-service/target/quarkus-app/quarkus-run.jar" \
     >"$OUT/$s.log" 2>&1 &
   echo $! >"$OUT/$s.pid"
 done
 
-services="core game athlete"
+services="$JAVA_SERVICES"
 if [ "${E2E_WITHOUT_PDF_FINANCE:-}" != 1 ]; then
   # the roles on an existing database (idempotent), then both images (built when missing, always unless
   # --no-build) and the containers; compose waits until they run, the loop below until they answer ready
@@ -45,7 +45,7 @@ for s in $services; do
   for _ in $(seq 1 90); do
     # ready = HTTP 200 and "status":"UP" on /q/health/ready (Quarkus' smallrye-health, and the Rust and Go services'
     # own; the jars and finance-service migrate before they listen)
-    body=$(curl -s -w '\n%{http_code}' "http://localhost:$(port "$s")/q/health/ready" || true)
+    body=$(curl -s -w '\n%{http_code}' "http://localhost:$(service_port "$s")/q/health/ready" || true)
     if [ "${body##*$'\n'}" = 200 ] && printf '%s' "$body" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"UP"'; then echo "$s ready"; continue 2; fi
     sleep 2
   done
