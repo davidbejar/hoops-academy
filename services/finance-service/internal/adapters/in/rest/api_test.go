@@ -102,8 +102,8 @@ type call struct {
 	token        string // a raw token instead
 	body         any
 	header       map[string]string
-	// outside: not an operation of finance.yaml (CORS preflight, unknown route) or a status it does not declare
-	// yet (413, 415): the answer is not validated
+	// outside: not an operation of finance.yaml (CORS preflight, unknown route): the answer is not validated
+	// (413 and 415 are declared since finance.yaml 1.1.0)
 	outside bool
 }
 
