@@ -286,7 +286,7 @@ project, not a commercial product (ADR-0025).
   `deploy/kind/secrets.sh` and `eso-store.sh` stop; the SMTP keys are optional locally.
 - Time-dependent tests: CI runs at any hour; derive dates from the test's "now" in the zone the code uses, never a fixed
   weekday and local time (54e7a2da: a test failed late on Sundays in UTC).
-- Realm changes need a Keycloak re-import (`just down && podman volume rm hoops_pgdata && just up && just seed-users`)
+- Realm changes need a Keycloak re-import (`just down && podman volume rm hoops_pgdata-19 && just up && just seed-users`)
   or, for the settings it knows (clients, audience mappers), `just seed-users` alone.
 - Parallel worktrees share the compose database: a Quarkus service started from a branch that lacks a migration another
   worktree already applied needs `QUARKUS_FLYWAY_IGNORE_MIGRATION_PATTERNS='*:future,*:missing'` until both are merged.

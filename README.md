@@ -79,7 +79,7 @@ cd apps/web && flutter pub get
 flutter run -d chrome --web-port 5173 --dart-define=HOOPS_API_BASE=http://localhost:8080
 ```
 A demo without any backend: `flutter run -d chrome --web-port 5173 --dart-define=HOOPS_MOCK_API=true`.
-After pulling realm changes, reset Keycloak: `just down && podman volume rm hoops_pgdata && just up && just seed-users`.
+After pulling realm changes, reset Keycloak: `just down && podman volume rm hoops_pgdata-19 && just up && just seed-users`.
 Create your first academy as `superadmin@hoops-academy.com`: `docs/runbooks/onboard-tenant.md`.
 
 Common commands: `just test` (Maven verify with coverage, RLS and PMD gates, then the Rust and Go gates), `just web-test`,
