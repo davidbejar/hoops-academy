@@ -4,8 +4,8 @@ Collected from the WP handovers and the WP20 review (2026-11-02); reconciled wit
 (WP26), with the WP26–WP37 handovers on 2026-11-06, with the WP38–WP42 handovers on the evening of 2026-11-06, with
 the WP43–WP51 handovers (third round) later that evening, with the WP52–WP71 handovers (fourth round) that night and
 with the WP72–WP90 handovers (fifth round) on 2026-11-07, with the WP91–WP103 handovers (sixth round) on 2026-11-10,
-with the WP104–WP109 handovers (seventh round) on 2026-11-14 and with the WP111–WP124 handovers (eighth round) on
-2026-11-16 (WP125).
+with the WP104–WP109 handovers (seventh round) on 2026-11-14, with the WP111–WP124 handovers (eighth round) on
+2026-11-16 (WP125) and with the WP126–WP139 handovers (ninth round) on 2026-11-24 (WP140).
 Grouped by area; **[v2]** marks items that are out of v1 by decision (PLAN §8, roadmap); **→ WPnn** marked an item the plans below assigned to a work package (all closed). Resolved items are listed at the bottom with the WP or decision that
 closed them. The statement-by-statement status of the spec is in [`../conformance.md`](../conformance.md).
 
@@ -451,7 +451,10 @@ record is in the work packages. Same mechanics (`wp-round` skill; at most four b
 disjoint by area: the three Quarkus services first, each alone in its own module; then the three moves into
 `common-quarkus`, one per wave because each touches the library and the services (WP130, WP134, WP137); the web has one
 WP per wave (WP129, WP135, WP138); the chart and kind belong to WP136; the realm variable rename (WP139) touches
-compose, chart, properties and scripts and runs alone.
+compose, chart, properties and scripts and runs alone. **All done**: merged into `main` on 2026-11-23 and 2026-11-24
+in this order: WP129, WP126, WP127, WP128, WP132, WP133, WP131, WP130, WP135, WP136, WP134, WP138 parts 1 and 2,
+WP137, WP138 parts 3 and 4, WP139, WP138 part 5; then the docs pass WP140. Fixes by the orchestrator at merge time are
+under "Resolved", "Ninth round".
 
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
@@ -469,7 +472,7 @@ compose, chart, properties and scripts and runs alone.
 | 4 | WP137 | Common plumbing: Problem exceptions, paging, language, clock, shared properties, poms, test support, vectors | Opus · high | Done (ADR-0069, ADR-0053 and ADR-0014 amendments; `finance.yaml` 1.1.0 (413, 415); 25 shared properties, poms, Problem plumbing, paging, one `PagedQuery`, test support and one copy of the vectors in the library; common 576, core 1259, game 527, athlete 1025 tests) |
 | 4 | WP138 | Web: the tests run against the demo mock; the separate test fakes go | Opus · high | Done (ADR-0070; five parts; test fakes 3,565 → 0 lines, only the sync worker's contract fake stays; 18 mock/contract differences decided; web 1954 tests) |
 | 5 | WP139 | One name for the realm URL everywhere; one login helper for the scripts; database roles from one list | Opus · high | Done (ADR-0071; `OIDC_AUTH_SERVER_URL` + `KEYCLOAK_ADMIN_URL`; kind smoke 57 checks; e2e 38 on compose) |
-| 6 | WP140 | Docs pass | Opus · medium | Last alone |
+| 6 | WP140 | Docs pass | Opus · medium | Done (HANDOVER, FOLLOW-UPS, README, conformance, roadmap, architecture, ADR index, mutation page, skills (X-14), web README; CI observed) |
 
 ### Decisions of 2026-11-23, eighth interview (product owner)
 104. **Scope of the round → WP126–WP140**: everything the audit confirmed: the bugs and gaps found on the way, the hot
@@ -514,7 +517,17 @@ compose, chart, properties and scripts and runs alone.
 - **`.env` has three new keys** (WP118): `FINANCE_MIGRATOR_PASSWORD`, `FINANCE_APP_PASSWORD`,
   `REDPANDA_FINANCE_SERVICE_PASSWORD` (see `.env.example`); kind's `env-keys.sh` requires them. The owner's `.env` in
   the main checkout got them on 2026-11-16 (copied by the orchestrator from WP118's worktree); any other machine or a
-  fresh `.env` needs them too, with strong values before a cloud install.
+  fresh `.env` needs them too, with strong values before a cloud install. Since WP139 (ADR-0071) `just up` requires
+  `FINANCE_MIGRATOR_PASSWORD` / `FINANCE_APP_PASSWORD` too, `KEYCLOAK_URL` and `E2E_KEYCLOAK_ADMIN_URL` are gone (the
+  admin base is `KEYCLOAK_ADMIN_URL`, the realm `OIDC_AUTH_SERVER_URL`; the compose defaults fit), and a private
+  `values-local.yaml` that sets `KEYCLOAK_URL` or calls `hoops-service.*` helpers in a `tpl` string must follow
+  (`hoops-lib.*` since WP136). The owner's `.env` was checked at the WP139 merge and needed no change.
+- **Delete the audit files** (decision 111): `audit/2026-11-23/` in the main checkout stays untracked and is deleted
+  at close-out after asking the owner; the briefs and handovers (finding IDs, ID-by-ID tables) are the record.
+- **Season rollover wizard** (WP138 part 2; owner decision open): the web wizard calls `rolloverSeason` with the season
+  it was opened on as both the path's target and `fromSeasonId`; `core.yaml` and core-service (`RolloverSeason`)
+  treat the path as the target and refuse the same season (`ROLLOVER_SAME_SEASON`), so the wizard works only against
+  the demo mock (which accepts it). Not checked against the real stack. A fix makes the wizard offer a target season.
 - **Other stacks after the round** (WP117, WP119, WP123 handovers): the owner's compose stack is done (the orchestrator
   ran `just events-backfill force` and `just seed-academy` after 9bb4bdb2: "7 things created", then "nothing to
   create", `just events-drift` equal). Any other stack (another machine, kind, the cloud): `just finance-up` (roles,
@@ -525,14 +538,13 @@ compose, chart, properties and scripts and runs alone.
   service's currency table), and the web shows whole amounts without decimals (`Rp150.000`, intl's default). The brief
   said "IDR has no decimals"; if the owner wants 0, the service's table (`currencies.go`) and the web's copy change
   together, before the first real IDR due (the currency is fixed by the first due).
-- **bump-pins PR #6** (WP89, WP93; found 2026-11-10): the workflow runs on GitHub since WP93 (skopeo index pin) and
-  f96389a3 (`--skip-workflows`: the Actions token may not push workflow files); run 42796164975 on 2274eb4 opened PR #6
-  (mailpit v1.33.1, External Secrets Operator v2.15.0). Close and reopen it so `ci` / `e2e` start (a `GITHUB_TOKEN` PR
-  starts no checks); the ESO bump needs a kind proof (`up.sh --eso --deploy --from-host`, ExternalSecrets synced)
-  before merging.
-- **Dependabot PRs of the eighth round** (open on 2026-11-16): #8 pitest-maven 1.30.2, #9 create-pull-request 8.1.2,
-  #10 skrifa 0.49.0 and #11 base64 0.23.1 (pdf-service, the first `cargo` updates), #13 five pub updates. Review as
-  usual; a pdf-service bump must pass `just test-rust` (Clippy pedantic, `cargo deny`).
+- **bump-pins PR #21** (opened 2026-11-23, before the ninth round): distroless java25, Redpanda v26.3.1, Mailpit
+  v1.34.0, otel-lgtm 0.41.1, oras, CloudNativePG 1.30.2, Reloader 2.2.21. Its CloudNativePG and Reloader rows edit
+  `deploy/kind/up.sh` and `deploy/cloud/install.sh`, where the pins no longer live since WP136 (`deploy/lib/platform.sh`):
+  close it and let the next weekly run open a fresh one, or rebase it by hand; close and reopen a `GITHUB_TOKEN` PR so
+  `ci` / `e2e` start. (PR #6 was merged on 2026-11-22.)
+- **Dependabot PR #22** (pub, two updates, 2026-11-23); the eighth round's #8, #9, #10, #12, #13 are closed and #11,
+  #14–#18 merged. Review as usual; a pdf-service bump must pass `just test-rust` (Clippy pedantic, `cargo deny`).
 - **Workflow-file pins by hand** (f96389a3): Trivy, Semgrep and the ZAP digest live in workflow files, which the weekly
   PR only lists; bump them with `scripts/bump-pins.sh --apply` and `actionlint`. Optional: a fine-grained PAT
   (contents, pull requests, workflows) so the PR carries them and starts its own checks.
@@ -575,17 +587,19 @@ compose, chart, properties and scripts and runs alone.
   affected.
 - **Finance leftovers** (WP118, WP119, WP121, WP123, WP124; ADR-0056 and its amendments): the `currencyLocked`
   description in `finance.yaml` names only dues, though the first expense locks the currency too (docs-only, at the next
-  contract bump); the demo mock answers 409 `CURRENCY_NOT_SET` for the season balance without a currency, while the
-  service answers 404 (the contract lists no 409 there; align the mock); re-check the web's balance, 404 and 422
+  contract bump; `finance.yaml` went to 1.1.0 in WP137 without it); re-check the web's balance, 404 and 422
   `EXPORT_TOO_LARGE` handling against the real service (the web was built against the mock while those operations
   answered 501); the coach's status section is not shown to a plain ADMIN (the service would allow it; the dues screens
-  cover it) and is hidden when the team's staff list fails to load; the family tab lists the first 50 dues (no paging);
-  the dues list has pages of 25 without "jump to page", its period filter offers the periods of active plans only, and
+  cover it) and is hidden when the team's staff list fails to load; the dues list has pages of 25 without "jump to page", its period filter offers the periods of active plans only, and
   dues of an archived plan are found only with "show archived" on; `financeLookupsProvider` asks for the teams of every
   season (one call each); the web's CSV buttons save under the shared file-name rule, not the server's name;
   `recordedBy.displayName` is empty for members without an event since V11 until a replay; choices recorded in ADR-0056
   that the owner may revisit (calendar quarters, a waived due is final, families see no reasons, notes or voided
   payments, a new plan amount applies to later dues only). Retention of finance records is undecided (joins P-02).
+- **Contract wording and shared components** (WP126, WP137): `game.yaml` could say that the feed's `lastServerSeq`
+  is "at or below" the page's last event (since WP126 it is read with the match before the page, so a batch committed
+  in between makes a client re-fetch events it has; harmless, ids are stable); moving shared schemas into
+  `common.yaml` (LIB-07) was skipped because it renames generated Dart types, for a later contract round.
 - **Sign-up leftovers** (WP90, ADR-0044): the requester's name stays optional (contract and landing form; decide
   whether to require it); decided requests (personal data of non-members) are kept until the v2 purge job; a crash
   between claim and onboarding leaves an ACCEPTED request without an academy (runbook `onboard-tenant.md` "Requests",
@@ -661,7 +675,15 @@ compose, chart, properties and scripts and runs alone.
   found in run 43740521836); ZAP 40018 on the two finance export paths (`:` and `%3A` forms) in
   `.zap/api-finance.conf`, pre-accepted by WP123 and **not yet seen in a scan**: drop the lines if the finance scan
   never raises them: the one finance scan so far (e2e 43815905637 on 3f964fb2) raised no SQL Injection alert, so they
-  have not matched yet (core's 40018 on academy requests was intermittent too).
+  have not matched yet (core's 40018 on academy requests was intermittent too). Ninth round, without an expiry (by
+  design): Semgrep's new rule `hoops-tenant-setting-rebound-by-hand` flags every call of core's
+  `SessionSettingsRepository`, and its six call sites (ADR-0026, ADR-0028, ADR-0029) are accepted one by one again
+  (2c47222f, after WP128 moved the `set_config` statements into that helper); the three paged-query builders' SQL
+  acceptances became one on common's `PagedQuery` (WP137).
+- **ZAP 40018 on core's audit export, seen once** (ninth round): `e2e` run 45235457191 on 2c47222f failed on a High
+  "SQL Injection" alert for `/api/core/audit-events:export?...&to=to+AND+1%3D1+--+...`, which `.zap/api-core.conf` does
+  not accept; the next runs did not raise it. Most likely the same differential false positive as the accepted one on
+  `/platform/academy-requests` (core binds every parameter), but nobody checked; accept it with a date if it recurs.
 - **ZAP API scan as a member** (WP83): the scan signs in as the super admin, who is in no academy, so tenant endpoints
   stop at 404/400; a member token with `X-Tenant-Id` (an e2e-created admin) would reach the academy logic.
 - **SAST drift** (WP83): the Semgrep registry rulesets (`p/java`, `p/owasp-top-ten`) are fetched at run time, so the
@@ -703,9 +725,21 @@ compose, chart, properties and scripts and runs alone.
   (Spanish only) and the catalogue holds only the mock's three templates' items plus the Cooper test; writes on the
   ended demo team do not answer 409 (the UI hides them). The academy-request mock (WP90) sends no mail. The mock's
   roster and audit CSVs have only a few columns, not the ADR-0048 layout, and `EXPORT_TOO_LARGE` cannot be provoked
-  there (a widget test with a fake covers it). Finance mock (WP121, WP124): its "today" is the real clock in
-  Europe/Madrid and its seeded payment days are fixed in 2026; tests that call it inside `testWidgets` need
-  `tester.runAsync` (it answers after a real 150 ms); the PDF mock answers a tiny valid PDF (WP122).
+  there (tests inject it in front of the mock, ADR-0070). Finance mock (WP121, WP124): its "today" is the real clock in
+  Europe/Madrid and its seeded payment days are fixed in 2026; in the demo it answers after a real 150 ms (tests run it
+  with zero latency since WP138); the PDF mock answers a tiny valid PDF (WP122). Found by WP138 and left: the athlete
+  mock answers 403 when a PARENT or PLAYER reads a session's attendance (`athlete.yaml` allows the linked / own entries;
+  the app does not ask in those roles); it computes the age at measurement from a fixed birthday (12 April of the birth
+  year), not the player's birth date, so an age can be off by one; the platform mock answers 409 `ALREADY_ADMIN` (not
+  in the contract) for an e-mail that is already an administrator; `FakeCore` / `FakeAthlete` keep their names as data
+  bundles of the seed files (a rename touches 55 files).
+- **Web helpers left as they are** (WP135, ADR-0067): the display styles of dates (ISO, `dd/MM/yyyy`, `yMMMd`) are not
+  unified (visible text and goldens in three languages; owner's call); the teams selector and `SeasonBar` are not
+  merged (different role visibility); `AssignPlayerDialog` stays a two-step dialog (`PickerDialog` would need a
+  stateful search header); the folder moves to one `core/api/<svc>_api.dart` / `core/mock/mock_<svc>_api.dart` per
+  service (about 60 imports) were skipped; only the 16 per-id provider families are `autoDispose`, the other 12 keep
+  their lifetime; three test files keep their own `Harness` set-up. `exerciseSearchProvider` (quick-add picker) shows
+  the first 50 matches of a typed search by design (WP129).
 - **Landing contrast** (WP54, WP70): the app's fills are AA since WP72 (contrast test, ADR-0040); the landing's own
   palette is unverified by Lighthouse (no DOM text in the Flutter canvas) and its screenshots are light-theme captures
   in dark mode too.
@@ -738,9 +772,28 @@ compose, chart, properties and scripts and runs alone.
   instead); CodeQL for Rust and Go runs in CI only; the `pdf.Containerfile` and `finance.Containerfile` base pins are
   bumped by hand (not in `scripts/bump_pins.py`); `just diagrams` covers core, game and athlete only (finance's model
   is in ADR-0056, no generated page).
-- **finance replica housekeeping** (WP118, WP119): no replica lag metric (`hoops_roster_replica_lag_seconds`; the kind
-  smoke uses the consumer group lag) and no retention job for finance's `applied_event` (the ADR-0037 WP82 pattern of
-  game and athlete).
+- **finance replica housekeeping** (WP118, WP119, WP131): no replica lag metric (`hoops_roster_replica_lag_seconds`;
+  the kind smoke uses the consumer group lag); `parked_event` has no retention in finance (no `inspected_at`, and the
+  app role may not delete; ADR-0063). `applied_event` is pruned since WP131 (Resolved).
+- **Replica and authz leftovers** (WP130, WP134; ADR-0062, ADR-0066): the `RosterSource` switch and resolver and the
+  replicas' test builders (`CoreEvents`, `CoreTopics`, `ReplicaDb`; X-01 items 4 and 5, ATH-08) stay per service; no
+  in-memory "seen tenants" set for the `replica_tenant` insert (GAME-06's optional refinement); the membership table
+  runs against in-memory ports, not against each replica store on Postgres (the services' contract tests cover that
+  through events); finance-service keeps its Go copy of the rule (ADR-0055), and a change of the rule must name it in
+  the same PR. Deploy note: game V10 dropped `parked_event.id`, so saved operator queries `where id in (...)` must use
+  the position; `GAME_ROSTER_REPLICA_MAX_ATTEMPTS` replaced `apply-attempts`.
+- **Ninth-round findings left on purpose** (each with its reason in its handover): core CORE-02's batched
+  `for update` reads in the rollover (high risk on the lock order, low gain), CORET-02 one Keycloak container for the
+  Quarkus Keycloak groups too, CORET-08's `event(...)` wrappers and poll loop, the fixed sleeps that guard negative
+  assertions (WP128); athlete ATH-14 (symmetry with game), ATH-16's `@WithTestResource` meta-annotation (unverified
+  Quarkus support) (WP127); GAME-04's mapping of feed rows straight to wire JSON (WP126); finance FIN-04's skipping of
+  generated windows, FIN-12, and the audit's lead that pgx can scan `[16]byte` uuids (WP131); pdf-service PDF-01
+  (generic handler), PDF-07 (Containerfile and `images.yml` not its files), PDF-08 (not measurable, byte-level risk),
+  PDF-09 (builders carry other sample values than the fixtures), PDF-10 (only with a third sheet) (WP132); common
+  LIB-07 (above), LIB-13 (not worth it alone), X-10's WireMock resources, `TokenAudienceKeycloakTest` and
+  `HealthEndpointsTest`, CORE-07's per-resource page records (one per contract schema) (WP137). The
+  `kafka.sasl.jaas.config` line carries `password="${KAFKA_SASL_PASSWORD:}"` in all three services, which
+  `NoBuiltInCredentialsContract` does not see (not a `*.password` key; PLAINTEXT needs none) (WP137).
 - **Replica lag seen by the web** (WP98, ADR-0037): the journeys wait for the replicas after a roster change; the web
   app can show the old state for the 1–2 s of lag.
 - **Model diagrams limits** (WP94): class relations are drawn only inside a group; port return types as declared;
@@ -802,8 +855,12 @@ compose, chart, properties and scripts and runs alone.
   2026-11-16): the Claude Code hook runs `just isolation-check` in the session's working directory (the main
   checkout), so an agent committing in its worktree gates `main`'s tree, not its branch. WP118 to WP123 ran the
   isolation and role checks by hand in their worktrees. Make the hook follow the worktree of the `git commit` (`git
-  -C`, `cd` in the command) or document running the checks there.
-- **Chart leftovers** (WP100, WP111, WP118, WP120): `tilt ci` last ran on chart 0.9.0; not re-run on 0.10.0 to 0.13.0,
+  -C`, `cd` in the command) or document running the checks there. Ninth round: agents of WP126–WP139 again ran both
+  checks by hand; a `git commit` inside a helper script is not seen by the hook at all (WP128's commits 9c001434 to
+  a45475a6; `wp-round` Traps), and under load the hook's Keycloak start timed out several times (WP127, WP128, WP135).
+- **Chart leftovers** (WP100, WP111, WP118, WP120, WP136, WP139): chart 0.15.0 (library chart `hoops-lib`) was proven
+  on kind only with `smoke.sh` (57 checks, WP139); WP136's own proof never reached a Ready stack on the loaded VM.
+  `tilt ci` last ran on chart 0.9.0; not re-run on 0.10.0 to 0.15.0,
   so the Tilt resources `pdf-service`, `finance-service` and `lgtm` (port 3000, replacing `jaeger`) are unproven;
   the e2e journey did not run on kind this round (the round's kind proofs are `smoke.sh` runs: WP111 on 0.11.0, WP118
   on 0.12.0, WP120 on 0.13.0, the last with images built before WP119 and WP123 merged, so the dues, expenses and
@@ -817,6 +874,40 @@ compose, chart, properties and scripts and runs alone.
   the compose nginx needs `HOOPS_FINANCE_BIND=0.0.0.0` on Linux (3f964fb2; macOS works with the default 127.0.0.1). The journey's first real core -> pdf-service and game
   -> pdf-service calls ran on compose on 2026-11-16 (the orchestrator's `just e2e` after the WP123 merge: 38 tests, 0
   failures, `JourneyTest` 32 steps, none skipped).
+- **kind install under VM load** (WP139): `deploy/kind/up.sh --deploy` failed its `helm --wait` once: Keycloak's first
+  start re-augments (about 150 s at load 31 on the 2-CPU Podman VM), the probes restarted it twice and its Deployment
+  missed the progress deadline; the same `helm upgrade --install` passed once Keycloak was Ready, then `smoke.sh` 57/57.
+  A longer `startupProbe` or `progressDeadlineSeconds` for Keycloak on kind would make it robust.
+- **Database bootstrap from the one role list, fresh compose volume not run** (WP139, INF-03): proven in two
+  throwaway `postgres:17` containers (old and new bootstrap identical, 43 rows), on kind (CNPG) and by `db-roles.sh` on
+  the existing compose volume, not by `just up` on a fresh `hoops_pgdata` volume. `db-roles.sh` re-applies every
+  role's password from `.env` (the database follows `.env`).
+- **Shell tests outside CI**: `scripts/tests/env-jdk.test.sh` (fails 2 of 3 on Linux: it needs a real JDK 25 outside
+  `PATH`) and `scripts/hooks/tenancy-gate.test.sh` (fails 1 of 55 on Linux: a string cut at a multi-byte character)
+  run only in `just test-hooks` on macOS; the `ci` job `scripts` runs the Python tests and the doctor drop-in test only
+  (checked in `ci.yml`, WP133). `scripts/tests/events-drift.test.sh` (`just events-drift-test`) is not in any workflow
+  either.
+- **Infra findings left** (WP139, WP136): the Keycloak realm retrofit in `infra/keycloak/seed-users.sh` stays until the
+  owner's Keycloak volume is rebuilt from the current realm file, then delete it (INF-07); the realm JSON keeps its
+  per-client audience mappers, only guarded by `test_local_stack.py` (INF-08: worth it only with a fourth client); the
+  tofu outputs and rules were not merged (INF-11: merging renames resources through `moved` blocks for no behaviour
+  change); MailHog has no release after v1.0.1 (2020, amd64 only), kind already uses Mailpit, and moving compose to
+  Mailpit needs the e2e `MailSink` (it speaks both) and the docs; the Containerfiles' pom-first layer split and the
+  `web` stage reorder (DEP-05, DEP-06), labels by `--label` (DEP-11), the nginx step (DEP-10) and the ad-hoc renders of
+  `run.sh` (DEP-12) were left; `shellcheck` reports 237 findings in the kind scripts and `run.sh`, unchanged by WP136.
+- **CI findings left** (WP133, ADR-0065): CodeQL keeps its own build and `trivy-fs` its own Maven resolve (CI-01 part
+  a); no cache or image hand-over between `e2e` and `images` (CI-06: medium risk, cannot be tried without a run); the
+  passive ZAP baseline stays in `ci.yml` (CI-08, ADR-0045); the `podman build` lines of `images.yml` and
+  `scripts/build-images.sh` differ (tags, build args) and web / pdf / finance are not one matrix; the `bump-pins` PR
+  still lists the Trivy tag of `ci.yml` as a hand bump (workflow file).
+- **Transient CI failures of the ninth round** (no code involved, green on the next push): Maven Central download
+  failures in `ci` `backend` on 498519fb (spotbugs-maven-plugin pom, run 45229849934), `images` athlete on beaaffaf
+  (quarkus-bom, 45249223638), `ci` `trivy-fs` on 2195fa03 (quarkus-bom, 45308886563), `ci` `zap-baseline` on fe792e33
+  (45297467783) and `e2e` "Build the services once" on 35e685d8 (surefire plugin, 45190316386); `ci` `trivy-fs` on
+  393b5676 (45274489084) resolved the `dependency:` prefix to `org.codehaus.mojo:dependency-maven-plugin:1.0` ("Could
+  not find goal 'go-offline'"), most likely after a failed metadata download; full plugin coordinates in `ci.yml` would
+  avoid the prefix lookup. The `e2e` ZAP step failed on 312cf764 (45273120302) and 0c1ac2ae (45289864232) in the game
+  scan, whose ZAP container failed with a netty bind error (no summary line); the next runs passed.
 - **dependency-check flakes on the NVD API** (eighth round): the `ci` job `dependency-check (aggregate)` failed on
   54e7a2da (run 43741030041), on 2f51edb3 (run 43813211248) and on the first attempt of 7f7d4284 (run 43811663987)
   with "NVD API request failures" (an NVD 503, third-party outage) and passed on the next push or re-run. A re-run is the fix; no finding was involved.
@@ -867,6 +958,56 @@ compose, chart, properties and scripts and runs alone.
 - **[v2]** Push notifications, native images, Pact broker.
 
 ## Resolved
+Ninth round (WP126–WP139, 2026-11-23 and 2026-11-24; from the audit of 2026-11-23, decisions 104–113; each work
+package's handover ends with an ID-by-ID table of its findings):
+- WP129 (decision 105): **the family tab lists the first 50 dues** (Finance leftovers): `playerDues` reads every page
+  through `fetchAll`; the 20 first-page-only reads of the web do too, the four pagers are one kit `Pager` (ADR-0061);
+  the live match stops polling when left (WEB-01).
+- WP138 part 4: **the demo mock answers 409 `CURRENCY_NOT_SET` for the season balance without a currency** (Finance
+  leftovers): it answers 404 like finance-service (red test first, `mock_finance_reads_test`). How the balance screen
+  shows that 404 against the real service is still to check (Finance leftovers).
+- WP138 (decision 108): **two imitations of the services in the web tests** (WEB-02): every widget and provider test
+  runs the real repositories on the demo mock, seeded per test; the repository fakes went (3,565 lines to 0), 18
+  mock/fake differences were decided against the contracts, `MockAuthService` and the mock are kept out of a release
+  build (`tool/verify_no_mock.dart`) (ADR-0070).
+- WP131: **no retention job for finance's `applied_event`** (finance replica housekeeping): pruned daily after 7 days,
+  per academy in batches of 1000 under the lock `finance.replica-retention` (ADR-0063); the contract guard of the Go
+  tests no longer lets 501 or an undeclared status pass (FIN-15); one test Postgres per `just test-go`.
+- WP137: **finance.yaml declares no 413 / 415** (WP131 open point): `finance.yaml` 1.1.0; one copy of the projection
+  vectors (ADR-0014 amendment); the shared settings, Problem plumbing, paging, `PagedQuery`, language, clock and the
+  pdf client in common-quarkus (ADR-0069).
+- WP126 (decision 109): `game.sync_receipt` dropped (V9); the feed cursor race (a batch committed while a page was read
+  was skipped) and a record parked twice (V8 unique position) fixed (ADR-0030, ADR-0037 amendments).
+- WP127: athlete's tenant zone from the caller's context, not a stale registry row; the per-request roster memo and
+  `teamsOf` (ADR-0059); the 90 % domain gate for athlete, which had none; the Monday-dependent `ScheduleApiTest`.
+- WP128: core's guardian-link N+1, the outbox sent per batch (ADR-0060), the measured eligibility-case index (V21),
+  Quarkus boots of core's tests 6 → 4, `TemporaryPasswordSweepTriggerTest` independent of load.
+- WP130, WP134 (decisions 106, 107): the replica pipeline and the membership rule once in common-quarkus (ADR-0062,
+  ADR-0066); game's 500 on a replica team without a season end fixed.
+- WP132 (decision 112): pdf-service's token leeway 0 s and its Problem slugs as common-quarkus' (ADR-0064); WP131 the
+  same leeway for finance (ADR-0063).
+- WP133: concurrency groups, each gate once, composite actions, `gen-api.sh` reads the generator version from the pom
+  (ADR-0065).
+- WP135: one home for web dates, validators, error words, states and server exports (ADR-0067); a measurement shown
+  with 0, 1 or 2 decimals depending on the widget fixed.
+- WP136: the library chart `hoops-lib`, one pins file for kind and the cloud, delta snapshots (ADR-0068); `up.sh
+  --deploy` without `--from-host` under macOS bash 3.2 fixed; four core routes Tilt left "uncategorized" grouped.
+- WP139 (decision 110): **`localhost:8180` and the several names of the realm URL** retired (`OIDC_AUTH_SERVER_URL`,
+  `KEYCLOAK_ADMIN_URL`, ADR-0071); one sourced PKCE helper for four scripts (two sent the password unencoded); the
+  database roles from one list (ADR-0006, ADR-0055 amendments); MailHog pinned by digest in compose; `dependabot.yml`
+  names where the pins live.
+- Orchestrator, at merge time (no work package):
+  - 2c47222f: after WP128 moved core's `set_config` calls into `SessionSettingsRepository`, Semgrep saw one place
+    instead of each cross-tenant path (`semgrep` red on 4317662a, 745f40f7, 498519fb): a new rule flags every call of
+    the helper and the six call sites are accepted again; core's model page regenerated (`model-diagrams` red on
+    745f40f7 and 498519fb).
+  - bf586552: the chart test read the OTel build keys from the services, which WP137 had moved into common-quarkus
+    (`ci` `helm-chart-tests` red on 2195fa03 and 21af40a0).
+  - b8443244: `e2e/bin/services-up.sh` builds the images in their own compose call (the `docker-compose` v2.15.1 that
+    `podman compose` uses on the owner's Mac refuses `up --no-deps --build`); then `just e2e` on compose after the
+    WP139 merge: 38 tests green. The owner's `.env` was checked for WP139's renames and needed no change.
+  - The `ci` `backend` red on 7f2a75a7 was the Monday-dependent athlete test (fixed by WP127).
+
 Eighth round (WP111–WP124, 2026-11-15 and 2026-11-16; each line names the open item it closed):
 - WP114 (decision 87): **`images` red on `main`** (14 HIGH `krb5-libs` in the UBI runtime): the three Java services
   run on `gcr.io/distroless/java25-debian13:nonroot` pinned by index digest, no shell, uid 65532 (ADR-0054); Trivy 0
