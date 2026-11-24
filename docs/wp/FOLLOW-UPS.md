@@ -516,8 +516,8 @@ fresh volume, the seeds, the checks and the e2e journey; on failure back to the 
 
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
-| 1 | WP142 | Infra: apply the outdated pins; the bump script tracks PostgreSQL | Sonnet · high | Planned |
-| 1 | WP143 | Services: the SQL calls of every service appear in its traces | Opus · medium | Planned |
+| 1 | WP142 | Infra: apply the outdated pins; the bump script tracks PostgreSQL | Sonnet · high | Running |
+| 1 | WP143 | Services: the SQL calls of every service appear in its traces | Opus · medium | Running |
 | 2 | WP144 | Database: PostgreSQL 17 to 19 (18.7 if a dependency refuses 19) | Opus · high | After wave 1 |
 | 3 | WP145 | athlete: a trigram index for the exercise search | Opus · medium | After wave 2 |
 | 3 | WP146 | kind and CI: the install waits for Keycloak under load; the skipped shell tests run in CI | Opus · medium | After wave 2 |
