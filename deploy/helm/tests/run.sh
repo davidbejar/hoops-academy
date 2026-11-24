@@ -710,8 +710,9 @@ for s in core game athlete; do
   # service may set them again (LibraryDefaultsContract checks each service sees the library's value).
   p=libs/common-quarkus/src/main/resources/META-INF/microprofile-config.properties
   grep -qx 'quarkus.otel.logs.enabled=true' "$p" && grep -qx 'quarkus.otel.traces.sampler=parentbased_traceidratio' "$p" \
-    && ! grep -q '^quarkus.otel.\(logs.enabled\|traces.sampler\)=' "services/$s-service/src/main/resources/application.properties" \
-    && ok "$s-service build: logs exporter and parent-based ratio sampler compiled in (build-time keys, from common-quarkus)" || bad "$s-service OTel build keys"
+    && grep -qx 'quarkus.datasource.jdbc.telemetry=true' "$p" \
+    && ! grep -q '^quarkus.\(otel.logs.enabled\|otel.traces.sampler\|datasource.jdbc.telemetry\)=' "services/$s-service/src/main/resources/application.properties" \
+    && ok "$s-service build: logs exporter, parent-based ratio sampler and JDBC spans compiled in (build-time keys, from common-quarkus)" || bad "$s-service OTel build keys"
   doc "$s-service-env" ConfigMap "$D" | grep -qx '  QUARKUS_OTEL_SDK_DISABLED: "true"' && ! doc "$s-service-env" ConfigMap "$D" | grep -q 'OTLP_ENDPOINT' \
     && ok "default: $s-service OTel SDK off, no endpoint" || bad "default: $s-service OTel env"
 done

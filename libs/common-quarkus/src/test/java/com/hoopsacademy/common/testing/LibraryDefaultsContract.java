@@ -41,7 +41,8 @@ public abstract class LibraryDefaultsContract {
             Map.entry("kafka.security.protocol", "PLAINTEXT"),
             Map.entry("kafka.sasl.mechanism", "SCRAM-SHA-256"),
             Map.entry("quarkus.otel.logs.enabled", "true"),
-            Map.entry("quarkus.otel.traces.sampler", "parentbased_traceidratio"));
+            Map.entry("quarkus.otel.traces.sampler", "parentbased_traceidratio"),
+            Map.entry("quarkus.datasource.jdbc.telemetry", "true"));
 
     /** The test-profile keys moved out of the three services' files. */
     private static final Map<String, String> SHARED_IN_TESTS = Map.of(
