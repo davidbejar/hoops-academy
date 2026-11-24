@@ -267,6 +267,15 @@ void main() {
         );
       },
     );
+
+    test('an academy without a currency is 404, like the service', () async {
+      // finance.yaml lists no 409 for the balance; finance-service answers
+      // 404 "no currency chosen yet".
+      await expectLater(
+        repoAs(['ADMIN'], tenant: norte).balance('season-2026'),
+        problem(404),
+      );
+    });
   });
 
   group("the coach's view", () {
