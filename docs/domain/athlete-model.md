@@ -685,12 +685,6 @@ classDiagram
         +PersonId personId
         +String displayName
     }
-    class TrainingRuleViolation {
-        +code() String
-    }
-    class TrainingStateConflict {
-        +code() String
-    }
 ```
 
 </details>

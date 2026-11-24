@@ -530,7 +530,7 @@ classDiagram
         +save(Match) void
         +findById(MatchId) Optional~Match~
         +lockById(MatchId) Optional~Match~
-        +list(MatchFilter,int,int) MatchPage
+        +list(MatchFilter,int,int) PageResult~Match~
         +roster(MatchId) MatchRoster
         +replaceRoster(MatchRoster) void
     }
@@ -592,12 +592,6 @@ classDiagram
     class MatchSheetRenderer {
         <<interface>>
         +render(MatchSheet) PdfFile
-    }
-    class SheetLanguage {
-        <<enumeration>>
-        ES
-        EN
-        ID
     }
 ```
 
