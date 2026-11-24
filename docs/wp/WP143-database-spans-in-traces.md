@@ -59,3 +59,62 @@ database calls as spans. ADR-0074 is reserved for you (an amendment of ADR-0046 
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built:
+  - **Java** (core, game, athlete): `quarkus.datasource.jdbc.telemetry=true` appended to common-quarkus'
+    `META-INF/microprofile-config.properties` (build-time; Agroal hands out connections through OpenTelemetry's JDBC
+    wrapper, already on the classpath). `LibraryDefaultsContract` and `deploy/helm/tests/run.sh`'s OTel build-key check
+    know the key (and that no service restates it).
+  - `DatabaseSpansNeedAParent` (common-quarkus, a `Sampler` bean): the configured `parentbased_traceidratio` (ratio
+    from `quarkus.otel.traces.sampler.arg`) that drops a database `CLIENT` span without a parent, so core's outbox poll
+    (every second) and other background statements start no trace of their own. Refuses to start if
+    `quarkus.otel.traces.sampler` is anything else (Quarkus uses a Sampler bean instead of that key).
+  - Test-jar: `RecordedSpans` (in-memory `SpanExporter` bean), `SampledTrace` (a sampled `traceparent` / context),
+    `RequestTrace` (root, database spans, ancestry, all exported text), `TracingProfile` (SDK on, simple processor,
+    OTLP off: no test span reaches a collector on localhost:4317).
+  - `DatabaseSpansTest` in core (roster read; privacy grep; a refused insert on `core.team`; a statement outside any
+    span; `/q/health/ready` with a sampled traceparent leaves no span), game (feed; roster name and note text) and
+    athlete (session sheet; an attendance note written as a bound value).
+  - **finance**: `telemetry.QueryTracer` (pgx `QueryTracer`, no new module): client span per statement under the
+    request/job span, `db.system`, `db.operation`, `db.name`, `db.statement` (string literals -> `?`, `$n` kept), no
+    span without a parent, a refused statement keeps its SQLSTATE only (no server text, no exception event).
+    `persistence.NewPool` sets it; `main` builds the pool with it; the REST test harness (`newTracedAPI`) uses the
+    same constructor plus `otelhttp` as `main` does.
+- Span counts, one request, SDK on (tests): core roster read 1 -> 5 (4 database: `set_config`, team, team_player,
+  player+person); game feed 1 -> 5 (4); athlete session sheet 1 -> 5 (4); finance dues list 1 -> 11 (10: two
+  transactions of BEGIN, `set_config`, SELECTs, COMMIT). Nothing near "a few dozen". Outbox poll: per-poll statement
+  count not measured (in the test profile the poll returns before the database); the orphan test shows such
+  statements no longer become traces.
+- Privacy: red shown with a value planted on the server span (`Span.current().setAttribute(...)` with the roster DTO in
+  `TeamPlayerResource.list`, not committed): `noSpanOfTheRosterReadCarriesAValueATenantOrAName` failed on
+  "Zelphine", "Quorrowby"; reverted, green. The Java exception event of a refused insert names the constraint only:
+  PostgreSQL leaves out the `DETAIL` that quotes the key when the table has RLS for the role (all tables force it).
+- Verified (fresh, after the last code change):
+  - `./mvnw -B -ntp -o -T 1C verify -Dquarkus.http.test-port=0`: BUILD SUCCESS, 3,794 tests, 0 failures, 0 errors,
+    32 skipped, all coverage checks met. (The earlier run, before the sampler, had one wall-clock failure in core
+    `TenantUsageResourceTest.aPeerSlowerThanTheTimeoutCountsAsUnavailable`, 3583 ms > 3400 ms while the commit hook's
+    Keycloak check ran alongside; green alone and in the fresh run.)
+  - `just test-go`: gofmt, tidy, golangci-lint 0 issues, tests ok, coverage module 88.68 %, domain 98.84 %,
+    govulncheck: no vulnerabilities reached (go.mod unchanged).
+  - `bash deploy/helm/tests/run.sh`: ALL CHART TESTS PASSED (237 ok; red before the key, only the three build-key
+    checks). No chart snapshot changed.
+  - `just isolation-check` (6 Java + 4 Go tests) and `just db-role-check` (13 + 2) passed in the worktree (no `.env`
+    needed). `just docs-build` strict: no issues.
+- Not run: the Tempo proof on compose (`just observability-up` reads the owner's `.env`). At merge, from the main
+  checkout with `just up` running: rebuild/restart the services from the merged code (a build-time key), then
+  `just observability-up`, start core/game/athlete with `QUARKUS_OTEL_SDK_DISABLED=false` (`./mvnw -pl
+  services/<svc>-service quarkus:dev`) and finance with `HOOPS_OTEL_SDK_DISABLED=false` (`just finance-up`), make one
+  request each (team players list, match events feed, session attendance, `GET /api/finance/dues`). In Grafana
+  (http://localhost:3000, Explore, Tempo) search `{ span.db.system = "postgresql" }` or by service: each request's trace
+  shows the server span with 4 (finance 10) child spans named `SELECT core.team` etc. (finance `SELECT`, `BEGIN`,
+  `COMMIT`); `db.statement` holds `?`/`$n`, never a value; `select set_config(?, ?, true)` is the first child; no trace
+  consists of database spans alone (the outbox poll leaves none).
+- Decisions/ADRs: ADR-0074 (amends ADR-0046, pointer amendment added there; line at the end of `docs/adr/README.md`):
+  statement attribute = parameterised text, values never; `set_config` span kept (evidence of the tenant binding,
+  tenant id is a bound value); database spans need a parent; finance's own tracer instead of `otelpgx`.
+- Open points / follow-ups:
+  - `quarkus.otel.traces.sampler` can only stay `parentbased_traceidratio` while `DatabaseSpansNeedAParent` exists.
+  - Residual (untested): a driver/server message that echoes malformed input could reach a Java exception event; the
+    services validate input before SQL.
+  - Tracing the scheduled jobs (`quarkus.scheduler.tracing.enabled`) would give the nightly jobs traces with their
+    SQL; a separate decision.
+  - The compose collector file is unchanged (no attribute needed dropping).
