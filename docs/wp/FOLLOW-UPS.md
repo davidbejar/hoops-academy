@@ -522,8 +522,8 @@ under "Resolved", "Ninth round".
   admin base is `KEYCLOAK_ADMIN_URL`, the realm `OIDC_AUTH_SERVER_URL`; the compose defaults fit), and a private
   `values-local.yaml` that sets `KEYCLOAK_URL` or calls `hoops-service.*` helpers in a `tpl` string must follow
   (`hoops-lib.*` since WP136). The owner's `.env` was checked at the WP139 merge and needed no change.
-- **Delete the audit files** (decision 111): the audit files of 2026-11-23 stay untracked in the main checkout and are deleted
-  at close-out after asking the owner; the briefs and handovers (finding IDs, ID-by-ID tables) are the record.
+- **Audit files deleted** (decision 111, 2026-11-24): the owner agreed; the audit files of 2026-11-23 are gone from
+  the main checkout. The briefs and handovers (finding IDs, ID-by-ID tables) are the record.
 - **Season rollover wizard** (WP138 part 2; owner decision open): the web wizard calls `rolloverSeason` with the season
   it was opened on as both the path's target and `fromSeasonId`; `core.yaml` and core-service (`RolloverSeason`)
   treat the path as the target and refuse the same season (`ROLLOVER_SAME_SEASON`), so the wizard works only against
@@ -538,11 +538,13 @@ under "Resolved", "Ninth round".
   service's currency table), and the web shows whole amounts without decimals (`Rp150.000`, intl's default). The brief
   said "IDR has no decimals"; if the owner wants 0, the service's table (`currencies.go`) and the web's copy change
   together, before the first real IDR due (the currency is fixed by the first due).
-- **bump-pins PR #21** (opened 2026-11-23, before the ninth round): distroless java25, Redpanda v26.3.1, Mailpit
-  v1.34.0, otel-lgtm 0.41.1, oras, CloudNativePG 1.30.2, Reloader 2.2.21. Its CloudNativePG and Reloader rows edit
-  `deploy/kind/up.sh` and `deploy/cloud/install.sh`, where the pins no longer live since WP136 (`deploy/lib/platform.sh`):
-  close it and let the next weekly run open a fresh one, or rebase it by hand; close and reopen a `GITHUB_TOKEN` PR so
-  `ci` / `e2e` start. (PR #6 was merged on 2026-11-22.)
+- **bump-pins PR #21 closed** (2026-11-24, with the owner): opened before the ninth round, it conflicted with `main`
+  (`deploy/kind/up.sh`, common-quarkus' `microprofile-config.properties`, a chart snapshot). Nothing is lost:
+  `scripts/bump-pins.sh --check` on `main` reads the moved pins in `deploy/lib/platform.sh` and reports 12 of 16
+  pins outdated (distroless java25, Redis 8.12.0, Redpanda v26.3.1, Mailpit v1.34.0, otel-lgtm 0.41.1, Trivy
+  0.76.2, Semgrep 1.186.0, oras v1.4.0, the ZAP digest, CloudNativePG 1.30.2, Reloader 2.2.21). The next weekly
+  run opens a fresh PR; close and reopen a `GITHUB_TOKEN` PR so `ci` / `e2e` start. (PR #6 was merged on
+  2026-11-22.)
 - **Dependabot PR #22** (pub, two updates, 2026-11-23); the eighth round's #8, #9, #10, #12, #13 are closed and #11,
   #14–#18 merged. Review as usual; a pdf-service bump must pass `just test-rust` (Clippy pedantic, `cargo deny`).
 - **Workflow-file pins by hand** (f96389a3): Trivy, Semgrep and the ZAP digest live in workflow files, which the weekly
@@ -821,6 +823,15 @@ under "Resolved", "Ninth round".
   many transitive APIs as "used undeclared"; only `caffeine` in game/athlete was really unused (removed in WP20).
 
 ### Infra, CI, e2e
+- **PostgreSQL 19** (owner, 2026-11-24: upgrade to the latest major): the project runs PostgreSQL 17 and 19.0 is
+  published (`docker.io/library/postgres:19`; 18 was never adopted). The major is pinned in five places that move
+  together: `infra/compose/compose.yaml`, the `databases` sub-chart's `values.yaml` (CloudNativePG image),
+  `PostgresRlsResource` in common-quarkus' test-jar, finance-service's `pgtest.go` and `.github/workflows/images.yml`;
+  `scripts/bump_pins.py` does not track it. To plan as a work package: check that CloudNativePG, Keycloak, Flyway,
+  the JDBC driver and pgx support 19; read the 18 and 19 release notes for RLS, `set_config` and role changes (the
+  tenancy suites are the proof); decide how existing data moves (the compose volume and the Keycloak database need
+  a dump and restore or `pg_upgrade`; CloudNativePG has its own major-upgrade path); then the kind proof and an ADR
+  amendment for the stack line in `CLAUDE.md`.
 - **Cloud slice: unproven until the first apply** (WP104, ADR-0050; the apply itself is a Pending user action). Only
   written, every step marked NOT YET RUN in `docs/runbooks/cloud.md`: plan, apply, cloud-init, the kubeconfig fetch,
   `install.sh`, seed and smoke through `with-cloud.sh`, destroy; the `docker run` Trivy fallback in CI. To check at the

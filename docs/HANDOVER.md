@@ -102,8 +102,8 @@ project, not a commercial product (ADR-0025).
   `backend` on 498519fb, `images` athlete on beaaffaf, `ci` `trivy-fs` on 393b5676 and 2195fa03, `ci` `zap-baseline`
   on fe792e33; the `e2e` ZAP step on 2c47222f (core 40018 on the audit export), 312cf764 and 0c1ac2ae (one scan's
   ZAP daemon could not bind its proxy port, "Address already in use"). Run ids in FOLLOW-UPS "Infra, CI, e2e".
-- GitHub: `davidbejar/hoops-academy` (public, AGPL-3.0), branch `main`. Open: the `bump-pins` PR #21 (2026-11-23,
-  stale since WP136 moved the CNPG and Reloader pins) and Dependabot PR #22 (pub). PR #6 was merged on 2026-11-22,
+- GitHub: `davidbejar/hoops-academy` (public, AGPL-3.0), branch `main`. Open: Dependabot PR #22 (pub); the stale `bump-pins` PR #21 was closed on
+  2026-11-24. PR #6 was merged on 2026-11-22,
   the eighth round's Dependabot PRs are merged or closed. Repository variable
   `IMAGE_REGISTRY=ghcr.io/davidbejar/hoops-academy`; secrets `NVD_API_KEY` (repository and Dependabot). Images per
   commit on ghcr.io with their SBOMs as OCI referrers. Dependabot: weekly grouped updates (Maven, pub, GitHub Actions
@@ -142,8 +142,8 @@ project, not a commercial product (ADR-0025).
 2. **Season rollover wizard** (owner decision; WP138 part 2): the web wizard sends the season it was opened on as both
    the target (path) and `fromSeasonId`; core refuses that (`ROLLOVER_SAME_SEASON`), so the wizard works only against
    the demo mock. Not checked on the real stack. A fix makes the wizard offer a target season.
-3. **Delete the audit files** (decision 111): the audit files of 2026-11-23 are untracked in the main checkout; the orchestrator
-   asks the owner and deletes them. Nothing in the repository links to them.
+3. **Audit files**: deleted on 2026-11-24 with the owner's agreement (decision 111). Nothing in the repository
+   linked to them.
 4. **IDR minor digits** (owner decision, WP121 / WP124): finance stores IDR with 2 minor digits (ISO 4217) and the web
    shows whole amounts without decimals. Change the service's currency table and the web's copy together if 0 is
    wanted, before the first real IDR due.
@@ -157,9 +157,10 @@ project, not a commercial product (ADR-0025).
    `FINANCE_MIGRATOR_PASSWORD` / `FINANCE_APP_PASSWORD`, which `just up` now requires; a private `values-local.yaml`
    that sets a retired name or calls `hoops-service.*` helpers follows (ADR-0071, `hoops-lib.*`). Any other stack after
    the eighth round still needs `just finance-up`, `just events-backfill force` and `just seed-academy`.
-7. **PR #21 (bump-pins) is stale**: opened before WP136, it edits the CNPG and Reloader pins in `deploy/kind/up.sh` and
-   `deploy/cloud/install.sh`, which now live in `deploy/lib/platform.sh`. Close it and let the next weekly run open a
-   fresh one (close and reopen a `GITHUB_TOKEN` PR so `ci` / `e2e` start). Review Dependabot PR #22.
+7. **PR #21 (bump-pins)**: closed on 2026-11-24 as stale; `scripts/bump-pins.sh --check` on `main` finds the same
+   bumps in `deploy/lib/platform.sh`, so the next weekly run opens a fresh PR (close and reopen a `GITHUB_TOKEN`
+   PR so `ci` / `e2e` start). Review Dependabot PR #22. Next candidate from the owner: PostgreSQL 17 to 19
+   (FOLLOW-UPS "Infra, CI, e2e").
 8. **Workflow-file pins by hand**: Trivy 0.76.2, Semgrep 1.186.0 and the ZAP digest (listed in PR #21) with
    `scripts/bump-pins.sh --apply`, then `actionlint`. Optional: a fine-grained PAT (contents + pull requests +
    workflows) so the weekly PR includes them and starts its own checks.
