@@ -935,6 +935,44 @@ done
 grep -qF -- '-f deploy/helm/hoops/values-cloud.yaml' deploy/cloud/install.sh \
   && ok "deploy/cloud/install.sh installs with values-cloud.yaml and sets every placeholder from the OpenTofu outputs" || bad "install.sh values"
 
+echo "== kind on a busy 2-CPU Podman VM (WP146)"
+# Under a Maven build beside `up.sh --deploy` the VM ran at a load of 30-120 (CPU pressure ~97 %): probes with 1-3 s
+# timeouts killed Keycloak (liveness, exit 137, while it still started) and the services, each restart costing minutes
+# more, and Keycloak's Deployment could be declared failed (progress deadline, default 600 s) before helm's --wait ran out
+# (Helm 4 stops waiting for a Failed resource). The kind render gives the app workloads probes that tolerate a slow
+# answer, and Keycloak a progress deadline no shorter than the release's timeout in up.sh, which stays the outer bound.
+probe() { # probe <Deployment> <startupProbe|livenessProbe|readinessProbe> <field>: its value in the kind render, or the
+  # Kubernetes default when unset (timeoutSeconds 1, periodSeconds 10, failureThreshold 3)
+  local v
+  v=$(doc "$1" Deployment | awk -v p="          $2:" -v f="$3:" '$0 == p {on=1; next}
+    on && /^          [a-zA-Z]+:/ {exit} on && $1 == f {print $2; exit}')
+  if [ -n "$v" ]; then echo "$v"; else case "$3" in timeoutSeconds) echo 1 ;; periodSeconds) echo 10 ;; *) echo 3 ;; esac; fi
+}
+for d in keycloak core-service game-service athlete-service finance-service pdf-service; do
+  slow=""
+  for p in startupProbe livenessProbe readinessProbe; do
+    [ "$(probe "$d" "$p" timeoutSeconds)" -ge 5 ] || slow+="$p timeout $(probe "$d" "$p" timeoutSeconds) s; "
+  done
+  kill_after=$(( $(probe "$d" livenessProbe periodSeconds) * $(probe "$d" livenessProbe failureThreshold) ))
+  [ "$kill_after" -ge 60 ] || slow+="liveness kills after $kill_after s; "
+  start_budget=$(( $(probe "$d" startupProbe periodSeconds) * $(probe "$d" startupProbe failureThreshold) ))
+  [ "$start_budget" -ge 300 ] || slow+="startup budget $start_budget s; "
+  [ -z "$slow" ] && ok "kind: $d probes wait 5 s per answer, kill after >= 60 s of failures, >= 300 s to start" \
+    || bad "kind: $d probes too impatient for a busy VM: $slow"
+done
+release_timeout=$(awk '/upgrade --install hoops / {h=1; next} h && /--wait --timeout [0-9]+m$/ {sub(/.*--timeout /, ""); sub(/m$/, ""); print; exit}' \
+  deploy/kind/up.sh)
+kc_deadline=$(doc keycloak Deployment | sed -n 's/^  progressDeadlineSeconds: \([0-9]*\)$/\1/p')
+[ -n "$release_timeout" ] && [ "${kc_deadline:-600}" -ge $((release_timeout * 60)) ] \
+  && ok "kind: Keycloak's progress deadline (${kc_deadline:-600} s) is not shorter than up.sh's helm timeout (${release_timeout} m)" \
+  || bad "kind: Keycloak's progress deadline ${kc_deadline:-600 (default)} s is shorter than up.sh's helm timeout (${release_timeout:-?} m)"
+for f in umbrella-default umbrella-cloud; do
+  ! doc keycloak Deployment "$WORK/$f.yaml" | grep -q 'progressDeadlineSeconds' \
+    && ! doc keycloak Deployment "$WORK/$f.yaml" | grep -q 'timeoutSeconds' \
+    && ok "$f: Keycloak keeps the Kubernetes defaults (deadline and probe timeouts are kind values)" \
+    || bad "$f: Keycloak's deadline or probe timeouts changed outside kind"
+done
+
 echo "== gitleaks (rendered manifests)"
 if command -v gitleaks >/dev/null; then
   if cat "$WORK"/*.yaml | gitleaks detect --pipe --no-banner --redact --config .gitleaks.toml >"$WORK/gl.txt" 2>&1; then ok "gitleaks clean"
