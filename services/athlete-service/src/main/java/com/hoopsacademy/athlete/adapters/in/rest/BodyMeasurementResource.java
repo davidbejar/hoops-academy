@@ -1,11 +1,11 @@
 package com.hoopsacademy.athlete.adapters.in.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.hoopsacademy.athlete.application.InvalidRequestException;
 import com.hoopsacademy.athlete.application.ManageMeasurements;
 import com.hoopsacademy.athlete.domain.BodyMeasurementId;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.common.authz.RequiresTenantRole;
+import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.common.tenancy.TenantRole;
@@ -50,7 +50,7 @@ public class BodyMeasurementResource {
     public List<HealthDtos.MeasurementResponse> history(@QueryParam("playerId") String playerId, @QueryParam("from") String from,
             @QueryParam("to") String to) {
         PlayerId player = Requests.uuid("playerId", playerId).map(PlayerId::new)
-                .orElseThrow(() -> new InvalidRequestException("playerId", "REQUIRED", "playerId is required"));
+                .orElseThrow(() -> InvalidRequestException.of("playerId", "REQUIRED", "playerId is required"));
         return measurements.history(caller(), player, Requests.date("from", from), Requests.date("to", to)).stream()
                 .map(HealthDtos.MeasurementResponse::from).toList();
     }

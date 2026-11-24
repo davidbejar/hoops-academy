@@ -1,5 +1,7 @@
 package com.hoopsacademy.athlete.domain;
 
+import com.hoopsacademy.common.problem.DomainRuleViolation;
+
 /** Validates the session/slot length bounds shared by the contract and the database. */
 final class Duration15to480 {
 
@@ -10,7 +12,7 @@ final class Duration15to480 {
 
     static int require(int minutes) {
         if (minutes < MIN_MINUTES || minutes > MAX_MINUTES) {
-            throw new TrainingRuleViolation(
+            throw new DomainRuleViolation(
                     "Duration must be between " + MIN_MINUTES + " and " + MAX_MINUTES + " minutes", "INVALID_DURATION");
         }
         return minutes;

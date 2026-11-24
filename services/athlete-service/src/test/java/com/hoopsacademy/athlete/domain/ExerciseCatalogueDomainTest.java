@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hoopsacademy.common.problem.AccessDeniedException;
+import com.hoopsacademy.common.problem.DomainRuleViolation;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -74,7 +75,7 @@ class ExerciseCatalogueDomainTest {
                 () -> Exercise.create("x", null, null, 101, null, null, NOW),
                 () -> Exercise.create("x", null, null, null, 0, null, NOW),
                 () -> Exercise.create("x", null, null, null, 1001, null, NOW))) {
-            assertThatThrownBy(invalid::run).isInstanceOfSatisfying(TrainingRuleViolation.class,
+            assertThatThrownBy(invalid::run).isInstanceOfSatisfying(DomainRuleViolation.class,
                     e -> assertThat(e.code()).isEqualTo("INVALID_EXERCISE"));
         }
     }
@@ -132,7 +133,7 @@ class ExerciseCatalogueDomainTest {
         assertThat(edited.sets()).isNull();
         assertThat(edited.videoUrl()).isNull();
         assertThatThrownBy(() -> exercise.edited(" ", null, null, null, null, null, LATER))
-                .isInstanceOf(TrainingRuleViolation.class);
+                .isInstanceOf(DomainRuleViolation.class);
     }
 
     @Test
@@ -180,7 +181,7 @@ class ExerciseCatalogueDomainTest {
     void anArchivedExerciseCannotBeAdded() {
         Exercise archived = own().archived(true, LATER);
 
-        assertThatThrownBy(archived::toItem).isInstanceOfSatisfying(TrainingRuleViolation.class,
+        assertThatThrownBy(archived::toItem).isInstanceOfSatisfying(DomainRuleViolation.class,
                 e -> assertThat(e.code()).isEqualTo("EXERCISE_ARCHIVED"));
     }
 

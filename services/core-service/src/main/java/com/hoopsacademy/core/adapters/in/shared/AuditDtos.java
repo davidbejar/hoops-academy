@@ -1,6 +1,7 @@
 package com.hoopsacademy.core.adapters.in.shared;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.core.application.audit.AuditEntry;
 import com.hoopsacademy.core.application.port.AuditAction;
 import com.hoopsacademy.core.application.port.AuditFilter;

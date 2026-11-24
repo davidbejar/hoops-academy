@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hoopsacademy.common.problem.AccessDeniedException;
+import com.hoopsacademy.common.problem.ConflictException;
+import com.hoopsacademy.common.problem.DomainRuleViolation;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -105,9 +107,9 @@ class SessionPlanDomainTest {
 
         assertThatCode(() -> own.requireAttachableTo(SESSION)).doesNotThrowAnyException();
         assertThatCode(() -> finishing().requireAttachableTo(SESSION)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> own.requireAttachableTo(SessionId.random())).isInstanceOf(TrainingRuleViolation.class)
+        assertThatThrownBy(() -> own.requireAttachableTo(SessionId.random())).isInstanceOf(DomainRuleViolation.class)
                 .extracting("code").isEqualTo("PLAN_OF_ANOTHER_SESSION");
-        assertThatThrownBy(() -> own.requireAttachableTo(null)).isInstanceOf(TrainingRuleViolation.class);
+        assertThatThrownBy(() -> own.requireAttachableTo(null)).isInstanceOf(DomainRuleViolation.class);
     }
 
     // ---- quick-add
@@ -168,8 +170,8 @@ class SessionPlanDomainTest {
                 "Court", "n", SessionStatus.PLANNED);
         assertThatCode(session::requireChangeable).doesNotThrowAnyException();
         TrainingSession cancelled = session.cancelled("rain");
-        assertThatThrownBy(cancelled::requireChangeable).isInstanceOf(TrainingStateConflict.class)
+        assertThatThrownBy(cancelled::requireChangeable).isInstanceOf(ConflictException.class)
                 .extracting("code").isEqualTo("SESSION_CANCELLED");
-        assertThatThrownBy(() -> cancelled.withPlan(plan.value())).isInstanceOf(TrainingStateConflict.class);
+        assertThatThrownBy(() -> cancelled.withPlan(plan.value())).isInstanceOf(ConflictException.class);
     }
 }

@@ -74,11 +74,11 @@ class ProblemExceptionMappersTest {
                 .body("violations.field", hasItem(containsString("name")));
     }
 
-    @Test
-    void malformedJsonIsBadRequestProblem() {
-        assertProblem(given().contentType("application/json").body("{\"name\":").post(BASE + "validation"),
-                400, "urn:hoops:problem:bad-request")
-                .body("detail", equalTo("Malformed JSON body"));
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {"{\"name\":", "{nope}"})
+    void malformedJsonIsBadRequestProblem(String body) {
+        // Quarkus REST wraps the parser's JsonParseException in a 400 WebApplicationException before any mapper
+        assertProblem(given().contentType("application/json").body(body).post(BASE + "validation"), 400, "about:blank");
     }
 
     @ParameterizedTest

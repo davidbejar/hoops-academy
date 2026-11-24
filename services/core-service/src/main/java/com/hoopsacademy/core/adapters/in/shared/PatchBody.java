@@ -2,6 +2,7 @@ package com.hoopsacademy.core.adapters.in.shared;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.common.problem.CodedProblemException;
+import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.common.problem.Problem;
 import com.hoopsacademy.core.domain.shared.Patch;
 import java.util.ArrayList;

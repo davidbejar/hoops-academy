@@ -6,6 +6,7 @@ import com.hoopsacademy.athlete.application.QuickAddItems;
 import com.hoopsacademy.athlete.domain.PlanId;
 import com.hoopsacademy.athlete.domain.PlanItemId;
 import com.hoopsacademy.common.authz.RequiresTenantRole;
+import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.common.tenancy.TenantRole;
@@ -67,7 +68,7 @@ public class TrainingPlanResource {
             @HeaderParam(ACCEPT_LANGUAGE) String acceptLanguage) {
         Optional<String> query = Optional.ofNullable(q).filter(text -> !text.isBlank());
         if (query.filter(text -> text.length() > 100).isPresent()) {
-            throw new com.hoopsacademy.athlete.application.InvalidRequestException("q", "INVALID_VALUE", "q must be at most 100 characters");
+            throw InvalidRequestException.of("q", "INVALID_VALUE", "q must be at most 100 characters");
         }
         return PageDto.of(plans.list(Requests.bool("template", template, false), query,
                 AcceptLanguage.negotiate(acceptLanguage), page, size), PlanDtos.Summary::from);

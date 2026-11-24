@@ -1,6 +1,7 @@
 package com.hoopsacademy.athlete.domain;
 
 import com.hoopsacademy.common.problem.AccessDeniedException;
+import com.hoopsacademy.common.problem.DomainRuleViolation;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
@@ -94,11 +95,11 @@ public record Exercise(
      * A new plan item with this exercise's content (as it is here, so localize a global exercise first) that keeps
      * referencing it; the plan places it.
      *
-     * @throws TrainingRuleViolation {@code EXERCISE_ARCHIVED} for an archived exercise
+     * @throws DomainRuleViolation {@code EXERCISE_ARCHIVED} for an archived exercise
      */
     public PlanItem toItem() {
         if (archived) {
-            throw new TrainingRuleViolation("An archived exercise cannot be added", "EXERCISE_ARCHIVED");
+            throw new DomainRuleViolation("An archived exercise cannot be added", "EXERCISE_ARCHIVED");
         }
         return new PlanItem(PlanItemId.random(), 0, title, description, durationMinutes, sets, repetitions, videoUrl,
                 Translations.NONE, id);

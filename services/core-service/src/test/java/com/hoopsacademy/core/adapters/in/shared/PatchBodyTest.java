@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hoopsacademy.common.problem.DomainRuleViolation;
+import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.common.problem.Problem;
 import com.hoopsacademy.core.domain.membership.Gender;
 import com.hoopsacademy.core.domain.shared.Patch;

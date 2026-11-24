@@ -1,6 +1,7 @@
 package com.hoopsacademy.athlete.domain;
 
 import com.hoopsacademy.common.problem.AccessDeniedException;
+import com.hoopsacademy.common.problem.DomainRuleViolation;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -49,7 +50,7 @@ public record TrainingPlan(
     public TrainingPlan {
         Objects.requireNonNull(id, "id");
         if (name == null || name.isBlank() || name.length() > MAX_NAME) {
-            throw new TrainingRuleViolation("A plan needs a name of 1 to 120 characters", "INVALID_PLAN");
+            throw new DomainRuleViolation("A plan needs a name of 1 to 120 characters", "INVALID_PLAN");
         }
         items = List.copyOf(items);
         Objects.requireNonNull(translations, "translations");
@@ -129,11 +130,11 @@ public record TrainingPlan(
     /**
      * A session may reference any readable plan except the ad-hoc plan of another session.
      *
-     * @throws TrainingRuleViolation {@code PLAN_OF_ANOTHER_SESSION}
+     * @throws DomainRuleViolation {@code PLAN_OF_ANOTHER_SESSION}
      */
     public void requireAttachableTo(SessionId candidate) {
         if (sessionOrNull != null && !sessionOrNull.equals(candidate)) {
-            throw new TrainingRuleViolation("This plan belongs to another session", "PLAN_OF_ANOTHER_SESSION");
+            throw new DomainRuleViolation("This plan belongs to another session", "PLAN_OF_ANOTHER_SESSION");
         }
     }
 
@@ -222,7 +223,7 @@ public record TrainingPlan(
     public TrainingPlan reordered(List<PlanItemId> order, Instant now) {
         Map<PlanItemId, PlanItem> byId = items.stream().collect(Collectors.toMap(PlanItem::id, Function.identity()));
         if (order.size() != items.size() || !new HashSet<>(order).equals(byId.keySet())) {
-            throw new TrainingRuleViolation("itemIds must list every item of the plan exactly once", "ITEM_ORDER_MISMATCH");
+            throw new DomainRuleViolation("itemIds must list every item of the plan exactly once", "ITEM_ORDER_MISMATCH");
         }
         return changed(name, description, archived, numbered(order.stream().map(byId::get).toList()), now);
     }

@@ -1,7 +1,6 @@
 package com.hoopsacademy.athlete.adapters.in.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.hoopsacademy.athlete.application.InvalidRequestException;
 import com.hoopsacademy.athlete.application.ManagePlans;
 import com.hoopsacademy.athlete.application.QuickAddItems;
 import com.hoopsacademy.athlete.domain.ExerciseId;
@@ -10,6 +9,7 @@ import com.hoopsacademy.athlete.domain.PlanItem;
 import com.hoopsacademy.athlete.domain.PlanItemId;
 import com.hoopsacademy.athlete.domain.SessionId;
 import com.hoopsacademy.athlete.domain.TrainingPlan;
+import com.hoopsacademy.common.problem.InvalidRequestException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -50,7 +50,7 @@ final class PlanDtos {
             if (exerciseId == null && planId != null && itemId != null) {
                 return new QuickAddItems.FromPlan(new PlanId(planId), new PlanItemId(itemId));
             }
-            throw new InvalidRequestException("items[" + index + "]", "INVALID_VALUE",
+            throw InvalidRequestException.of("items[" + index + "]", "INVALID_VALUE",
                     "Give either exerciseId, or planId and itemId");
         }
     }

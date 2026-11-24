@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hoopsacademy.common.problem.AccessDeniedException;
+import com.hoopsacademy.common.problem.DomainRuleViolation;
 import com.hoopsacademy.common.problem.NotFoundException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -38,12 +39,12 @@ class PlanDomainTest {
 
     @Test
     void itemAndPlanValidateTheirFields() {
-        assertThatThrownBy(() -> item(" ", 5)).isInstanceOf(TrainingRuleViolation.class)
+        assertThatThrownBy(() -> item(" ", 5)).isInstanceOf(DomainRuleViolation.class)
                 .extracting("code").isEqualTo("INVALID_ITEM");
-        assertThatThrownBy(() -> item("x", 0)).isInstanceOf(TrainingRuleViolation.class);
-        assertThatThrownBy(() -> item("x", 481)).isInstanceOf(TrainingRuleViolation.class);
+        assertThatThrownBy(() -> item("x", 0)).isInstanceOf(DomainRuleViolation.class);
+        assertThatThrownBy(() -> item("x", 481)).isInstanceOf(DomainRuleViolation.class);
         assertThatThrownBy(() -> TrainingPlan.create(" ", null, COACH, List.of(), NOW))
-                .isInstanceOf(TrainingRuleViolation.class).extracting("code").isEqualTo("INVALID_PLAN");
+                .isInstanceOf(DomainRuleViolation.class).extracting("code").isEqualTo("INVALID_PLAN");
     }
 
     @Test
@@ -60,7 +61,7 @@ class PlanDomainTest {
                 () -> PlanItem.draft("x", null, null, 101, null, null),
                 () -> PlanItem.draft("x", null, null, null, 0, null),
                 () -> PlanItem.draft("x", null, null, null, 1001, null))) {
-            assertThatThrownBy(invalid::run).isInstanceOfSatisfying(TrainingRuleViolation.class,
+            assertThatThrownBy(invalid::run).isInstanceOfSatisfying(DomainRuleViolation.class,
                     e -> assertThat(e.code()).isEqualTo("INVALID_ITEM"));
         }
     }
@@ -69,9 +70,9 @@ class PlanDomainTest {
     void planNamesAreOneTo120Characters() {
         assertThat(TrainingPlan.create("n".repeat(120), null, COACH, List.of(), NOW).name()).hasSize(120);
         assertThatThrownBy(() -> TrainingPlan.create(null, null, COACH, List.of(), NOW))
-                .isInstanceOf(TrainingRuleViolation.class);
+                .isInstanceOf(DomainRuleViolation.class);
         assertThatThrownBy(() -> TrainingPlan.create("n".repeat(121), null, COACH, List.of(), NOW))
-                .isInstanceOf(TrainingRuleViolation.class);
+                .isInstanceOf(DomainRuleViolation.class);
     }
 
     @Test
@@ -140,13 +141,13 @@ class PlanDomainTest {
         assertThat(reordered.items()).extracting(PlanItem::title).containsExactly("C", "A", "B");
         assertThat(reordered.items()).extracting(PlanItem::position).containsExactly(0, 1, 2);
         assertThatThrownBy(() -> plan.reordered(List.of(ids.get(0), ids.get(1)), NOW))
-                .isInstanceOf(TrainingRuleViolation.class).extracting("code").isEqualTo("ITEM_ORDER_MISMATCH");
+                .isInstanceOf(DomainRuleViolation.class).extracting("code").isEqualTo("ITEM_ORDER_MISMATCH");
         assertThatThrownBy(() -> plan.reordered(List.of(ids.get(0), ids.get(0), ids.get(1)), NOW))
-                .isInstanceOf(TrainingRuleViolation.class);
+                .isInstanceOf(DomainRuleViolation.class);
         assertThatThrownBy(() -> plan.reordered(List.of(ids.get(0), ids.get(1), PlanItemId.random()), NOW))
-                .isInstanceOf(TrainingRuleViolation.class);
+                .isInstanceOf(DomainRuleViolation.class);
         assertThatThrownBy(() -> plan.reordered(List.of(ids.get(0), ids.get(1), ids.get(2), ids.get(0)), NOW))
-                .isInstanceOf(TrainingRuleViolation.class);
+                .isInstanceOf(DomainRuleViolation.class);
     }
 
     // ---- templates and copy-on-use
@@ -200,9 +201,9 @@ class PlanDomainTest {
         assertThat(PlanAssignment.create(plan, Optional.empty(), Optional.of(PlayerId.random()), due, null, COACH, NOW).playerId())
                 .isPresent();
         assertThatThrownBy(() -> PlanAssignment.create(plan, Optional.empty(), Optional.empty(), due, null, COACH, NOW))
-                .isInstanceOf(TrainingRuleViolation.class).extracting("code").isEqualTo("ASSIGNMENT_TARGET_REQUIRED");
+                .isInstanceOf(DomainRuleViolation.class).extracting("code").isEqualTo("ASSIGNMENT_TARGET_REQUIRED");
         assertThatThrownBy(() -> PlanAssignment.create(plan, Optional.of(TeamId.random()), Optional.of(PlayerId.random()), due, null, COACH, NOW))
-                .isInstanceOf(TrainingRuleViolation.class).extracting("code").isEqualTo("ASSIGNMENT_TARGET_AMBIGUOUS");
+                .isInstanceOf(DomainRuleViolation.class).extracting("code").isEqualTo("ASSIGNMENT_TARGET_AMBIGUOUS");
     }
 
     @Test

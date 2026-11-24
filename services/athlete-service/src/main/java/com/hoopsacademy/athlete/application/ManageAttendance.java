@@ -7,10 +7,10 @@ import com.hoopsacademy.athlete.domain.AttendanceSheet;
 import com.hoopsacademy.athlete.domain.AttendanceStatus;
 import com.hoopsacademy.athlete.domain.PlayerId;
 import com.hoopsacademy.athlete.domain.SessionId;
-import com.hoopsacademy.athlete.domain.TrainingRuleViolation;
 import com.hoopsacademy.athlete.domain.TrainingSession;
-import com.hoopsacademy.athlete.domain.TrainingStateConflict;
 import com.hoopsacademy.common.problem.AccessDeniedException;
+import com.hoopsacademy.common.problem.ConflictException;
+import com.hoopsacademy.common.problem.DomainRuleViolation;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -72,12 +72,12 @@ public class ManageAttendance {
         TrainingSession session = sessions.find(id).orElseThrow(() -> new NotFoundException("Session not found"));
         access.requireManage(caller, session.teamId());
         if (session.isCancelled()) {
-            throw new TrainingStateConflict("Attendance cannot be recorded for a cancelled session", "SESSION_CANCELLED");
+            throw new ConflictException("Attendance cannot be recorded for a cancelled session", "SESSION_CANCELLED");
         }
         TeamRoster teamRoster = roster.teamRoster(caller.tenantId(), session.teamId());
         for (Mark mark : marks) {
             if (!teamRoster.hasPlayer(mark.playerId())) {
-                throw new TrainingRuleViolation("Player " + mark.playerId() + " is not on the team", "PLAYER_NOT_IN_TEAM");
+                throw new DomainRuleViolation("Player " + mark.playerId() + " is not on the team", "PLAYER_NOT_IN_TEAM");
             }
         }
         var now = clock.now();

@@ -3,6 +3,7 @@ package com.hoopsacademy.athlete.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hoopsacademy.common.problem.DomainRuleViolation;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -54,9 +55,9 @@ class TemplateLanguageTest {
     @Test
     void aLocalizedTextNeedsATitleOfOneTo120Characters() {
         assertThat(new LocalizedText("t".repeat(120), null).title()).hasSize(120);
-        assertThatThrownBy(() -> new LocalizedText(" ", "d")).isInstanceOf(TrainingRuleViolation.class);
-        assertThatThrownBy(() -> new LocalizedText(null, "d")).isInstanceOf(TrainingRuleViolation.class);
-        assertThatThrownBy(() -> new LocalizedText("t".repeat(121), "d")).isInstanceOf(TrainingRuleViolation.class);
+        assertThatThrownBy(() -> new LocalizedText(" ", "d")).isInstanceOf(DomainRuleViolation.class);
+        assertThatThrownBy(() -> new LocalizedText(null, "d")).isInstanceOf(DomainRuleViolation.class);
+        assertThatThrownBy(() -> new LocalizedText("t".repeat(121), "d")).isInstanceOf(DomainRuleViolation.class);
     }
 
     @Test

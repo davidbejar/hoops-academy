@@ -2,10 +2,10 @@ package com.hoopsacademy.athlete.adapters.in.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.hoopsacademy.athlete.application.ExerciseRepository;
-import com.hoopsacademy.athlete.application.InvalidRequestException;
 import com.hoopsacademy.athlete.application.ManageExercises;
 import com.hoopsacademy.athlete.domain.ExerciseId;
 import com.hoopsacademy.common.authz.RequiresTenantRole;
+import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import com.hoopsacademy.common.tenancy.TenantContext;
 import com.hoopsacademy.common.tenancy.TenantRole;
@@ -58,7 +58,7 @@ public class ExerciseResource {
             @HeaderParam(ACCEPT_LANGUAGE) String acceptLanguage) {
         Optional<String> query = Optional.ofNullable(q).filter(text -> !text.isBlank());
         if (query.filter(text -> text.length() > MAX_QUERY).isPresent()) {
-            throw new InvalidRequestException("q", "INVALID_VALUE", "q must be at most 100 characters");
+            throw InvalidRequestException.of("q", "INVALID_VALUE", "q must be at most 100 characters");
         }
         var search = new ExerciseRepository.Search(scope(scope),
                 Requests.bool("includeArchived", includeArchived, false), query,
@@ -111,7 +111,7 @@ public class ExerciseResource {
             return Optional.empty();
         }
         return Optional.of(Arrays.stream(ExerciseRepository.Scope.values()).filter(s -> s.name().equals(raw)).findFirst()
-                .orElseThrow(() -> new InvalidRequestException("scope", "INVALID_VALUE", "scope must be GLOBAL or TENANT")));
+                .orElseThrow(() -> InvalidRequestException.of("scope", "INVALID_VALUE", "scope must be GLOBAL or TENANT")));
     }
 
     private AuthzContext caller() {

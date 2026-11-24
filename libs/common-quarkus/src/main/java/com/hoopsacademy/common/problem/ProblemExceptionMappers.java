@@ -1,5 +1,6 @@
 package com.hoopsacademy.common.problem;
 
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.hoopsacademy.common.security.DenialKind;
 import com.hoopsacademy.common.security.MissingSubjectException;
 import com.hoopsacademy.common.security.SecurityCaller;
@@ -22,6 +23,8 @@ public class ProblemExceptionMappers {
 
     /** Problem {@code code} of a lost optimistic-locking race ({@code @Version}): reload and retry. */
     public static final String CONCURRENT_MODIFICATION = "CONCURRENT_MODIFICATION";
+    /** Violation {@code code} of a body value of the wrong type. */
+    public static final String INVALID_VALUE = "INVALID_VALUE";
 
     private static final Logger LOG = Logger.getLogger(ProblemExceptionMappers.class);
 
@@ -98,6 +101,23 @@ public class ProblemExceptionMappers {
     @ServerExceptionMapper
     public Response constraintViolation(ConstraintViolationException e, UriInfo uri) {
         return Problem.validation(ProblemMapping.violationsOf(e.getConstraintViolations()), path(uri)).toResponse();
+    }
+
+    /** Hand-written request reading refused the request: every violation it found. */
+    @ServerExceptionMapper
+    public Response invalidRequest(InvalidRequestException e, UriInfo uri) {
+        return Problem.validation(e.violations(), path(uri)).toResponse();
+    }
+
+    /**
+     * A body value Jackson cannot read as the field's type (a string for a number, an unknown enum constant, an array
+     * for an object): a validation Problem naming the field, never the value. A body that is not JSON at all reaches
+     * {@link #httpError} as Quarkus REST's 400.
+     */
+    @ServerExceptionMapper
+    public Response unreadableValue(MismatchedInputException e, UriInfo uri) {
+        return Problem.validation(List.of(new Problem.Violation(ProblemMapping.fieldOf(e), INVALID_VALUE,
+                "Invalid value")), path(uri)).toResponse();
     }
 
     /** A NUL in a JSON string (SD-02): a validation Problem naming the field. */

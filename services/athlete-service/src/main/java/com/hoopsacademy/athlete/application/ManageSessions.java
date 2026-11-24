@@ -5,6 +5,7 @@ import com.hoopsacademy.athlete.domain.SessionId;
 import com.hoopsacademy.athlete.domain.SessionStatus;
 import com.hoopsacademy.athlete.domain.TeamId;
 import com.hoopsacademy.athlete.domain.TrainingSession;
+import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.common.problem.NotFoundException;
 import com.hoopsacademy.common.tenancy.AuthzContext;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -74,10 +75,10 @@ public class ManageSessions {
         LocalDate to = calendar.to().orElseGet(() -> calendar.from().isPresent()
                 ? from.plusDays(MAX_RANGE_DAYS - 1L) : today.plusWeeks(horizonWeeks));
         if (to.isBefore(from)) {
-            throw new InvalidRequestException("to", "INVALID_RANGE", "to must not be before from");
+            throw InvalidRequestException.of("to", "INVALID_RANGE", "to must not be before from");
         }
         if (java.time.temporal.ChronoUnit.DAYS.between(from, to) + 1 > MAX_RANGE_DAYS) {
-            throw new InvalidRequestException("to", "RANGE_TOO_LARGE", "The date range is limited to 366 days");
+            throw InvalidRequestException.of("to", "RANGE_TOO_LARGE", "The date range is limited to 366 days");
         }
         return sessions.list(new SessionQuery(teams, from.atStartOfDay(zone).toInstant(),
                 to.plusDays(1).atStartOfDay(zone).toInstant(), calendar.status(), calendar.page(), calendar.size()));

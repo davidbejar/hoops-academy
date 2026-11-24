@@ -1,5 +1,6 @@
 package com.hoopsacademy.athlete.domain;
 
+import com.hoopsacademy.common.problem.DomainRuleViolation;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -28,7 +29,7 @@ public record TrainingSchedule(
         Objects.requireNonNull(validFrom, "validFrom");
         Duration15to480.require(durationMinutes);
         if (validUntil != null && validUntil.isBefore(validFrom)) {
-            throw new TrainingRuleViolation("validUntil must not be before validFrom", "INVALID_VALIDITY_RANGE");
+            throw new DomainRuleViolation("validUntil must not be before validFrom", "INVALID_VALIDITY_RANGE");
         }
         startTime = startTime.withSecond(0).withNano(0);
     }

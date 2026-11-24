@@ -1,7 +1,7 @@
 package com.hoopsacademy.athlete.adapters.in.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.hoopsacademy.athlete.application.InvalidRequestException;
+import com.hoopsacademy.common.problem.InvalidRequestException;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Optional;
@@ -38,7 +38,7 @@ final class PatchBody {
         for (String name : cleared) {
             JsonNode value = body.get(name);
             if (value != null && !value.isNull()) {
-                throw new InvalidRequestException(name, "CLEAR_CONFLICT", name + " is both given a value and named in clear");
+                throw InvalidRequestException.of(name, "CLEAR_CONFLICT", name + " is both given a value and named in clear");
             }
         }
     }
@@ -72,7 +72,7 @@ final class PatchBody {
     }
 
     private static InvalidRequestException emptyPatch() {
-        return new InvalidRequestException("body", "EMPTY_PATCH", "At least one property must be given");
+        return InvalidRequestException.of("body", "EMPTY_PATCH", "At least one property must be given");
     }
 
     /** A non-nullable member: absent = untouched, null = 400. */
@@ -162,6 +162,6 @@ final class PatchBody {
     }
 
     private static InvalidRequestException invalid(String field, String message) {
-        return new InvalidRequestException(field, "INVALID_VALUE", field + " " + message);
+        return InvalidRequestException.of(field, "INVALID_VALUE", field + " " + message);
     }
 }

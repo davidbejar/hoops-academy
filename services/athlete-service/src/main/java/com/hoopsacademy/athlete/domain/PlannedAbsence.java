@@ -1,5 +1,6 @@
 package com.hoopsacademy.athlete.domain;
 
+import com.hoopsacademy.common.problem.DomainRuleViolation;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Objects;
@@ -22,7 +23,7 @@ public record PlannedAbsence(
         Objects.requireNonNull(createdBy, "createdBy");
         Objects.requireNonNull(createdAt, "createdAt");
         if (toDate.isBefore(fromDate)) {
-            throw new TrainingRuleViolation("toDate must not be before fromDate", "INVALID_DATE_RANGE");
+            throw new DomainRuleViolation("toDate must not be before fromDate", "INVALID_DATE_RANGE");
         }
     }
 

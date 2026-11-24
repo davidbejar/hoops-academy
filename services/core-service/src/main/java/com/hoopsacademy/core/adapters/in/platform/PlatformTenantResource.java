@@ -1,13 +1,13 @@
 package com.hoopsacademy.core.adapters.in.platform;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.common.tenancy.TenantId;
 import com.hoopsacademy.core.adapters.in.shared.CallerIdentity;
 import com.hoopsacademy.core.adapters.in.shared.Constraints;
-import com.hoopsacademy.core.adapters.in.shared.InvalidRequestException;
-import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.adapters.in.shared.PageMetaDto;
 import com.hoopsacademy.core.adapters.in.shared.Params;
+import com.hoopsacademy.core.adapters.in.shared.PatchBody;
 import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
 import com.hoopsacademy.core.application.platform.CreateTenant;
 import com.hoopsacademy.core.application.platform.CreateTenantCommand;

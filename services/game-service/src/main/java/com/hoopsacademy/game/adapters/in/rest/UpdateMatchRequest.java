@@ -1,6 +1,7 @@
 package com.hoopsacademy.game.adapters.in.rest;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.game.domain.HomeAway;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -41,19 +42,21 @@ public class UpdateMatchRequest {
             return Set.of();
         }
         if (!clear.isArray()) {
-            throw invalid("clear", "INVALID_VALUE", "clear must be a list of property names");
+            throw InvalidRequestException.of("clear", "INVALID_VALUE", "clear must be a list of property names");
         }
         Set<String> names = new LinkedHashSet<>();
         for (JsonNode item : clear) {
             if (!item.isTextual() || !CLEARABLE.contains(item.asText())) {
-                throw invalid("clear", "INVALID_VALUE", "clear may only name " + String.join(", ", CLEARABLE));
+                throw InvalidRequestException.of("clear", "INVALID_VALUE",
+                        "clear may only name " + String.join(", ", CLEARABLE));
             }
             if (!names.add(item.asText())) {
-                throw invalid("clear", "INVALID_VALUE", "clear names " + item.asText() + " twice");
+                throw InvalidRequestException.of("clear", "INVALID_VALUE", "clear names " + item.asText() + " twice");
             }
         }
         if (names.contains("venue") && venue != null) {
-            throw invalid("venue", "CLEAR_CONFLICT", "venue is both given a value and named in clear");
+            throw InvalidRequestException.of("venue", "CLEAR_CONFLICT",
+                    "venue is both given a value and named in clear");
         }
         return names;
     }
@@ -61,9 +64,5 @@ public class UpdateMatchRequest {
     boolean isEmpty() {
         return opponentName == null && homeAway == null && scheduledAt == null && venue == null && periodCount == null
                 && periodMinutes == null;
-    }
-
-    private static InvalidRequestException invalid(String field, String code, String message) {
-        return new InvalidRequestException(field, code, message);
     }
 }

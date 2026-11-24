@@ -1,7 +1,7 @@
 package com.hoopsacademy.core.adapters.in.rest;
 
+import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.common.problem.Problem;
-import com.hoopsacademy.core.adapters.in.shared.InvalidRequestException;
 import com.hoopsacademy.core.adapters.in.shared.WithPasswordDto;
 import com.hoopsacademy.core.application.approvals.ApprovalQueries;
 import com.hoopsacademy.core.application.approvals.ApproveRequest;

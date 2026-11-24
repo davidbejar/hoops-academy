@@ -9,8 +9,11 @@ public enum ProblemType {
     NOT_FOUND(404, "Not Found", "not-found"),
     CONFLICT(409, "Conflict", "conflict"),
     PAYLOAD_TOO_LARGE(413, "Payload Too Large", "payload-too-large"),
+    UNSUPPORTED_MEDIA_TYPE(415, "Unsupported Media Type", "unsupported-media-type"),
     DOMAIN_RULE_VIOLATION(422, "Domain Rule Violation", "domain-rule-violation"),
     INTERNAL_ERROR(500, "Internal Server Error", "internal-error"),
+    /** core's Keycloak calls failed; nothing was changed (core.yaml {@code UpstreamIdentityProvider}). */
+    IDENTITY_PROVIDER_UNAVAILABLE(502, "Bad Gateway", "identity-provider-unavailable"),
     UPSTREAM_UNAVAILABLE(503, "Service Unavailable", "upstream-unavailable");
 
     private static final String URN_PREFIX = "urn:hoops:problem:";

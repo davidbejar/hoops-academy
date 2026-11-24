@@ -1,6 +1,6 @@
 package com.hoopsacademy.athlete.adapters.in.rest;
 
-import com.hoopsacademy.athlete.application.InvalidRequestException;
+import com.hoopsacademy.common.problem.InvalidRequestException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
@@ -37,7 +37,7 @@ final class Requests {
         try {
             return Optional.of(parser.apply(raw));
         } catch (IllegalArgumentException | DateTimeParseException e) {
-            throw new InvalidRequestException(field, "INVALID_VALUE", field + " must be " + expected);
+            throw InvalidRequestException.of(field, "INVALID_VALUE", field + " must be " + expected);
         }
     }
 
@@ -45,7 +45,7 @@ final class Requests {
         try {
             return LocalTime.parse(raw);
         } catch (DateTimeParseException e) {
-            throw new InvalidRequestException(field, "INVALID_VALUE", field + " must be HH:mm");
+            throw InvalidRequestException.of(field, "INVALID_VALUE", field + " must be HH:mm");
         }
     }
 

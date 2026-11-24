@@ -210,8 +210,8 @@ mod tests {
             .collect()
     }
 
-    /// Slugs the Java vocabulary lacks; Go's finance-service has `unsupported-media-type` too (X-11).
-    const OWN_SLUGS: [&str; 2] = ["unsupported-media-type", "method-not-allowed"];
+    /// Slugs the Java vocabulary lacks (`unsupported-media-type` joined `ProblemType` in WP137).
+    const OWN_SLUGS: [&str; 1] = ["method-not-allowed"];
 
     #[test]
     fn problem_types_are_the_shared_vocabulary() {

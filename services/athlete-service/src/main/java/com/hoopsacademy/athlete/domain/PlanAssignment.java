@@ -1,5 +1,6 @@
 package com.hoopsacademy.athlete.domain;
 
+import com.hoopsacademy.common.problem.DomainRuleViolation;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collection;
@@ -24,10 +25,10 @@ public record PlanAssignment(
         Objects.requireNonNull(dueOn, "dueOn");
         Objects.requireNonNull(assignedBy, "assignedBy");
         if (teamIdOrNull == null && playerIdOrNull == null) {
-            throw new TrainingRuleViolation("Give either teamId or playerId", "ASSIGNMENT_TARGET_REQUIRED");
+            throw new DomainRuleViolation("Give either teamId or playerId", "ASSIGNMENT_TARGET_REQUIRED");
         }
         if (teamIdOrNull != null && playerIdOrNull != null) {
-            throw new TrainingRuleViolation("Give only one of teamId and playerId", "ASSIGNMENT_TARGET_AMBIGUOUS");
+            throw new DomainRuleViolation("Give only one of teamId and playerId", "ASSIGNMENT_TARGET_AMBIGUOUS");
         }
     }
 

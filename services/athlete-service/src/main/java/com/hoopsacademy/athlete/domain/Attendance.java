@@ -1,5 +1,6 @@
 package com.hoopsacademy.athlete.domain;
 
+import com.hoopsacademy.common.problem.DomainRuleViolation;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -23,10 +24,10 @@ public record Attendance(
         Objects.requireNonNull(recordedAt, "recordedAt");
         if (status == AttendanceStatus.LATE) {
             if (minutesLate == null || minutesLate < 1 || minutesLate > MAX_MINUTES_LATE) {
-                throw new TrainingRuleViolation("minutesLate (1..480) is required for LATE", "MINUTES_LATE_REQUIRED");
+                throw new DomainRuleViolation("minutesLate (1..480) is required for LATE", "MINUTES_LATE_REQUIRED");
             }
         } else if (minutesLate != null) {
-            throw new TrainingRuleViolation("minutesLate is only allowed for LATE", "MINUTES_LATE_NOT_ALLOWED");
+            throw new DomainRuleViolation("minutesLate is only allowed for LATE", "MINUTES_LATE_NOT_ALLOWED");
         }
     }
 }

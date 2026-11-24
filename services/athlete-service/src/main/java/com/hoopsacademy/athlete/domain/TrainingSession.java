@@ -1,5 +1,7 @@
 package com.hoopsacademy.athlete.domain;
 
+import com.hoopsacademy.common.problem.ConflictException;
+import com.hoopsacademy.common.problem.DomainRuleViolation;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -27,7 +29,7 @@ public record TrainingSession(
         Objects.requireNonNull(endsAt, "endsAt");
         Objects.requireNonNull(status, "status");
         if (!endsAt.isAfter(startsAt)) {
-            throw new TrainingRuleViolation("A session must end after it starts", "INVALID_TIME_RANGE");
+            throw new DomainRuleViolation("A session must end after it starts", "INVALID_TIME_RANGE");
         }
     }
 
@@ -57,16 +59,16 @@ public record TrainingSession(
 
     public TrainingSession cancelled(String reason) {
         if (status != SessionStatus.PLANNED) {
-            throw new TrainingStateConflict("Only PLANNED sessions can be cancelled", "SESSION_NOT_PLANNED");
+            throw new ConflictException("Only PLANNED sessions can be cancelled", "SESSION_NOT_PLANNED");
         }
         return new TrainingSession(id, teamId, scheduleId, startsAt, endsAt, location, planId,
                 SessionStatus.CANCELLED, notes, reason, manuallyEdited);
     }
 
-    /** @throws TrainingStateConflict {@code SESSION_CANCELLED}: a cancelled session is frozen */
+    /** @throws ConflictException {@code SESSION_CANCELLED}: a cancelled session is frozen */
     public void requireChangeable() {
         if (isCancelled()) {
-            throw new TrainingStateConflict("A cancelled session cannot be changed", "SESSION_CANCELLED");
+            throw new ConflictException("A cancelled session cannot be changed", "SESSION_CANCELLED");
         }
     }
 
@@ -80,7 +82,7 @@ public record TrainingSession(
             String newNotes, SessionStatus newStatus) {
         requireChangeable();
         if (newStatus == SessionStatus.CANCELLED) {
-            throw new TrainingRuleViolation("Use the cancel operation to cancel a session", "USE_CANCEL");
+            throw new DomainRuleViolation("Use the cancel operation to cancel a session", "USE_CANCEL");
         }
         return new TrainingSession(id, teamId, scheduleId, newStart,
                 newStart.plus(Duration.ofMinutes(Duration15to480.require(newDurationMinutes))), newLocation, newPlanId,

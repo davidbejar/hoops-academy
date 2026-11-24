@@ -1,5 +1,6 @@
 package com.hoopsacademy.core.adapters.in.shared;
 
+import com.hoopsacademy.common.problem.InvalidRequestException;
 import com.hoopsacademy.common.problem.Problem;
 import java.time.Instant;
 import java.time.LocalDate;

@@ -6,7 +6,8 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hoopsacademy.athlete.application.InvalidRequestException;
+import com.hoopsacademy.common.problem.InvalidRequestException;
+import com.hoopsacademy.common.problem.Problem;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -66,8 +67,8 @@ class PatchBodyTest {
         assertThatExceptionOfType(InvalidRequestException.class)
                 .isThrownBy(() -> patch("{\"location\": \"Court 1\", \"clear\": [\"location\"]}"))
                 .satisfies(e -> {
-                    assertThat(e.field()).isEqualTo("location");
-                    assertThat(e.code()).isEqualTo("CLEAR_CONFLICT");
+                    assertThat(only(e).field()).isEqualTo("location");
+                    assertThat(only(e).code()).isEqualTo("CLEAR_CONFLICT");
                 });
     }
 
@@ -77,8 +78,8 @@ class PatchBodyTest {
     void anUnknownMalformedOrRepeatedClearListIsRejected(String json) {
         assertThatExceptionOfType(InvalidRequestException.class).isThrownBy(() -> patch(json))
                 .satisfies(e -> {
-                    assertThat(e.field()).isEqualTo("clear");
-                    assertThat(e.code()).isEqualTo("INVALID_VALUE");
+                    assertThat(only(e).field()).isEqualTo("clear");
+                    assertThat(only(e).code()).isEqualTo("INVALID_VALUE");
                 });
     }
 
@@ -86,13 +87,13 @@ class PatchBodyTest {
     @ValueSource(strings = {"{}", "{\"clear\": []}", "{\"clear\": null}", "[]"})
     void aBodyThatChangesNothingIsAnEmptyPatch(String json) {
         assertThatExceptionOfType(InvalidRequestException.class).isThrownBy(() -> patch(json))
-                .satisfies(e -> assertThat(e.code()).isEqualTo("EMPTY_PATCH"));
+                .satisfies(e -> assertThat(only(e).code()).isEqualTo("EMPTY_PATCH"));
     }
 
     @Test
     void aMissingBodyIsAnEmptyPatch() {
         assertThatExceptionOfType(InvalidRequestException.class).isThrownBy(() -> new PatchBody(null, CLEARABLE))
-                .satisfies(e -> assertThat(e.code()).isEqualTo("EMPTY_PATCH"));
+                .satisfies(e -> assertThat(only(e).code()).isEqualTo("EMPTY_PATCH"));
     }
 
     @Test
@@ -111,7 +112,7 @@ class PatchBodyTest {
         assertThat(patch("{\"notes\": \"x\"}").required("name", PatchBody.text(9))).isEmpty();
         assertThatExceptionOfType(InvalidRequestException.class)
                 .isThrownBy(() -> patch("{\"name\": null}").required("name", PatchBody.text(9)))
-                .withMessage("name must not be null");
+                .satisfies(e -> assertThat(only(e).message()).isEqualTo("name must not be null"));
     }
 
     @Test
@@ -120,19 +121,19 @@ class PatchBodyTest {
         assertThatExceptionOfType(InvalidRequestException.class)
                 .isThrownBy(() -> patch("{\"name\": 3}").required("name", PatchBody.text(9)))
                 .satisfies(e -> {
-                    assertThat(e.field()).isEqualTo("name");
-                    assertThat(e.code()).isEqualTo("INVALID_VALUE");
-                    assertThat(e.getMessage()).isEqualTo("name must be a string of at most 9 characters");
+                    assertThat(only(e).field()).isEqualTo("name");
+                    assertThat(only(e).code()).isEqualTo("INVALID_VALUE");
+                    assertThat(only(e).message()).isEqualTo("name must be a string of at most 9 characters");
                 });
     }
 
     @Test
     void aClearNameOutsideTheClearableOnesNamesTheAllowedOnes() {
         assertThatExceptionOfType(InvalidRequestException.class).isThrownBy(() -> patch("{\"clear\": [\"plan\"]}"))
-                .withMessage("clear may only name location, notes");
+                .satisfies(e -> assertThat(only(e).message()).isEqualTo("clear may only name location, notes"));
         assertThatExceptionOfType(InvalidRequestException.class)
                 .isThrownBy(() -> new PatchBody(read("{\"clear\": [1]}"), Set.of("1")))
-                .as("names are strings").satisfies(e -> assertThat(e.field()).isEqualTo("clear"));
+                .as("names are strings").satisfies(e -> assertThat(only(e).field()).isEqualTo("clear"));
     }
 
     @Test
@@ -192,6 +193,11 @@ class PatchBodyTest {
     private static void assertInvalid(String json, java.util.function.Function<JsonNode, ?> parser, String expected) {
         assertThatExceptionOfType(InvalidRequestException.class)
                 .isThrownBy(() -> patch("{\"v\": " + json + "}").required("v", parser))
-                .withMessage("v must be " + expected);
+                .satisfies(e -> assertThat(only(e).message()).isEqualTo("v must be " + expected));
+    }
+
+    private static Problem.Violation only(InvalidRequestException e) {
+        assertThat(e.violations()).hasSize(1);
+        return e.violations().get(0);
     }
 }
