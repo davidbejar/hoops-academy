@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/core/api/athlete_api.dart' as ath;
+import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/core/l10n/locale_controller.dart';
 import 'package:hoops_app/core/session/capabilities.dart';
 import 'package:hoops_app/features/health/application/health_providers.dart';
@@ -50,7 +51,6 @@ ProviderContainer _container(
     overrides: [
       capabilitiesProvider.overrideWithValue(caps),
       effectiveLocaleProvider.overrideWithValue(const Locale('es')),
-      ...a.overrides,
       ...a.apiOverrides(backend),
       teamsRepositoryProvider.overrideWithValue(
         ApiTeamsRepository(backend.coreApi(), backend.tenantAId),
@@ -125,7 +125,7 @@ void main() {
         final c = _container(a, const Capabilities(roles: {TenantRole.admin}));
         await expectLater(
           c.read(weekSessionsProvider.future),
-          throwsStateError,
+          throwsA(predicate((Object e) => AppError.of(e).status == 500)),
         );
         a.training.failWith = null;
         c.invalidate(weekSessionsProvider);
@@ -144,8 +144,14 @@ void main() {
           a,
           const Capabilities(roles: {TenantRole.coach}, staffTeamIds: {'t1'}),
         );
+        staff.listen(sessionDetailProvider('s1'), (_, _) {}); // auto-dispose
         final d = await staff.read(sessionDetailProvider('s1').future);
-        expect(d.attendance!.entries.single.playerId, 'p1');
+        // One entry per player of the roster (athlete.yaml).
+        expect(d.attendance!.entries.map((e) => e.playerId), [
+          'p1',
+          'p2',
+          'p3',
+        ]);
         expect(d.roster.map((p) => p.player.id), ['p1', 'p2', 'p3']);
         a.training.calls.clear();
         final parent = _container(
@@ -155,6 +161,7 @@ void main() {
             linkedPlayerIds: {'p1'},
           ),
         );
+        parent.listen(sessionDetailProvider('s1'), (_, _) {});
         final pd = await parent.read(sessionDetailProvider('s1').future);
         expect(pd.attendance, isNull);
         expect(a.training.calls, ['session']);
@@ -176,10 +183,8 @@ void main() {
       ]);
       expect(a.training.recorded!.single.playerId, 'p1');
       expect(
-        (await c.read(sessionDetailProvider('s1').future))
-            .attendance!
-            .entries
-            .single
+        (await c.read(sessionDetailProvider('s1').future)).attendance!.entries
+            .firstWhere((e) => e.playerId == 'p1')
             .status,
         ath.AttendanceStatus.PRESENT,
       );
@@ -190,6 +195,7 @@ void main() {
     test('PlanDetailNotifier.move sends the permutation and the library is invalidated', () async {
       final a = weekAthlete();
       final c = _container(a, const Capabilities(roles: {TenantRole.admin}));
+      c.listen(planDetailProvider('plan-1'), (_, _) {}); // auto-dispose
       await c.read(planDetailProvider('plan-1').future);
       await c.read(planDetailProvider('plan-1').notifier).move(0, 1);
       expect(a.plans.lastOrder, ['i2', 'i1']);
@@ -201,7 +207,7 @@ void main() {
     });
 
     test('library copy returns an editable copy of the template', () async {
-      final plans = FakePlansRepository(
+      final plans = PlansData(
         plans: [
           planOf(
             'tpl',
@@ -228,7 +234,7 @@ void main() {
     test(
       'AssignmentsView groups completions per assignment and player',
       () async {
-        final plans = FakePlansRepository(plans: [planOf('p', 'P')]);
+        final plans = PlansData(plans: [planOf('p', 'P')]);
         plans.assignmentList.add(
           assignmentOf('as1', plans.planList.single, teamId: 't1'),
         );
@@ -255,7 +261,7 @@ void main() {
     );
 
     test('record replaces the previous mark of the same player', () async {
-      final plans = FakePlansRepository(plans: [planOf('p', 'P')]);
+      final plans = PlansData(plans: [planOf('p', 'P')]);
       plans.assignmentList.add(
         assignmentOf('as1', plans.planList.single, playerId: 'p1'),
       );

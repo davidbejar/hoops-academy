@@ -100,8 +100,11 @@ class MockBackend extends MockApiAdapter {
   /// Every path of the backend.
   static final anyPath = RegExp('');
 
-  /// Forgets every injected failure: the next requests reach the mock again.
-  void heal() => _faults.clear();
+  /// Forgets every injected failure (only those injected on [path], when
+  /// given): the next requests reach the mock again.
+  void heal([Pattern? path]) => path == null
+      ? _faults.clear()
+      : _faults.removeWhere((f) => f.path == path && f.gate == null);
 
   /// The requests to [path] (exact, or a [RegExp]) with [method] (any: null).
   List<RequestOptions> requestsTo(Pattern path, {String? method = 'GET'}) => [

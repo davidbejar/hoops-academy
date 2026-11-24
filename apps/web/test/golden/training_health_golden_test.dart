@@ -59,7 +59,7 @@ FakeCore _demoCore() => FakeCore(
 );
 
 FakeAthlete _demoWeek() => FakeAthlete(
-  training: FakeTrainingRepository(
+  training: TrainingData(
     sessions: [
       _demo('s1', 0, 17, 30, teamId: 't1', place: 'Pabellón Norte'),
       _demo('s2', 1, 18, 30, teamId: 't2', place: 'Pabellón Sur'),

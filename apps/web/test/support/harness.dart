@@ -168,7 +168,8 @@ class Harness {
   /// device's Drift store and the sync timers; empty by default.
   final GameData game;
 
-  /// In-memory athlete-service side (training, plans, health, fitness).
+  /// The athlete side (training, plans, exercises, health, fitness) seeded
+  /// into [backend].
   final FakeAthlete athlete;
 
   final List<Override> extraOverrides;
@@ -224,7 +225,6 @@ class Harness {
         onlineProvider.overrideWith((ref) => online.stream),
         ...backend.overrides,
         ...game.overrides,
-        ...athlete.overrides,
         ...extraOverrides,
         // Deferred libraries load in real time; make them instant in tests.
         libraryLoaderProvider.overrideWithValue(

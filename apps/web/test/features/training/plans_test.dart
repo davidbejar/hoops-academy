@@ -5,10 +5,11 @@ import 'package:hoops_app/core/l10n/locale_controller.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
+import '../../support/athlete_seed.dart';
 import '../../support/fake_athlete.dart';
 import '../../support/pump_helpers.dart';
 
-FakePlansRepository _plans() => FakePlansRepository(
+PlansData _plans() => PlansData(
   plans: [
     planOf(
       'tpl-1',
@@ -111,7 +112,7 @@ void main() {
         location: '/training/plans',
       );
       expect(find.textContaining('Aún no hay planes propios'), findsOneWidget);
-      final hung = FakeAthlete(plans: FakePlansRepository()..hang = true);
+      final hung = FakeAthlete(plans: PlansData()..hang = true);
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
@@ -122,7 +123,7 @@ void main() {
       );
       expect(find.byType(CircularProgressIndicator), findsWidgets);
       final failing = FakeAthlete(
-        plans: FakePlansRepository()..failWith = StateError('x'),
+        plans: PlansData()..failWith = StateError('x'),
       );
       await pumpAs(
         tester,
@@ -203,7 +204,7 @@ void main() {
           roles: {TenantRole.coach},
           staffTeamIds: {'t1'},
           core: athleteCore(),
-          athlete: FakeAthlete(plans: FakePlansRepository(plans: [template])),
+          athlete: FakeAthlete(plans: PlansData(plans: [template])),
           location: '/training/plans',
         );
         await tester.tap(find.byKey(const Key('tab-templates')));

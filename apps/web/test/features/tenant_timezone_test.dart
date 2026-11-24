@@ -5,6 +5,7 @@ import 'package:hoops_app/features/training/domain/week.dart';
 import 'package:hoops_athlete_api/hoops_athlete_api.dart' as ath;
 
 import '../support/athlete_scenarios.dart';
+import '../support/athlete_seed.dart';
 import '../support/fake_athlete.dart';
 import '../support/game_seed.dart' show teamA;
 import '../support/pump_helpers.dart';
@@ -25,7 +26,7 @@ void main() {
       final day = DateTime(monday.year, monday.month, monday.day + 1);
       final noonUtc = DateTime.utc(day.year, day.month, day.day, 12);
       final athlete = FakeAthlete(
-        training: FakeTrainingRepository(
+        training: TrainingData(
           sessions: [
             ath.TrainingSession(
               (b) => b

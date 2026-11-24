@@ -1,4 +1,3 @@
-import 'package:built_collection/built_collection.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/features/health/application/health_providers.dart';
@@ -9,12 +8,7 @@ import 'package:hoops_app/features/training/data/plans_repository.dart';
 import 'package:hoops_app/features/training/data/training_repository.dart';
 
 import 'athlete_seed.dart';
-import 'fake_repos.dart' show Faulty;
 import 'mock_backend.dart';
-
-/// An update field as the server applies it (ADR-0032): named in `clear` = null, null = unchanged.
-T? patched<T, E>(BuiltSet<E>? clear, E name, T? value, T? current) =>
-    (clear?.contains(name) ?? false) ? null : value ?? current;
 
 // ------------------------------------------------------------------ fixtures
 
@@ -82,17 +76,23 @@ ath.TrainingSchedule schedule(
     ..validFrom = ath.Date(2026, 9, 1),
 );
 
-ath.PlannedAbsence absence(String id, String playerId, {String? reason}) =>
-    ath.PlannedAbsence(
-      (b) => b
-        ..id = id
-        ..playerId = playerId
-        ..fromDate = ath.Date(2026, 11, 10)
-        ..toDate = ath.Date(2026, 11, 12)
-        ..reason = reason
-        ..recordedBy = _who.toBuilder()
-        ..recordedAt = DateTime.utc(2026, 11, 1),
-    );
+/// A planned absence, by default from 10 to 12 November 2026.
+ath.PlannedAbsence absence(
+  String id,
+  String playerId, {
+  String? reason,
+  ath.Date? from,
+  ath.Date? to,
+}) => ath.PlannedAbsence(
+  (b) => b
+    ..id = id
+    ..playerId = playerId
+    ..fromDate = from ?? ath.Date(2026, 11, 10)
+    ..toDate = to ?? ath.Date(2026, 11, 12)
+    ..reason = reason
+    ..recordedBy = _who.toBuilder()
+    ..recordedAt = DateTime.utc(2026, 11, 1),
+);
 
 ath.PlanItem planItem(
   String id,
@@ -139,34 +139,6 @@ ath.Exercise exercise(
     ..nameKey = global ? id : null
     ..archived = archived,
 );
-
-/// What a quick-add appends for [source] (athlete 3.0.0, before the server
-/// gives it an id and a position): a catalogue exercise becomes an item that
-/// references it; an item of a plan is copied with its own reference.
-ath.PlanItem quickAddCopy(
-  ath.PlanItemSource source, {
-  required List<ath.TrainingPlan> plans,
-  required List<ath.Exercise> exercises,
-}) {
-  final exerciseId = source.exerciseId;
-  if (exerciseId != null) {
-    final e = exercises.firstWhere((e) => e.id == exerciseId);
-    return planItem(
-      e.id,
-      e.title,
-      0,
-      minutes: e.durationMinutes,
-      sets: e.sets,
-      reps: e.repetitions,
-      video: e.videoUrl,
-      exerciseId: e.id,
-    ).rebuild((b) => b..description = e.description);
-  }
-  return plans
-      .firstWhere((p) => p.id == source.planId)
-      .items
-      .firstWhere((i) => i.id == source.itemId);
-}
 
 ath.TrainingPlan planOf(
   String id,
@@ -345,719 +317,50 @@ ath.PhysicalTestResult testResult(
     ..recordedAt = DateTime.utc(2026, 10, 1),
 );
 
-// --------------------------------------------------------------------- fakes
-
-class FakeTrainingRepository with Faulty implements TrainingRepository {
-  /// The plans quick-adds read from and write to (set by [FakeAthlete]).
-  FakePlansRepository? plans;
-
-  /// The catalogue quick-adds copy exercises from (set by [FakeAthlete]).
-  ExercisesData? exercises;
-  final List<List<ath.PlanItemSource>> quickAdded = [];
-
-  /// Fails quick-adds only (a session is still created).
-  Object? failCopyWith;
-
-  FakeTrainingRepository({
-    List<ath.TrainingSession>? sessions,
-    List<ath.TrainingSchedule>? schedules,
-    List<ath.PlannedAbsence>? absences,
-    Map<String, List<ath.AttendanceEntry>>? attendance,
-  }) : sessionList = sessions ?? [],
-       scheduleList = schedules ?? [],
-       absenceList = absences ?? [],
-       attendanceBySession = attendance ?? {};
-
-  final List<ath.TrainingSession> sessionList;
-  final List<ath.TrainingSchedule> scheduleList;
-  final List<ath.PlannedAbsence> absenceList;
-  final Map<String, List<ath.AttendanceEntry>> attendanceBySession;
-  final List<String> sessionQueries = [];
-  ath.CreateTrainingSessionRequest? createdSession;
-  ath.UpdateTrainingSessionRequest? updatedSession;
-  List<ath.AttendanceInput>? recorded;
-  String? cancelledReason;
-  ath.TrainingScheduleInput? createdSchedule;
-  ath.PlannedAbsenceInput? createdAbsence;
-  ath.UpdatePlannedAbsenceRequest? updatedAbsence;
-  ath.UpdateTrainingScheduleRequest? updatedSchedule;
-
-  @override
-  Future<List<ath.TrainingSession>> sessions({
-    String? teamId,
-    required ath.Date from,
-    required ath.Date to,
-  }) => run('sessions', () {
-    sessionQueries.add('${teamId ?? '*'}:$from..$to');
-    return [
-      for (final s in sessionList)
-        if ((teamId == null || s.teamId == teamId) &&
-            !_day(s.startsAt).isBefore(from.toDateTime()) &&
-            !_day(s.startsAt).isAfter(to.toDateTime()))
-          s,
-    ];
-  });
-
-  DateTime _day(DateTime t) {
-    final l = t.toLocal();
-    return DateTime(l.year, l.month, l.day);
-  }
-
-  @override
-  Future<ath.TrainingSession> session(String sessionId) =>
-      run('session', () => sessionList.firstWhere((s) => s.id == sessionId));
-
-  /// Like athlete 3.0.0: copies go to the session's own plan, created on the
-  /// first quick-add with the items of the plan it referenced.
-  @override
-  Future<ath.TrainingPlan> copyItemsToSession(
-    String sessionId,
-    List<ath.PlanItemSource> items,
-  ) => run('copyItemsToSession', () {
-    if (failCopyWith case final error?) throw error;
-    quickAdded.add(items);
-    final store = plans!;
-    final index = sessionList.indexWhere((s) => s.id == sessionId);
-    final session = sessionList[index];
-    final current = store.planList
-        .where((p) => p.id == session.planId)
-        .firstOrNull;
-    var own = current?.sessionId == sessionId
-        ? current!
-        : planOf(
-            'own-$sessionId',
-            current?.name ?? 'Sesión',
-            items: current?.items.toList() ?? const [],
-            sessionId: sessionId,
-          );
-    final copies = [
-      for (final source in items)
-        quickAddCopy(
-          source,
-          plans: store.planList,
-          exercises: exercises?.exerciseList ?? const [],
-        ),
-    ];
-    final all = [...own.items, ...copies];
-    own = planOf(
-      own.id,
-      own.name,
-      sessionId: sessionId,
-      items: [
-        for (var n = 0; n < all.length; n++)
-          all[n].rebuild(
-            (b) => b
-              ..id = '${own.id}-i$n'
-              ..position = n,
-          ),
-      ],
-    );
-    store.planList
-      ..removeWhere((p) => p.id == own.id)
-      ..add(own);
-    sessionList[index] = session.rebuild((b) => b..planId = own.id);
-    return own;
-  });
-
-  @override
-  Future<ath.TrainingSession> createSession(
-    ath.CreateTrainingSessionRequest request,
-  ) => run('createSession', () {
-    createdSession = request;
-    final s = ath.TrainingSession(
-      (b) => b
-        ..id = 'new-${sessionList.length}'
-        ..teamId = request.teamId
-        ..startsAt = request.startsAt
-        ..durationMinutes = request.durationMinutes
-        ..location = request.location
-        ..planId = request.planId
-        ..status = ath.TrainingSessionStatus.PLANNED,
-    );
-    sessionList.add(s);
-    return s;
-  });
-
-  @override
-  Future<ath.TrainingSession> updateSession(
-    String sessionId,
-    ath.UpdateTrainingSessionRequest request,
-  ) => run('updateSession', () {
-    updatedSession = request;
-    final i = sessionList.indexWhere((s) => s.id == sessionId);
-    sessionList[i] = sessionList[i].rebuild(
-      (b) => b
-        ..startsAt = request.startsAt ?? b.startsAt
-        ..durationMinutes = request.durationMinutes ?? b.durationMinutes
-        ..location = patched(
-          request.clear,
-          ath.UpdateTrainingSessionRequestClearEnum.location,
-          request.location,
-          b.location,
-        )
-        ..planId = patched(
-          request.clear,
-          ath.UpdateTrainingSessionRequestClearEnum.planId,
-          request.planId,
-          b.planId,
-        )
-        ..notes = patched(
-          request.clear,
-          ath.UpdateTrainingSessionRequestClearEnum.notes,
-          request.notes,
-          b.notes,
-        ),
-    );
-    return sessionList[i];
-  });
-
-  @override
-  Future<ath.TrainingSession> cancelSession(String sessionId, String reason) =>
-      run('cancelSession', () {
-        cancelledReason = reason;
-        final i = sessionList.indexWhere((s) => s.id == sessionId);
-        sessionList[i] = sessionList[i].rebuild(
-          (b) => b
-            ..status = ath.TrainingSessionStatus.CANCELLED
-            ..cancelReason = reason,
-        );
-        return sessionList[i];
-      });
-
-  @override
-  Future<List<ath.TrainingSchedule>> schedules({String? teamId}) => run(
-    'schedules',
-    () => [
-      for (final s in scheduleList)
-        if (teamId == null || s.teamId == teamId) s,
-    ],
-  );
-
-  @override
-  Future<ath.TrainingSchedule> createSchedule(
-    ath.TrainingScheduleInput input,
-  ) => run('createSchedule', () {
-    createdSchedule = input;
-    final s = ath.TrainingSchedule(
-      (b) => b
-        ..id = 'sch-${scheduleList.length}'
-        ..teamId = input.teamId
-        ..dayOfWeek = input.dayOfWeek
-        ..startTime = '${input.startTime}:00'
-        ..durationMinutes = input.durationMinutes
-        ..location = input.location
-        ..validFrom = input.validFrom
-        ..validUntil = input.validUntil,
-    );
-    scheduleList.add(s);
-    return s;
-  });
-
-  @override
-  Future<ath.TrainingSchedule> updateSchedule(
-    String scheduleId,
-    ath.UpdateTrainingScheduleRequest request,
-  ) => run('updateSchedule', () {
-    updatedSchedule = request;
-    final i = scheduleList.indexWhere((s) => s.id == scheduleId);
-    scheduleList[i] = scheduleList[i].rebuild(
-      (b) => b
-        ..dayOfWeek = request.dayOfWeek
-        ..startTime = '${request.startTime}:00'
-        ..durationMinutes = request.durationMinutes
-        ..location = patched(
-          request.clear,
-          ath.UpdateTrainingScheduleRequestClearEnum.location,
-          request.location,
-          b.location,
-        )
-        ..validUntil = patched(
-          request.clear,
-          ath.UpdateTrainingScheduleRequestClearEnum.validUntil,
-          request.validUntil,
-          b.validUntil,
-        ),
-    );
-    return scheduleList[i];
-  });
-
-  @override
-  Future<void> deleteSchedule(String scheduleId) => run(
-    'deleteSchedule',
-    () => scheduleList.removeWhere((s) => s.id == scheduleId),
-  );
-
-  @override
-  Future<ath.SessionAttendance> attendance(String sessionId) => run(
-    'attendance',
-    () => ath.SessionAttendance(
-      (b) => b
-        ..sessionId = sessionId
-        ..entries.replace(attendanceBySession[sessionId] ?? const []),
-    ),
-  );
-
-  @override
-  Future<ath.SessionAttendance> recordAttendance(
-    String sessionId,
-    List<ath.AttendanceInput> entries,
-  ) => run('recordAttendance', () {
-    recorded = entries;
-    attendanceBySession[sessionId] = [
-      for (final e in entries)
-        attEntry(e.playerId, status: e.status, late: e.minutesLate),
-    ];
-    return ath.SessionAttendance(
-      (b) => b
-        ..sessionId = sessionId
-        ..entries.replace(attendanceBySession[sessionId]!),
-    );
-  });
-
-  @override
-  Future<List<ath.PlannedAbsence>> absences({
-    String? playerId,
-    String? teamId,
-    ath.Date? from,
-    ath.Date? to,
-  }) => run(
-    'absences',
-    () => [
-      for (final a in absenceList)
-        if (playerId == null || a.playerId == playerId) a,
-    ],
-  );
-
-  @override
-  Future<ath.PlannedAbsence> createAbsence(ath.PlannedAbsenceInput input) =>
-      run('createAbsence', () {
-        createdAbsence = input;
-        final a = absence(
-          'abs-${absenceList.length}',
-          input.playerId,
-          reason: input.reason,
-        );
-        absenceList.add(a);
-        return a;
-      });
-
-  @override
-  Future<ath.PlannedAbsence> updateAbsence(
-    String absenceId,
-    ath.UpdatePlannedAbsenceRequest request,
-  ) => run('updateAbsence', () {
-    updatedAbsence = request;
-    final i = absenceList.indexWhere((a) => a.id == absenceId);
-    absenceList[i] = absenceList[i].rebuild(
-      (b) => b
-        ..fromDate = request.fromDate ?? b.fromDate
-        ..toDate = request.toDate ?? b.toDate
-        ..reason = patched(
-          request.clear,
-          ath.UpdatePlannedAbsenceRequestClearEnum.reason,
-          request.reason,
-          b.reason,
-        ),
-    );
-    return absenceList[i];
-  });
-
-  @override
-  Future<void> deleteAbsence(String absenceId) => run(
-    'deleteAbsence',
-    () => absenceList.removeWhere((a) => a.id == absenceId),
-  );
-}
-
-class FakePlansRepository with Faulty implements PlansRepository {
-  FakePlansRepository({
-    List<ath.TrainingPlan>? plans,
-    List<ath.PlanAssignment>? assignments,
-    List<ath.PlanCompletion>? completions,
-  }) : planList = plans ?? [],
-       assignmentList = assignments ?? [],
-       completionList = completions ?? [];
-
-  final List<ath.TrainingPlan> planList;
-  final List<ath.PlanAssignment> assignmentList;
-  final List<ath.PlanCompletion> completionList;
-  String? lastQuery;
-
-  /// The catalogue quick-adds copy exercises from (set by [FakeAthlete]).
-  ExercisesData? exercises;
-
-  /// The sources of every quick-add into a plan, per call.
-  final List<List<ath.PlanItemSource>> quickAdded = [];
-
-  /// `Accept-Language` code of every plan read / copy, in call order (null = none given).
-  final List<String?> languages = [];
-  ath.CreatePlanAssignmentRequest? assigned;
-  String? copiedFrom;
-
-  ath.TrainingPlan _get(String id) => planList.firstWhere((p) => p.id == id);
-  void _put(ath.TrainingPlan p) =>
-      planList[planList.indexWhere((x) => x.id == p.id)] = p;
-
-  ath.TrainingPlan _recount(ath.TrainingPlan p, List<ath.PlanItem> items) =>
-      p.rebuild(
-        (b) => b
-          ..items.replace(items)
-          ..itemCount = items.length
-          ..totalDurationMinutes = items.fold<int>(
-            0,
-            (s, i) => s + (i.durationMinutes ?? 0),
-          ),
-      );
-
-  /// Like athlete 2.3.0: a session's own plan is never listed; [query]
-  /// matches the name or item titles, the latter reported in `matchedItems`.
-  @override
-  Future<List<ath.TrainingPlanSummary>> plans({
-    required bool templates,
-    String? query,
-    String? language,
-  }) => run('plans', () {
-    lastQuery = query;
-    languages.add(language);
-    final q = query?.toLowerCase();
-    return [
-      for (final p in planList)
-        if (p.template == templates && p.sessionId == null)
-          if (q == null)
-            summaryOf(p)
-          else if (_matches(p, q) case final found
-              when found.isNotEmpty || p.name.toLowerCase().contains(q))
-            summaryOf(p).rebuild((b) {
-              if (found.isNotEmpty) b.matchedItems.replace(found);
-            }),
-    ];
-  });
-
-  static List<ath.PlanItemMatch> _matches(ath.TrainingPlan p, String q) => [
-    for (final i in p.items)
-      if (i.title.toLowerCase().contains(q))
-        ath.PlanItemMatch(
-          (b) => b
-            ..id = i.id
-            ..planId = p.id
-            ..title = i.title
-            ..exerciseId = i.exerciseId,
-        ),
-  ];
-
-  @override
-  Future<ath.TrainingPlan> plan(String planId, {String? language}) =>
-      run('plan', () {
-        languages.add(language);
-        return _get(planId);
-      });
-
-  @override
-  Future<ath.TrainingPlan> createPlan(ath.CreateTrainingPlanRequest request) =>
-      run('createPlan', () {
-        final p = planOf(
-          'plan-${planList.length}',
-          request.name,
-          description: request.description,
-        );
-        planList.add(p);
-        return p;
-      });
-
-  @override
-  Future<ath.TrainingPlan> updatePlan(
-    String planId,
-    ath.UpdateTrainingPlanRequest request,
-  ) => run('updatePlan', () {
-    _put(_get(planId).rebuild((b) => b..name = request.name ?? b.name));
-    return _get(planId);
-  });
-
-  @override
-  Future<void> deletePlan(String planId) =>
-      run('deletePlan', () => planList.removeWhere((p) => p.id == planId));
-
-  @override
-  Future<ath.TrainingPlan> copyPlan(
-    String planId, {
-    String? name,
-    String? language,
-  }) => run('copyPlan', () {
-    copiedFrom = planId;
-    languages.add(language);
-    final src = _get(planId);
-    final copy = planOf(
-      'copy-${planList.length}',
-      name ?? src.name,
-      items: src.items.toList(),
-    );
-    planList.add(copy);
-    return copy;
-  });
-
-  @override
-  Future<ath.PlanItem> addItem(String planId, ath.PlanItemInput input) =>
-      run('addItem', () {
-        final p = _get(planId);
-        final item = planItem(
-          'i-${p.items.length + 1}',
-          input.title,
-          p.items.length,
-          minutes: input.durationMinutes,
-          sets: input.sets,
-          reps: input.repetitions,
-          video: input.videoUrl,
-        );
-        _put(_recount(p, [...p.items, item]));
-        return item;
-      });
-
-  @override
-  Future<ath.PlanItem> updateItem(
-    String planId,
-    String itemId,
-    ath.UpdatePlanItemRequest request,
-  ) => run('updateItem', () {
-    updatedItem = request;
-    final p = _get(planId);
-    final items = [
-      for (final i in p.items)
-        i.id == itemId
-            ? i.rebuild(
-                (b) => b
-                  ..title = request.title ?? b.title
-                  ..description = patched(
-                    request.clear,
-                    ath.UpdatePlanItemRequestClearEnum.description,
-                    request.description,
-                    b.description,
-                  )
-                  ..durationMinutes = patched(
-                    request.clear,
-                    ath.UpdatePlanItemRequestClearEnum.durationMinutes,
-                    request.durationMinutes,
-                    b.durationMinutes,
-                  )
-                  ..sets = patched(
-                    request.clear,
-                    ath.UpdatePlanItemRequestClearEnum.sets,
-                    request.sets,
-                    b.sets,
-                  )
-                  ..repetitions = patched(
-                    request.clear,
-                    ath.UpdatePlanItemRequestClearEnum.repetitions,
-                    request.repetitions,
-                    b.repetitions,
-                  )
-                  ..videoUrl = patched(
-                    request.clear,
-                    ath.UpdatePlanItemRequestClearEnum.videoUrl,
-                    request.videoUrl,
-                    b.videoUrl,
-                  ),
-              )
-            : i,
-    ];
-    _put(_recount(p, items));
-    return items.firstWhere((i) => i.id == itemId);
-  });
-
-  @override
-  Future<void> deleteItem(String planId, String itemId) =>
-      run('deleteItem', () {
-        final p = _get(planId);
-        _put(
-          _recount(p, [
-            for (final i in p.items)
-              if (i.id != itemId) i,
-          ]),
-        );
-      });
-
-  /// Like athlete 3.0.0: copies of the sources at the end of the plan.
-  @override
-  Future<ath.TrainingPlan> copyItems(
-    String planId,
-    List<ath.PlanItemSource> items, {
-    String? language,
-  }) => run('copyItems', () {
-    quickAdded.add(items);
-    languages.add(language);
-    final p = _get(planId);
-    final copies = [
-      for (final source in items)
-        quickAddCopy(
-          source,
-          plans: planList,
-          exercises: exercises?.exerciseList ?? const [],
-        ),
-    ];
-    final first = p.items.length;
-    _put(
-      _recount(p, [
-        ...p.items,
-        for (var n = 0; n < copies.length; n++)
-          copies[n].rebuild(
-            (b) => b
-              ..id = '$planId-c${first + n}'
-              ..position = first + n,
-          ),
-      ]),
-    );
-    return _get(planId);
-  });
-
-  List<String>? lastOrder;
-  ath.UpdatePlanItemRequest? updatedItem;
-
-  @override
-  Future<List<ath.PlanItem>> reorder(String planId, List<String> itemIds) =>
-      run('reorder', () {
-        lastOrder = itemIds;
-        final p = _get(planId);
-        final byId = {for (final i in p.items) i.id: i};
-        final items = [
-          for (var n = 0; n < itemIds.length; n++)
-            byId[itemIds[n]]!.rebuild((b) => b.position = n),
-        ];
-        _put(_recount(p, items));
-        return items;
-      });
-
-  @override
-  Future<List<ath.PlanAssignment>> assignments({
-    String? teamId,
-    String? playerId,
-  }) => run(
-    'assignments',
-    () => [
-      for (final a in assignmentList)
-        if (playerId == null || a.playerId == playerId || a.teamId != null) a,
-    ],
-  );
-
-  @override
-  Future<ath.PlanAssignment> assign(ath.CreatePlanAssignmentRequest request) =>
-      run('assign', () {
-        assigned = request;
-        final a = assignmentOf(
-          'as-${assignmentList.length}',
-          _get(request.planId),
-          teamId: request.teamId,
-          playerId: request.playerId,
-          due: request.dueOn,
-          notes: request.notes,
-        );
-        assignmentList.add(a);
-        return a;
-      });
-
-  @override
-  Future<void> deleteAssignment(String assignmentId) => run(
-    'deleteAssignment',
-    () => assignmentList.removeWhere((a) => a.id == assignmentId),
-  );
-
-  @override
-  Future<List<ath.PlanCompletion>> completions({
-    String? assignmentId,
-    String? playerId,
-  }) => run(
-    'completions',
-    () => [
-      for (final c in completionList)
-        if ((assignmentId == null || c.assignmentId == assignmentId) &&
-            (playerId == null || c.playerId == playerId))
-          c,
-    ],
-  );
-
-  ({
-    String assignmentId,
-    String playerId,
-    ath.CompletionStatus status,
-    String? comment,
-  })?
-  lastRecord;
-
-  @override
-  Future<ath.PlanCompletion> record(
-    String assignmentId,
-    String playerId,
-    ath.CompletionStatus status, {
-    String? comment,
-  }) => run('record', () {
-    lastRecord = (
-      assignmentId: assignmentId,
-      playerId: playerId,
-      status: status,
-      comment: comment,
-    );
-    completionList.removeWhere(
-      (c) => c.assignmentId == assignmentId && c.playerId == playerId,
-    );
-    final c = completionOf(
-      'c-${completionList.length}',
-      assignmentId,
-      playerId,
-      status,
-      comment: comment,
-    );
-    completionList.add(c);
-    return c;
-  });
-}
-
-/// The athlete-service side of a test: the fakes not moved yet, and the data
-/// the backend's athlete mock serves (ADR-0070): the exercise catalogue,
-/// health and fitness.
+/// The athlete-service side of a test, seeded into the backend's athlete
+/// mock (ADR-0070): training, plans, the exercise catalogue, health and
+/// fitness; afterwards what the app did with them.
 class FakeAthlete {
   FakeAthlete({
-    FakeTrainingRepository? training,
-    FakePlansRepository? plans,
+    TrainingData? training,
+    PlansData? plans,
     ExercisesData? exercises,
     HealthData? health,
     FitnessData? fitness,
-  }) : training = training ?? FakeTrainingRepository(),
-       plans = plans ?? FakePlansRepository(),
+  }) : training = training ?? TrainingData(),
+       plans = plans ?? PlansData(),
        exercises = exercises ?? ExercisesData(),
        health = health ?? HealthData(),
-       fitness = fitness ?? FitnessData() {
-    this.training
-      ..plans = this.plans
-      ..exercises = this.exercises;
-    this.plans.exercises = this.exercises;
-  }
+       fitness = fitness ?? FitnessData();
 
-  final FakeTrainingRepository training;
-  final FakePlansRepository plans;
+  final TrainingData training;
+  final PlansData plans;
   final ExercisesData exercises;
   final HealthData health;
   final FitnessData fitness;
 
-  /// Seeds what the backend serves: the exercise catalogue, health and
-  /// fitness.
+  /// Seeds everything into [backend].
   void seedInto(MockBackend backend) {
+    training.seedInto(backend);
+    plans.seedInto(backend);
     exercises.seedInto(backend);
     health.seedInto(backend);
     fitness.seedInto(backend);
   }
 
-  List<Override> get overrides => [
-    trainingRepositoryProvider.overrideWithValue(training),
-    plansRepositoryProvider.overrideWithValue(plans),
-  ];
-
-  /// The app's repositories of what [backend] serves, for tests of the
-  /// providers without the app (after [seedInto]).
-  List<Override> apiOverrides(MockBackend backend) => [
-    ...exercises.overrides,
-    healthRepositoryProvider.overrideWithValue(
-      ApiHealthRepository(backend.athleteApi(), backend.tenantAId),
-    ),
-    fitnessRepositoryProvider.overrideWithValue(
-      ApiFitnessRepository(backend.athleteApi(), backend.tenantAId),
-    ),
-  ];
+  /// The app's athlete repositories on [backend], for tests of the providers
+  /// without the app (after [seedInto]).
+  List<Override> apiOverrides(MockBackend backend) {
+    final api = backend.athleteApi();
+    final t = backend.tenantAId;
+    return [
+      ...exercises.overrides,
+      trainingRepositoryProvider.overrideWithValue(
+        ApiTrainingRepository(api, t),
+      ),
+      plansRepositoryProvider.overrideWithValue(ApiPlansRepository(api, t)),
+      healthRepositoryProvider.overrideWithValue(ApiHealthRepository(api, t)),
+      fitnessRepositoryProvider.overrideWithValue(ApiFitnessRepository(api, t)),
+    ];
+  }
 }

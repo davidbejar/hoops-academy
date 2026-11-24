@@ -2,6 +2,7 @@ import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/features/training/domain/week.dart';
 
 import 'core_fixtures.dart';
+import 'athlete_seed.dart';
 import 'fake_athlete.dart';
 import 'core_seed.dart';
 import 'fake_repos.dart';
@@ -52,7 +53,7 @@ FakeCore athleteCore() => FakeCore(
 );
 
 FakeAthlete weekAthlete() => FakeAthlete(
-  training: FakeTrainingRepository(
+  training: TrainingData(
     sessions: [
       session(
         's1',
@@ -72,7 +73,7 @@ FakeAthlete weekAthlete() => FakeAthlete(
       ),
     ],
   ),
-  plans: FakePlansRepository(
+  plans: PlansData(
     plans: [
       planOf(
         'plan-1',

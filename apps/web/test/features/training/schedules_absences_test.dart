@@ -4,13 +4,14 @@ import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
+import '../../support/athlete_seed.dart';
 import '../../support/fake_athlete.dart';
 import '../../support/pump_helpers.dart';
 
 void main() {
   group('schedule editor', () {
     FakeAthlete athlete() => FakeAthlete(
-      training: FakeTrainingRepository(
+      training: TrainingData(
         schedules: [
           schedule('sch1'),
           schedule(
@@ -182,9 +183,7 @@ void main() {
 
   group('planned absences edit', () {
     FakeAthlete athlete() => FakeAthlete(
-      training: FakeTrainingRepository(
-        absences: [absence('a1', 'p1', reason: 'Viaje')],
-      ),
+      training: TrainingData(absences: [absence('a1', 'p1', reason: 'Viaje')]),
     );
 
     testWidgets('the reason of an absence can be corrected', (tester) async {
@@ -245,9 +244,7 @@ void main() {
 
   group('planned absences', () {
     FakeAthlete athlete() => FakeAthlete(
-      training: FakeTrainingRepository(
-        absences: [absence('a1', 'p1', reason: 'Viaje')],
-      ),
+      training: TrainingData(absences: [absence('a1', 'p1', reason: 'Viaje')]),
     );
 
     testWidgets('list with reason; empty state', (tester) async {

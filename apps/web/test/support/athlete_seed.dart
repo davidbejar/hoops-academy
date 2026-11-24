@@ -1,4 +1,8 @@
+import 'dart:collection';
+import 'dart:convert';
+
 import 'package:built_value/serializer.dart';
+import 'package:dio/dio.dart' show RequestOptions;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/core/mock/mock_athlete_api.dart';
@@ -8,11 +12,13 @@ import 'package:hoops_app/features/training/data/exercises_repository.dart';
 import 'core_seed.dart' show injectInto;
 import 'mock_backend.dart';
 
-/// [value] (an athlete model) as the service sends it, for seeding the mock.
-Map<String, Object?> athleteJson<T>(T value) =>
-    (ath.standardSerializers.serialize(value, specifiedType: FullType(T))!
-            as Map)
-        .cast<String, Object?>();
+/// [value] (an athlete model) as the service sends it, for seeding the mock
+/// (a fresh, growable copy the mock may change).
+Map<String, Object?> athleteJson<T>(T value) => (jsonDecode(
+  jsonEncode(
+    ath.standardSerializers.serialize(value, specifiedType: FullType(T)),
+  ),
+) as Map).cast<String, Object?>();
 
 /// A stored row or a request body of the athlete mock as a model.
 T athleteModel<T>(Object? json) =>
@@ -51,7 +57,7 @@ abstract class _AthleteData {
   /// one (null: heals).
   set failWith(Object? error) {
     _pending.clear();
-    _backend?.heal();
+    _backend?.heal(_paths);
     if (error == null) return;
     _seeded ? injectInto(_b, error, _paths) : _pending.add(error);
   }
@@ -78,6 +84,37 @@ abstract class _AthleteData {
   /// [seed] before seeding, afterwards the mock's [rows] as models.
   List<T> _rows<T>(List<T> seed, List<Map<String, Object?>> Function() rows) =>
       _seeded ? [for (final r in rows()) athleteModel<T>(r)] : seed;
+}
+
+/// What [_all] returns from the backend [_source] names, read-only; [clear]
+/// forgets what is there (later reads list only what came after, until the
+/// data is seeded into another backend).
+class _Since<T> extends ListBase<T> {
+  _Since(this._source, this._all);
+
+  final Object? Function() _source;
+  final List<T> Function() _all;
+  var _from = 0;
+  Object? _clearedOn;
+
+  List<T> get _now =>
+      _all().skip(identical(_clearedOn, _source()) ? _from : 0).toList();
+
+  @override
+  int get length => _now.length;
+
+  @override
+  set length(int value) {
+    if (value != 0) throw UnsupportedError('only clear()');
+    _from = _all().length;
+    _clearedOn = _source();
+  }
+
+  @override
+  T operator [](int index) => _now[index];
+
+  @override
+  void operator []=(int index, T value) => throw UnsupportedError('read-only');
 }
 
 /// One read of the catalogue as the app asked for it.
@@ -292,4 +329,308 @@ class FitnessData extends _AthleteData {
   /// The last correction of a result the app sent (null: none).
   ath.UpdatePhysicalTestResultRequest? get updatedResult =>
       _lastSent(_result, 'PATCH');
+}
+
+/// The training side of a test (ADR-0070): sessions, schedules, planned
+/// absences and recorded attendance seeded into the backend's athlete mock,
+/// then what it holds and what the app sent. The mock builds each attendance
+/// sheet from the team's roster, the planned absences and the open injuries;
+/// [attendanceBySession] seeds only the recorded marks.
+class TrainingData extends _AthleteData {
+  TrainingData({
+    List<ath.TrainingSession> sessions = const [],
+    List<ath.TrainingSchedule> schedules = const [],
+    List<ath.PlannedAbsence> absences = const [],
+    Map<String, List<ath.AttendanceEntry>> attendance = const {},
+  }) : _sessions = [...sessions],
+       _schedules = [...schedules],
+       _absences = [...absences],
+       _attendance = {...attendance},
+       super(
+         RegExp(
+           '^/api/athlete/(training-sessions|training-schedules|'
+           'planned-absences)',
+         ),
+       );
+
+  final List<ath.TrainingSession> _sessions;
+  final List<ath.TrainingSchedule> _schedules;
+  final List<ath.PlannedAbsence> _absences;
+  final Map<String, List<ath.AttendanceEntry>> _attendance;
+
+  static const _sessionList = '/api/athlete/training-sessions';
+  static final _session = RegExp(r'^/api/athlete/training-sessions/[^/]+$');
+  static final _quickAdd = RegExp(
+    r'^/api/athlete/training-sessions/[^/]+/items$',
+  );
+  static final _attendancePath = RegExp(
+    r'^/api/athlete/training-sessions/[^/]+/attendance$',
+  );
+  static final _cancel = RegExp(
+    r'^/api/athlete/training-sessions/[^/]+/cancel$',
+  );
+  static const _scheduleList = '/api/athlete/training-schedules';
+  static final _schedule = RegExp(r'^/api/athlete/training-schedules/[^/]+$');
+  static const _absenceList = '/api/athlete/planned-absences';
+  static final _absence = RegExp(r'^/api/athlete/planned-absences/[^/]+$');
+
+  @override
+  void _seedRows(MockAthleteApi mock) {
+    mock.sessions.addAll(_sessions.map(athleteJson<ath.TrainingSession>));
+    mock.schedules.addAll(_schedules.map(athleteJson<ath.TrainingSchedule>));
+    mock.absences.addAll(_absences.map(athleteJson<ath.PlannedAbsence>));
+    for (final e in _attendance.entries) {
+      final sheet = mock.attendance[e.key] = {};
+      for (final entry in e.value.where((x) => x.status != null)) {
+        sheet[entry.playerId] = {
+          'status': entry.status!.name,
+          'minutesLate': entry.minutesLate,
+          'note': entry.note,
+          'recordedBy': {'personId': 'person-coach', 'displayName': 'Coach'},
+          'recordedAt': '2026-11-01T00:00:00.000Z',
+        };
+      }
+    }
+  }
+
+  /// The sessions: before seeding the seed (to change), afterwards the
+  /// mock's.
+  List<ath.TrainingSession> get sessionList =>
+      _rows(_sessions, () => _mock.sessions);
+
+  /// The weekly schedules: before seeding the seed, afterwards the mock's.
+  List<ath.TrainingSchedule> get scheduleList =>
+      _rows(_schedules, () => _mock.schedules);
+
+  /// The planned absences: before seeding the seed, afterwards the mock's.
+  List<ath.PlannedAbsence> get absenceList =>
+      _rows(_absences, () => _mock.absences);
+
+  /// The recorded marks per session: before seeding the seed (to change).
+  Map<String, List<ath.AttendanceEntry>> get attendanceBySession => _seeded
+      ? {
+          for (final s in _mock.attendance.entries)
+            s.key: [
+              for (final m in s.value.entries)
+                athleteModel<ath.AttendanceEntry>({
+                  ...m.value,
+                  'playerId': m.key,
+                  'expectedAbsent': false,
+                }),
+            ],
+        }
+      : _attendance;
+
+  /// Every read of the sessions as `team:from..to` (`*`: no team), in order.
+  List<String> get sessionQueries => [
+    for (final r in _b.requestsTo(_sessionList))
+      '${r.queryParameters['teamId'] ?? '*'}:'
+          '${r.queryParameters['from']}..${r.queryParameters['to']}',
+  ];
+
+  /// The training repository's operations the app called, in order (failed
+  /// and held ones too); [clear] forgets the earlier ones.
+  late final List<String> calls = _Since(
+    () => _backend,
+    () => [for (final r in _b.requestsTo(_paths, method: null)) ?_operation(r)],
+  );
+
+  static String? _operation(RequestOptions r) {
+    final m = r.method.toUpperCase();
+    final p = r.path;
+    if (_quickAdd.hasMatch(p)) return 'copyItemsToSession';
+    if (_attendancePath.hasMatch(p)) {
+      return m == 'GET' ? 'attendance' : 'recordAttendance';
+    }
+    if (_cancel.hasMatch(p)) return 'cancelSession';
+    if (p == _sessionList) return m == 'GET' ? 'sessions' : 'createSession';
+    if (_session.hasMatch(p)) return m == 'GET' ? 'session' : 'updateSession';
+    if (p == _scheduleList) return m == 'GET' ? 'schedules' : 'createSchedule';
+    if (_schedule.hasMatch(p)) {
+      return m == 'DELETE' ? 'deleteSchedule' : 'updateSchedule';
+    }
+    if (p == _absenceList) return m == 'GET' ? 'absences' : 'createAbsence';
+    if (_absence.hasMatch(p)) {
+      return m == 'DELETE' ? 'deleteAbsence' : 'updateAbsence';
+    }
+    return null;
+  }
+
+  /// Fails the quick-adds into a session only (a session is still created).
+  set failCopyWith(Object error) =>
+      _seeded ? injectInto(_b, error, _quickAdd) : _copyFaults.add(error);
+  final List<Object> _copyFaults = [];
+
+  @override
+  void seedInto(MockBackend backend) {
+    super.seedInto(backend);
+    for (final e in _copyFaults) {
+      injectInto(backend, e, _quickAdd);
+    }
+  }
+
+  /// The sources of every quick-add into a session, per call.
+  List<List<ath.PlanItemSource>> get quickAdded => [
+    for (final r in _b.requestsTo(_quickAdd, method: 'POST'))
+      athleteModel<ath.CopyPlanItemsRequest>(MockBackend.bodyOf(r)).items
+          .toList(),
+  ];
+
+  ath.CreateTrainingSessionRequest? get createdSession =>
+      _lastSent(_sessionList, 'POST');
+  ath.UpdateTrainingSessionRequest? get updatedSession =>
+      _lastSent(_session, 'PATCH');
+
+  /// The entries of the last attendance the app recorded (null: none).
+  List<ath.AttendanceInput>? get recorded =>
+      _lastSent<ath.RecordAttendanceRequest>(
+        _attendancePath,
+        'PUT',
+      )?.entries.toList();
+
+  /// The reason of the last cancellation (null: none).
+  String? get cancelledReason =>
+      _lastSent<ath.CancelTrainingSessionRequest>(_cancel, 'POST')?.reason;
+
+  ath.TrainingScheduleInput? get createdSchedule =>
+      _lastSent(_scheduleList, 'POST');
+  ath.UpdateTrainingScheduleRequest? get updatedSchedule =>
+      _lastSent(_schedule, 'PATCH');
+  ath.PlannedAbsenceInput? get createdAbsence =>
+      _lastSent(_absenceList, 'POST');
+  ath.UpdatePlannedAbsenceRequest? get updatedAbsence =>
+      _lastSent(_absence, 'PATCH');
+}
+
+/// The plans of a test (ADR-0070): plans with their items, assignments and
+/// completions seeded into the backend's athlete mock, then what it holds and
+/// what the app sent.
+class PlansData extends _AthleteData {
+  PlansData({
+    List<ath.TrainingPlan> plans = const [],
+    List<ath.PlanAssignment> assignments = const [],
+    List<ath.PlanCompletion> completions = const [],
+  }) : _plans = [...plans],
+       _assignments = [...assignments],
+       _completions = [...completions],
+       super(
+         RegExp(
+           '^/api/athlete/(training-plans|plan-assignments|'
+           'plan-completions)',
+         ),
+       );
+
+  final List<ath.TrainingPlan> _plans;
+  final List<ath.PlanAssignment> _assignments;
+  final List<ath.PlanCompletion> _completions;
+
+  static const _planList = '/api/athlete/training-plans';
+  static final _planReads = RegExp(r'^/api/athlete/training-plans(/[^/:]+)?$');
+  static final _copy = RegExp(r'^/api/athlete/training-plans/[^/]+:copy$');
+  static final _itemsCopy = RegExp(
+    r'^/api/athlete/training-plans/[^/]+/items:copy$',
+  );
+  static final _items = RegExp(r'^/api/athlete/training-plans/[^/]+/items$');
+  static final _item = RegExp(
+    r'^/api/athlete/training-plans/[^/]+/items/[^/]+$',
+  );
+  static const _assignmentList = '/api/athlete/plan-assignments';
+  static final _completion = RegExp(
+    r'^/api/athlete/plan-assignments/([^/]+)/completions/([^/]+)$',
+  );
+
+  @override
+  void _seedRows(MockAthleteApi mock) {
+    mock.plans.addAll(_plans.map(athleteJson<ath.TrainingPlan>));
+    mock.assignments.addAll([
+      for (final a in _assignments)
+        {
+          ...athleteJson<ath.PlanAssignment>(a)..remove('plan'),
+          'planId': a.plan.id,
+        },
+    ]);
+    mock.completions.addAll(_completions.map(athleteJson<ath.PlanCompletion>));
+  }
+
+  /// The plans (a session's own ones too): before seeding the seed (to
+  /// change), afterwards the mock's.
+  List<ath.TrainingPlan> get planList =>
+      _rows(_plans, () => [for (final p in _mock.plans) _mock.planView(p)]);
+
+  /// The assignments: before seeding the seed (to change), afterwards the
+  /// mock's.
+  List<ath.PlanAssignment> get assignmentList => _rows(
+    _assignments,
+    () => [for (final a in _mock.assignments) _mock.assignmentView(a)],
+  );
+
+  /// The completions: before seeding the seed (to change), afterwards the
+  /// mock's.
+  List<ath.PlanCompletion> get completionList =>
+      _rows(_completions, () => _mock.completions);
+
+  /// The search text of the last read of the library (null: none).
+  String? get lastQuery =>
+      _b.requestsTo(_planList).last.queryParameters['q'] as String?;
+
+  /// The `Accept-Language` of every plan read and copy, in call order;
+  /// [clear] forgets the earlier ones.
+  late final List<String?> languages = _Since(
+    () => _backend,
+    () => [
+      for (final r in _b.requestsTo(_paths, method: null))
+        if ((r.method == 'GET' && _planReads.hasMatch(r.path)) ||
+            _copy.hasMatch(r.path) ||
+            _itemsCopy.hasMatch(r.path))
+          r.headers['Accept-Language'] as String?,
+    ],
+  );
+
+  /// The last assignment the app created (null: none).
+  ath.CreatePlanAssignmentRequest? get assigned =>
+      _lastSent(_assignmentList, 'POST');
+
+  /// The plan the app last copied (null: none).
+  String? get copiedFrom {
+    final sent = _b.requestsTo(_copy, method: 'POST');
+    if (sent.isEmpty) return null;
+    final path = sent.last.path;
+    return path.substring(path.lastIndexOf('/') + 1, path.indexOf(':copy'));
+  }
+
+  /// The sources of every quick-add into a plan, per call.
+  List<List<ath.PlanItemSource>> get quickAdded => [
+    for (final r in _b.requestsTo(_itemsCopy, method: 'POST'))
+      athleteModel<ath.CopyPlanItemsRequest>(MockBackend.bodyOf(r)).items
+          .toList(),
+  ];
+
+  /// The item order the app last sent (null: none).
+  List<String>? get lastOrder =>
+      _lastSent<ath.ReorderPlanItemsRequest>(_items, 'PUT')?.itemIds.toList();
+
+  /// The last change of an item the app sent (null: none).
+  ath.UpdatePlanItemRequest? get updatedItem => _lastSent(_item, 'PATCH');
+
+  /// The last completion the app recorded (null: none).
+  ({
+    String assignmentId,
+    String playerId,
+    ath.CompletionStatus status,
+    String? comment,
+  })?
+  get lastRecord {
+    final sent = _b.requestsTo(_completion, method: 'PUT');
+    if (sent.isEmpty) return null;
+    final ids = _completion.firstMatch(sent.last.path)!;
+    final body = athleteModel<ath.RecordPlanCompletionRequest>(
+      MockBackend.bodyOf(sent.last),
+    );
+    return (
+      assignmentId: ids[1]!,
+      playerId: ids[2]!,
+      status: body.status,
+      comment: body.comment,
+    );
+  }
 }

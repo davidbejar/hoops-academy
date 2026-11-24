@@ -13,6 +13,7 @@ import 'package:hoops_app/l10n/gen/app_localizations_es.dart';
 import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
 import '../support/core_fixtures.dart';
+import '../support/athlete_seed.dart';
 import '../support/fake_athlete.dart';
 import '../support/game_seed.dart';
 import '../support/core_seed.dart';
@@ -327,7 +328,7 @@ void main() {
 
   group('training of a past season', () {
     FakeAthlete athlete() => FakeAthlete(
-      training: FakeTrainingRepository(
+      training: TrainingData(
         sessions: [session('s-old', teamId: _tOld, day: DateTime(2026, 5, 4))],
       ),
     );

@@ -1238,6 +1238,13 @@ class MockAthleteApi {
     return MockResult.json(200, _full(own));
   }
 
+  /// A stored plan and assignment as the service answers them, for the widget tests.
+  @visibleForTesting
+  Map<String, Object?> planView(Map<String, Object?> p) => _full(p);
+  @visibleForTesting
+  Map<String, Object?> assignmentView(Map<String, Object?> a) =>
+      _assignmentView(a);
+
   Map<String, Object?> _full(Map<String, Object?> p) => {
     ..._summary(p),
     'items': p['items'],

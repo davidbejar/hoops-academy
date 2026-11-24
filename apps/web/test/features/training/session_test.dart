@@ -7,12 +7,18 @@ import '../../support/athlete_scenarios.dart';
 import '../../support/fake_athlete.dart';
 import '../../support/pump_helpers.dart';
 
-FakeAthlete _athlete() => weekAthlete()
-  ..training.attendanceBySession['s1'] = [
-    attEntry('p1'),
-    attEntry('p2', expected: true),
-    attEntry('p3', injuryId: 'inj-1', status: ath.AttendanceStatus.ABSENT),
-  ];
+/// The week, and on the day of s1 (team t1: p1, p2, p3) a planned absence of
+/// p2, an open injury of p3 and p3 marked ABSENT; the backend builds the
+/// sheet from the roster, the absences and the injuries.
+FakeAthlete _athlete() {
+  final day = ath.Date(weekday(1).year, weekday(1).month, weekday(1).day);
+  return weekAthlete()
+    ..training.absenceList.add(absence('abs-p2', 'p2', from: day, to: day))
+    ..health.injuryList.add(injury('inj-1', 'p3'))
+    ..training.attendanceBySession['s1'] = [
+      attEntry('p3', status: ath.AttendanceStatus.ABSENT),
+    ];
+}
 
 void main() {
   group('session detail', () {

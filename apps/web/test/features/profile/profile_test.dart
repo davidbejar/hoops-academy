@@ -12,7 +12,7 @@ import '../../support/fixtures.dart';
 import '../../support/pump_helpers.dart';
 
 FakeAthlete _athlete() {
-  final plans = FakePlansRepository(
+  final plans = PlansData(
     plans: [
       planOf(
         'plan-1',
@@ -37,7 +37,7 @@ FakeAthlete _athlete() {
     ),
   );
   return FakeAthlete(
-    training: FakeTrainingRepository(
+    training: TrainingData(
       sessions: [
         session('s1', day: DateTime.now().add(const Duration(days: 1))),
         session(

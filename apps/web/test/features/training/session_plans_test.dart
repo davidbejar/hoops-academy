@@ -522,7 +522,13 @@ void main() {
         sources(athlete.training.quickAdded.single),
         'ex:g-cooper, ex:g-ft',
       );
-      expect(created.planId, 'own-${created.id}');
+      // The copies went to the session's own plan (athlete 3.0.0).
+      expect(
+        athlete.plans.planList
+            .singleWhere((p) => p.id == created.planId)
+            .sessionId,
+        created.id,
+      );
       expect(find.text('Sesión creada'), findsOneWidget);
     });
 
