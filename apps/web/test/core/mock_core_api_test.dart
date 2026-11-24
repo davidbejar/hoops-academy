@@ -146,6 +146,81 @@ void main() {
     expect((await cats.list()).length, 4);
   });
 
+  test('rollover: the path is the target, fromSeasonId the source, and the '
+      'mock refuses what core refuses (core.yaml, RolloverSeason)', () async {
+    final seasonsApi = client.getSeasonsApi();
+    final next = (await ApiSeasonsRepository(client, t).create(
+      name: '2027/28',
+      startsOn: api.Date(2027, 9, 1),
+      endsOn: api.Date(2028, 6, 30),
+      referenceYear: 2027,
+    )).id;
+    Future<api.SeasonRolloverResult> rollover(String target, String from) =>
+        seasonsApi
+            .rolloverSeason(
+              xTenantId: t,
+              seasonId: target,
+              seasonRolloverRequest: api.SeasonRolloverRequest(
+                (b) => b.fromSeasonId = from,
+              ),
+            )
+            .then((r) => r.data!);
+    Matcher problem(int status, [String? code]) => throwsA(
+      isA<DioException>().having(
+        (e) => (e.response?.statusCode, (e.response?.data as Map?)?['code']),
+        'status and code',
+        (status, code),
+      ),
+    );
+
+    await expectLater(
+      rollover('season-2026', 'season-2026'),
+      problem(422, 'ROLLOVER_SAME_SEASON'),
+    );
+    await expectLater(
+      rollover('season-2025', 'season-2026'),
+      problem(422, 'ROLLOVER_BACKWARDS'),
+    );
+    await expectLater(
+      rollover('season-2026', 'season-2025'),
+      problem(409, 'ROLLOVER_TARGET_NOT_EMPTY'),
+    );
+    await expectLater(rollover(next, 'season-0000'), problem(404));
+    await expectLater(rollover('season-0000', 'season-2026'), problem(404));
+    await expectLater(
+      client.dio.post<Object?>(
+        '/api/core/seasons/$next/rollover',
+        data: <String, Object?>{},
+        options: Options(headers: {'X-Tenant-Id': t}),
+      ),
+      problem(400),
+      reason: '`fromSeasonId` is required',
+    );
+
+    final result = await rollover(next, 'season-2026');
+    expect(result.fromSeasonId, 'season-2026');
+    expect(result.toSeasonId, next);
+    expect(result.clonedTeams.map((c) => c.name), [
+      'Mini A',
+      'Mini B',
+      'Infantil A',
+    ]);
+    expect(
+      (await seasonsApi.listSeasons(xTenantId: t)).data!.length,
+      3,
+      reason: 'no season is created: the target exists',
+    );
+    final cloned = (await client.getTeamsApi().listTeams(
+      xTenantId: t,
+      seasonId: next,
+    )).data!.items;
+    expect(cloned.map((c) => c.name), ['Mini A', 'Mini B', 'Infantil A']);
+    await expectLater(
+      rollover(next, 'season-2026'),
+      problem(409, 'ROLLOVER_TARGET_NOT_EMPTY'),
+    );
+  });
+
   test(
     'member personal data: values replace, null optionals are cleared',
     () async {

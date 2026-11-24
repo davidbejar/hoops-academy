@@ -10,6 +10,23 @@ import '../../support/pump_helpers.dart';
 const _seasons = '/api/core/seasons';
 const _categories = '/api/core/age-categories';
 
+// The seasons around the current one (`seasonId`, 2026/27) for the rollover.
+const _nextSeasonId = 'season-2027';
+final _next = season(
+  _nextSeasonId,
+  '2027/28',
+  startsOn: api.Date(2027, 9, 1),
+  endsOn: api.Date(2028, 6, 30),
+  referenceYear: 2027,
+);
+final _past = season(
+  pastSeasonId,
+  '2025/26',
+  startsOn: api.Date(2025, 9, 1),
+  endsOn: api.Date(2026, 6, 30),
+  referenceYear: 2025,
+);
+
 void main() {
   group('seasons', () {
     const path = '/admin/seasons';
@@ -150,6 +167,99 @@ void main() {
         expect(find.textContaining('Los datos han cambiado'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'the opened season is the source and the next season the target '
+      '(core.yaml: the path is the target, fromSeasonId the source)',
+      (tester) async {
+        final later = season(
+          'season-2028',
+          '2028/29',
+          startsOn: api.Date(2028, 9, 1),
+          endsOn: api.Date(2029, 6, 30),
+          referenceYear: 2028,
+        );
+        final h = await pumpAs(
+          tester,
+          roles: {TenantRole.admin},
+          core: FakeCore(
+            seasons: [
+              _past,
+              season(seasonId, '2026/27', current: true),
+              later,
+              _next,
+            ],
+          ),
+          location: '/admin/seasons/$seasonId/rollover',
+          prepare: (b) => b.seedTeams([team('t1', 'Mini A')]),
+        );
+        // The next season is offered first; the past one is not offered.
+        expect(find.text('2027/28'), findsOneWidget);
+        await tapKey(tester, 'rollover-target');
+        expect(find.text('2028/29'), findsWidgets);
+        expect(find.text('2025/26'), findsNothing);
+        await tester.tap(find.text('2028/29').last);
+        await tester.pumpAndSettle();
+
+        await tapKey(tester, 'rollover-run');
+        const into = '$_seasons/season-2028/rollover';
+        expect(h.backend.requestsTo(into, method: 'POST'), hasLength(1));
+        expect(h.backend.lastBody(into)['fromSeasonId'], seasonId);
+        expect(
+          h.backend.requestsTo(RegExp('$_seasons/.*/rollover'), method: 'POST'),
+          hasLength(1),
+        );
+        expect(find.text('Equipos copiados: 1'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'without a later season the wizard asks for one and cannot run',
+      (tester) async {
+        final h = await pumpAs(
+          tester,
+          roles: {TenantRole.admin},
+          core: FakeCore(
+            seasons: [_past, season(seasonId, '2026/27', current: true)],
+          ),
+          location: '/admin/seasons/$seasonId/rollover',
+        );
+        expect(find.byKey(const Key('rollover-no-target')), findsOneWidget);
+        expect(
+          tester
+              .widget<FilledButton>(find.byKey(const Key('rollover-run')))
+              .onPressed,
+          isNull,
+        );
+        expect(
+          h.backend.requestsTo(RegExp('$_seasons/.*/rollover'), method: 'POST'),
+          isEmpty,
+        );
+      },
+    );
+
+    testWidgets('a target that already has teams is refused in words for it', (
+      tester,
+    ) async {
+      await pumpAs(
+        tester,
+        roles: {TenantRole.admin},
+        core: FakeCore(
+          seasons: [season(seasonId, '2026/27', current: true), _next],
+        ),
+        location: '/admin/seasons/$seasonId/rollover',
+        prepare: (b) => b.seedTeams([
+          team('t1', 'Mini A'),
+          team('t2', 'Mini A', sid: _nextSeasonId),
+        ]),
+      );
+      await tapKey(tester, 'rollover-run');
+      expect(find.byKey(const Key('rollover-done')), findsNothing);
+      expect(
+        find.text('La temporada de destino ya tiene equipos.'),
+        findsOneWidget,
+      );
+    });
 
     testWidgets('no orphans shows the all-clear', (tester) async {
       final core = FakeCore();

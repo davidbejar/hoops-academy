@@ -23,14 +23,16 @@ api.Season season(
   String id,
   String name, {
   bool current = false,
+  api.Date? startsOn,
   api.Date? endsOn,
+  int referenceYear = 2026,
 }) => api.Season(
   (b) => b
     ..id = id
     ..name = name
-    ..startsOn = api.Date(2026, 9, 1)
+    ..startsOn = startsOn ?? api.Date(2026, 9, 1)
     ..endsOn = endsOn ?? api.Date(2027, 6, 30)
-    ..referenceYear = 2026
+    ..referenceYear = referenceYear
     ..current = current,
 );
 
