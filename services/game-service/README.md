@@ -23,8 +23,8 @@ statistics on top of the same packages. Port 8082, schema `game`, contract `libs
 Ingest and projection semantics: ADR-0014. A batch locks the match row, reads its events once and re-projects from
 them plus the accepted ones, writing only the `voided_by` marks that changed (WP126). The feed's `lastServerSeq` is
 read with the match (its projected summary), before the page, so it never passes an event the page did not hold. The projector is pure domain code (`domain/events`, `domain/projection`);
-shared test vectors live in `src/test/resources/vectors` and are copied to `libs/contracts/vectors`
-(`-Dvectors.write=true` on `ProjectionVectorsTest` regenerates both).
+shared test vectors live once in `libs/contracts/vectors`, which the web app's projector test reads too
+(`-Dvectors.write=true` on `ProjectionVectorsTest` regenerates them).
 
 State machine: `SCHEDULED -> LIVE -> FINISHED`; `CANCELLED` from `SCHEDULED` or `LIVE`. Illegal transitions are 409
 (`INVALID_STATE`); starting needs a roster with a starter (422 `NO_STARTERS`), starting a LIVE match is idempotent.

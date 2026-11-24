@@ -5,8 +5,8 @@ import 'package:hoops_app/features/match/domain/match_event.dart';
 import 'package:hoops_app/features/match/domain/projector/projection.dart';
 import 'package:hoops_app/features/match/domain/projector/projector.dart';
 
-/// One server projection vector (`libs/contracts/vectors`, copied to
-/// `test/fixtures/vectors` by `tool/sync_vectors.sh`).
+/// One server projection vector, read from `libs/contracts/vectors` (the
+/// one copy, written by game-service's `ProjectionVectorsTest`).
 class Vector {
   Vector(this.file, this.json);
 
@@ -49,7 +49,7 @@ class Vector {
       json['expected']! as Map<String, Object?>;
 }
 
-const vectorsDir = 'test/fixtures/vectors';
+const vectorsDir = '../../libs/contracts/vectors';
 
 List<Vector> loadVectors() {
   final files =

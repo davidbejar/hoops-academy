@@ -42,3 +42,8 @@ exactly.
 - A misbehaving client cannot block its queue: every event gets a final answer.
 - Contract follow-ups (WP2b owner) are listed in the WP7 handover: a reason for "id used by another match", the
   technical/unsportsmanlike counts in `StatLine`, and a MatchEvent schema the OpenAPI validator can check.
+
+## Amendment 2026-11-24 (WP137, ADR-0069): one copy of the projection vectors
+The vectors live only in `libs/contracts/vectors`: game-service's `ProjectionVectorsTest` writes (`-Dvectors.write=true`)
+and checks them there, and the web app's projector test reads them from there. game's `src/test/resources/vectors`, the
+web app's `test/fixtures/vectors`, `tool/sync_vectors.sh` and the two byte-equality tests are gone.

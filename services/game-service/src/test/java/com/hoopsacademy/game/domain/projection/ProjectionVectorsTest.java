@@ -26,15 +26,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
- * Shared test vectors (src/test/resources/vectors, copied to libs/contracts/vectors for the Flutter projector).
- * Each file holds the inputs and the expected projection; this test proves the Java projector reproduces it.
- * Run with {@code -Dvectors.write=true} to (re)write the {@code expected} member of every file in both places
- * after a deliberate projection change, then review the diff.
+ * Shared test vectors, kept once in {@code libs/contracts/vectors} (WP137, LIB-02); the Flutter projector reads the same
+ * files. Each file holds the inputs and the expected projection; this test proves the Java projector reproduces it.
+ * Run with {@code -Dvectors.write=true} to (re)write the {@code expected} member of every file after a deliberate
+ * projection change, then review the diff.
  */
 class ProjectionVectorsTest {
 
-    static final Path VECTORS = Path.of("src/test/resources/vectors");
-    static final Path CONTRACT_COPY = Path.of("../../libs/contracts/vectors");
+    static final Path VECTORS = Path.of("../../libs/contracts/vectors");
     static final List<String> REQUIRED = List.of("simple-game", "substitutions-and-minutes", "overtime",
             "void-and-corrections", "out-of-order-arrival", "parent-mixed-scorers", "impossible-sequences-warnings");
     static final ObjectMapper JSON = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
@@ -61,16 +60,8 @@ class ProjectionVectorsTest {
             vector.set("expected", actual);
             String text = JSON.writeValueAsString(vector) + "\n";
             Files.writeString(file, text);
-            Files.createDirectories(CONTRACT_COPY);
-            Files.writeString(CONTRACT_COPY.resolve(file.getFileName()), text);
         }
         assertThat(actual).isEqualTo(vector.get("expected"));
-    }
-
-    @ParameterizedTest(name = "{0}")
-    @MethodSource("vectorFiles")
-    void contractCopyIsIdentical(Path file) throws IOException {
-        assertThat(CONTRACT_COPY.resolve(file.getFileName())).hasSameTextualContentAs(file);
     }
 
     static Projection project(JsonNode vector) {

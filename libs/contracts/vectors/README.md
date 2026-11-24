@@ -1,9 +1,9 @@
 # Match projection test vectors
 
 **Generated — do not edit by hand.** These files are produced and verified by game-service
-(`services/game-service/src/test/java/.../domain/projection/ProjectionVectorsTest.java`, source copies in
-`services/game-service/src/test/resources/vectors/`). That test fails if a copy here differs from the source.
-They are consumed by the Flutter offline projector (WP13), which must reproduce `expected` exactly.
+(`services/game-service/src/test/java/.../domain/projection/ProjectionVectorsTest.java`) and are the only copy
+(WP137): the Flutter offline projector's test (`apps/web/test/features/match/domain/projector_vectors_test.dart`, WP13)
+reads them from here and must reproduce `expected` exactly.
 
 Regenerate after a deliberate projection change (then review the diff):
 

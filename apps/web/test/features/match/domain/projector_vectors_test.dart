@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -12,29 +11,6 @@ void main() {
 
   test('every server vector is present (7 at WP7)', () {
     expect(vectors.length, greaterThanOrEqualTo(7));
-  });
-
-  test('fixtures are byte-identical to libs/contracts/vectors '
-      '(run tool/sync_vectors.sh after a server change)', () {
-    final source = Directory('../../libs/contracts/vectors');
-    if (!source.existsSync()) {
-      markTestSkipped('contracts folder not available');
-      return;
-    }
-    final names = source
-        .listSync()
-        .whereType<File>()
-        .where((f) => f.path.endsWith('.json'))
-        .map((f) => f.uri.pathSegments.last)
-        .toSet();
-    expect(vectors.map((v) => v.file).toSet(), names);
-    for (final name in names) {
-      expect(
-        File('$vectorsDir/$name').readAsStringSync(),
-        File('${source.path}/$name').readAsStringSync(),
-        reason: '$name differs from the server copy',
-      );
-    }
   });
 
   group('Dart projector reproduces the server vector', () {
