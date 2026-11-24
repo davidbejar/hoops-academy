@@ -8,20 +8,29 @@ import 'package:hoops_app/features/finance/application/finance_providers.dart';
 import 'package:hoops_app/features/finance/domain/expense_query.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 
-import '../../support/fake_finance.dart';
+import '../../support/finance_pump.dart';
+import '../../support/finance_seed.dart';
 
 /// The state of expenses, the balance and the coach's and the family's reads,
-/// over the demo mock's seed.
+/// over the finance seed.
 void main() {
-  late FakeFinanceRepository repo;
+  /// A 501 as the screens read it (`AppError.of`, like the app's error
+  /// mapping).
+  final notYetServed = predicate<Object>(
+    (e) => AppError.of(e).status == 501,
+    'a 501 AppError',
+  );
+
+  late FinanceData finance;
   late ProviderContainer container;
 
   setUp(() {
-    repo = FakeFinanceRepository();
+    finance = FinanceData();
+    financeBackend(finance);
     container = ProviderContainer(
       retry: (_, _) => null,
       overrides: [
-        ...repo.overrides,
+        ...finance.overrides,
         effectiveLocaleProvider.overrideWithValue(const Locale('es')),
       ],
     );
@@ -41,7 +50,7 @@ void main() {
     test('the list follows the query, newest first', () async {
       final page = await container.read(expensesProvider.future);
       expect(page.items.length, greaterThanOrEqualTo(6));
-      expect(repo.last['expenses'], const ExpenseQuery());
+      expect(finance.expenseQuery, const ExpenseQuery());
       container
           .read(expenseQueryProvider.notifier)
           .filter(category: fin.ExpenseCategory.KIT);
@@ -52,7 +61,7 @@ void main() {
         isTrue,
       );
       expect(
-        repo.last['expenses'],
+        finance.expenseQuery,
         const ExpenseQuery(category: fin.ExpenseCategory.KIT),
       );
     });
@@ -128,19 +137,24 @@ void main() {
 
     test('a refused write is thrown and leaves the list as it was', () async {
       final before = await container.read(expensesProvider.future);
-      repo.failOn['createExpense'] = notImplemented;
+      finance.fail(
+        path: FinanceData.expensesPath,
+        method: 'POST',
+        status: 501,
+        code: 'NOT_IMPLEMENTED',
+      );
       await expectLater(
         container.read(expensesProvider.notifier).create(request()),
-        throwsA(isA<AppError>().having((e) => e.status, 'status', 501)),
+        throwsA(notYetServed),
       );
       expect(container.read(expensesProvider).requireValue, before);
     });
 
     test('a service that does not serve them yet is a 501', () async {
-      repo.notYetServed();
+      finance.notYetServed();
       await expectLater(
         container.read(expensesProvider.future),
-        throwsA(isA<AppError>().having((e) => e.status, 'status', 501)),
+        throwsA(notYetServed),
       );
       expect(isNotYetServed(container.read(expensesProvider).error!), isTrue);
     });
@@ -152,7 +166,10 @@ void main() {
         seasonBalanceProvider('season-2026').future,
       );
       expect(b.seasonId, 'season-2026');
-      expect(repo.last['balance'], 'season-2026');
+      expect(
+        finance.backend.lastQuery(FinanceData.balancePath).text('seasonId'),
+        'season-2026',
+      );
       expect(b.income.paidMinor, greaterThan(0));
     });
   });
@@ -163,13 +180,13 @@ void main() {
         teamDueStatusProvider('team-mini-a').future,
       );
       expect(status.players, hasLength(7));
-      expect(repo.last['teamDueStatus'], 'team-mini-a');
+      expect(finance.lastId(FinanceData.teamStatusPath), 'team-mini-a');
     });
 
     test("a player's dues", () async {
       final dues = await container.read(playerDuesProvider('p-ana').future);
       expect(dues, hasLength(3));
-      expect(repo.last['playerDues'], 'p-ana');
+      expect(finance.lastId(FinanceData.playerDuesPath), 'p-ana');
     });
   });
 }

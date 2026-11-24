@@ -1,30 +1,28 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hoops_app/core/errors/app_error.dart';
-import 'package:hoops_app/core/http/mock_api_adapter.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 
-import '../../support/fake_finance.dart';
+import '../../support/finance_seed.dart';
 import '../../support/finance_pump.dart';
 import '../../support/pump_helpers.dart';
 
 /// The finance area for ADMIN, first half: how to reach it, the currency and
-/// the fee plans. Data comes from the demo mock's seed (EUR, a monthly plan of
+/// the fee plans. Data comes from the finance seed (EUR, a monthly plan of
 /// Mini A with dues, a season plan of the Mini category, an archived plan).
 void main() {
   const eur45 = '45,00 €';
   const eur120 = '120,00 €';
 
-  late FakeFinanceRepository repo;
-  setUp(() => repo = FakeFinanceRepository());
+  late FinanceData finance;
+  setUp(() => finance = FinanceData());
 
   group('reaching it', () {
     testWidgets('the admin hub has a Finance entry that opens the area', (
       tester,
     ) async {
-      await pumpFinance(tester, repo: repo, location: '/admin');
+      await pumpFinance(tester, finance: finance, location: '/admin');
       expect(find.byKey(const Key('admin-finance')), findsOneWidget);
       await tapKey(tester, 'admin-finance');
       expect(find.byKey(const Key('finance-hub')), findsOneWidget);
@@ -33,7 +31,7 @@ void main() {
     testWidgets('the hub shows the currency and links to plans and dues', (
       tester,
     ) async {
-      await pumpFinance(tester, repo: repo, location: '/admin/finance');
+      await pumpFinance(tester, finance: finance, location: '/admin/finance');
       expect(find.text('Finanzas'), findsWidgets);
       expect(
         find.descendant(
@@ -51,19 +49,19 @@ void main() {
     testWidgets('a coach does not get there', (tester) async {
       await pumpFinance(
         tester,
-        repo: repo,
+        finance: finance,
         roles: {TenantRole.coach},
         location: '/admin/finance',
       );
       expect(find.byKey(const Key('finance-hub')), findsNothing);
-      expect(repo.calls, isEmpty);
+      expect(finance.askedAnything, isFalse);
     });
 
     testWidgets('loading and error states of the hub', (tester) async {
-      repo.hang = true;
+      finance.hang();
       await pumpFinance(
         tester,
-        repo: repo,
+        finance: finance,
         location: '/admin/finance',
         settle: false,
       );
@@ -71,8 +69,8 @@ void main() {
     });
 
     testWidgets('a failing server shows the message and retry', (tester) async {
-      repo.failWith = const AppError(kind: AppErrorKind.server);
-      await pumpFinance(tester, repo: repo, location: '/admin/finance');
+      finance.fail();
+      await pumpFinance(tester, finance: finance, location: '/admin/finance');
       expect(find.byKey(const Key('retry-button')), findsOneWidget);
     });
   });
@@ -81,7 +79,7 @@ void main() {
     testWidgets('fixed once dues exist, with the reason', (tester) async {
       await pumpFinance(
         tester,
-        repo: repo,
+        finance: finance,
         location: '/admin/finance/settings',
       );
       expect(find.text('EUR'), findsWidgets);
@@ -99,10 +97,10 @@ void main() {
     testWidgets('an academy without one chooses it, then it shows', (
       tester,
     ) async {
-      final other = FakeFinanceRepository(tenant: mockTenantBId);
+      final other = FinanceData.empty();
       await pumpFinance(
         tester,
-        repo: other,
+        finance: other,
         roles: {TenantRole.admin},
         location: '/admin/finance/settings',
       );
@@ -119,16 +117,18 @@ void main() {
       await tester.tap(find.byKey(const Key('dialog-confirm')));
       await tester.pumpAndSettle();
 
-      expect(other.last['chooseCurrency'], 'IDR');
+      expect(other.backend.lastBody(FinanceData.settingsPath, method: 'PUT'), {
+        'currency': 'IDR',
+      });
       expect(find.text('Moneda guardada'), findsOneWidget);
       expect(find.text('Sin elegir'), findsNothing);
     });
 
     testWidgets('a search without a match says so', (tester) async {
-      final other = FakeFinanceRepository(tenant: mockTenantBId);
+      final other = FinanceData.empty();
       await pumpFinance(
         tester,
-        repo: other,
+        finance: other,
         location: '/admin/finance/settings',
       );
       await tapKey(tester, 'currency-choose');
@@ -143,7 +143,7 @@ void main() {
     testWidgets('lists the active plans with target, cadence and amount', (
       tester,
     ) async {
-      await pumpFinance(tester, repo: repo, location: path);
+      await pumpFinance(tester, finance: finance, location: path);
       expect(find.byKey(const Key('plan-fp-mini-a')), findsOneWidget);
       expect(find.text('Cuota mensual Mini A'), findsOneWidget);
       expect(find.text('Equipo Mini A · 2026/27'), findsOneWidget);
@@ -157,16 +157,15 @@ void main() {
     });
 
     testWidgets('archived plans only when asked for', (tester) async {
-      await pumpFinance(tester, repo: repo, location: path);
+      await pumpFinance(tester, finance: finance, location: path);
       await tapKey(tester, 'plans-show-archived');
       expect(find.byKey(const Key('plan-fp-premini-2025')), findsOneWidget);
       expect(find.text('Archivado'), findsOneWidget);
     });
 
     testWidgets('empty', (tester) async {
-      final other = FakeFinanceRepository(tenant: mockTenantBId);
-      await tester.runAsync(() => other.chooseCurrency('EUR'));
-      await pumpFinance(tester, repo: other, location: path);
+      final other = FinanceData.empty(currency: 'EUR');
+      await pumpFinance(tester, finance: other, location: path);
       expect(find.text('Aún no hay planes de cuota'), findsOneWidget);
       expect(find.byKey(const Key('plan-new')), findsOneWidget);
     });
@@ -174,8 +173,8 @@ void main() {
     testWidgets('without a currency it asks to choose one first', (
       tester,
     ) async {
-      final other = FakeFinanceRepository(tenant: mockTenantBId);
-      await pumpFinance(tester, repo: other, location: path);
+      final other = FinanceData.empty();
+      await pumpFinance(tester, finance: other, location: path);
       expect(find.byKey(const Key('finance-no-currency')), findsOneWidget);
       expect(find.byKey(const Key('plan-new')), findsNothing);
       await tapKey(tester, 'finance-no-currency-action');
@@ -185,7 +184,7 @@ void main() {
     testWidgets('create a plan for a team', (tester) async {
       await pumpFinance(
         tester,
-        repo: repo,
+        finance: finance,
         location: path,
         size: const Size(360, 1100),
       );
@@ -196,7 +195,9 @@ void main() {
       await enter(tester, 'plan-amount', '35');
       await tapKey(tester, 'form-submit');
 
-      final request = repo.last['createFeePlan']! as fin.CreateFeePlanRequest;
+      final request = finance.sent<fin.CreateFeePlanRequest>(
+        FinanceData.plansPath,
+      );
       expect(request.name, 'Cuota Mini B');
       expect(request.seasonId, 'season-2026');
       expect(request.teamId, 'team-mini-b');
@@ -212,7 +213,7 @@ void main() {
     testWidgets('create a season plan for an age category', (tester) async {
       await pumpFinance(
         tester,
-        repo: repo,
+        finance: finance,
         location: path,
         size: const Size(360, 1100),
       );
@@ -225,7 +226,9 @@ void main() {
       await enter(tester, 'plan-amount', '150,50');
       await tapKey(tester, 'form-submit');
 
-      final request = repo.last['createFeePlan']! as fin.CreateFeePlanRequest;
+      final request = finance.sent<fin.CreateFeePlanRequest>(
+        FinanceData.plansPath,
+      );
       expect(request.teamId, isNull);
       expect(request.ageCategoryId, 'cat-u14');
       expect(request.cadence, fin.FeeCadence.SEASON);
@@ -236,7 +239,7 @@ void main() {
     testWidgets('the form says what is missing or wrong', (tester) async {
       await pumpFinance(
         tester,
-        repo: repo,
+        finance: finance,
         location: path,
         size: const Size(360, 1100),
       );
@@ -248,20 +251,21 @@ void main() {
         find.text('Introduce un importe mayor que cero, por ejemplo 45,00'),
         findsOneWidget,
       );
-      expect(repo.calls, isNot(contains('createFeePlan')));
+      expect(finance.requests(FinanceData.plansPath, method: 'POST'), isEmpty);
     });
 
     testWidgets('a refusal of the server is worded, not shown raw', (
       tester,
     ) async {
-      repo.failOn['createFeePlan'] = const AppError(
-        kind: AppErrorKind.conflict,
-        code: 'CURRENCY_NOT_SET',
+      finance.fail(
+        path: FinanceData.plansPath,
+        method: 'POST',
         status: 409,
+        code: 'CURRENCY_NOT_SET',
       );
       await pumpFinance(
         tester,
-        repo: repo,
+        finance: finance,
         location: path,
         size: const Size(360, 1100),
       );
@@ -281,7 +285,7 @@ void main() {
     testWidgets('edit: name and amount, the rest is fixed', (tester) async {
       await pumpFinance(
         tester,
-        repo: repo,
+        finance: finance,
         location: path,
         size: const Size(360, 1100),
       );
@@ -311,7 +315,10 @@ void main() {
       await enter(tester, 'plan-amount', '50');
       await tapKey(tester, 'form-submit');
 
-      final request = repo.last['updateFeePlan']! as fin.UpdateFeePlanRequest;
+      final request = finance.sent<fin.UpdateFeePlanRequest>(
+        '${FinanceData.plansPath}/fp-mini-a',
+        method: 'PATCH',
+      );
       expect(request.amountMinor, 5000);
       expect(request.name, isNull, reason: 'only what changed is sent');
       expect(request.firstPeriod, isNull);
@@ -320,13 +327,19 @@ void main() {
     });
 
     testWidgets('archive and bring back', (tester) async {
-      await pumpFinance(tester, repo: repo, location: path);
+      await pumpFinance(tester, finance: finance, location: path);
       await tapKey(tester, 'plan-menu-fp-u12-season');
       await tester.tap(find.byKey(const Key('sheet-action-archive')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('dialog-confirm')));
       await tester.pumpAndSettle();
-      expect(repo.last['setFeePlanArchived'], true);
+      expect(
+        finance.requests(
+          '${FinanceData.plansPath}/fp-u12-season:archive',
+          method: 'POST',
+        ),
+        hasLength(1),
+      );
       expect(find.text('Plan archivado'), findsOneWidget);
       expect(find.byKey(const Key('plan-fp-u12-season')), findsNothing);
 
@@ -335,12 +348,18 @@ void main() {
       await tapKey(tester, 'plan-menu-fp-u12-season');
       await tester.tap(find.byKey(const Key('sheet-action-unarchive')));
       await tester.pumpAndSettle();
-      expect(repo.last['setFeePlanArchived'], false);
+      expect(
+        finance.requests(
+          '${FinanceData.plansPath}/fp-u12-season:unarchive',
+          method: 'POST',
+        ),
+        hasLength(1),
+      );
       expect(find.text('Plan reactivado'), findsOneWidget);
     });
 
     testWidgets('delete only a plan without dues', (tester) async {
-      await pumpFinance(tester, repo: repo, location: path);
+      await pumpFinance(tester, finance: finance, location: path);
       await tapKey(tester, 'plan-menu-fp-mini-a');
       expect(find.byKey(const Key('sheet-action-delete')), findsNothing);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape); // dismiss the sheet
@@ -351,13 +370,19 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('dialog-confirm')));
       await tester.pumpAndSettle();
-      expect(repo.calls, contains('deleteFeePlan'));
+      expect(
+        finance.requests(
+          '${FinanceData.plansPath}/fp-u12-season',
+          method: 'DELETE',
+        ),
+        hasLength(1),
+      );
       expect(find.text('Plan eliminado'), findsOneWidget);
       expect(find.byKey(const Key('plan-fp-u12-season')), findsNothing);
     });
 
     testWidgets('offline it can be read but not changed', (tester) async {
-      final h = await pumpFinance(tester, repo: repo, location: path);
+      final h = await pumpFinance(tester, finance: finance, location: path);
       h.online.add(false);
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('finance-offline')), findsOneWidget);

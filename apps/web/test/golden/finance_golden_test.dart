@@ -1,16 +1,14 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hoops_app/features/finance/data/mock_finance_api.dart';
-import 'package:hoops_app/features/finance/domain/due_query.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 
-import '../support/fake_finance.dart';
 import '../support/finance_pump.dart';
+import '../support/finance_seed.dart';
 
 /// Regenerate with `flutter test --update-goldens test/golden/finance_golden_test.dart`.
 ///
-/// The screens show the demo mock's seed (EUR, three plans, the dues of Mini A
-/// for September to November 2026), which does not depend on the day the test
+/// The screens show the finance seed (EUR, three plans, the dues of Mini A for
+/// September to November 2026), which does not depend on the day the test
 /// runs.
 void main() {
   Future<void> shoot(
@@ -23,22 +21,18 @@ void main() {
   }) async {
     tester.platformDispatcher.platformBrightnessTestValue = brightness;
     addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
-    final repo = FakeFinanceRepository();
-    var path = location;
+    final finance = FinanceData();
+    final h = await pumpFinance(
+      tester,
+      finance: finance,
+      location: dueSeed == null ? location : null,
+      size: size,
+    );
     if (dueSeed != null) {
-      final due = (await tester.runAsync(
-        () => FakeFinanceRepository().dues(
-          DueQuery(
-            planId: MockFinanceApi.monthlyPlanId,
-            period: '2026-09',
-            status: fin.DueStatus.PAID,
-            size: 50,
-          ),
-        ),
-      ))!.items.first;
-      path = '$location/${due.id}';
+      // A paid due of September; its id is the mock's.
+      final due = finance.due(fin.DueStatus.PAID, period: '2026-09');
+      await h.go(tester, '$location/${due.id}');
     }
-    await pumpFinance(tester, repo: repo, location: path, size: size);
     final tag = brightness == Brightness.dark ? '_dark' : '';
     await expectLater(
       find.byType(MaterialApp),

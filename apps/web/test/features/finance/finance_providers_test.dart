@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/errors/app_error.dart';
-import 'package:hoops_app/core/http/mock_api_adapter.dart';
 import 'package:hoops_app/core/l10n/locale_controller.dart';
 import 'package:hoops_app/core/time/tenant_zone.dart';
 import 'package:hoops_app/features/finance/application/finance_providers.dart';
@@ -11,24 +10,38 @@ import 'package:hoops_app/features/finance/data/mock_finance_api.dart';
 import 'package:hoops_app/features/finance/domain/due_query.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 
-import '../../support/fake_finance.dart';
+import '../../support/finance_pump.dart';
+import '../../support/finance_seed.dart';
 
 /// The state the finance screens read and the commands they run, over the
-/// demo mock's seed.
+/// finance seed.
 void main() {
-  late FakeFinanceRepository repo;
+  /// A 501 as the screens read it (`AppError.of`, like the app's error
+  /// mapping).
+  final notYetServed = predicate<Object>(
+    (e) => AppError.of(e).status == 501,
+    'a 501 AppError',
+  );
+
+  late FinanceData finance;
   late ProviderContainer container;
 
-  setUp(() {
-    repo = FakeFinanceRepository();
-    container = ProviderContainer(
+  ProviderContainer containerOn(FinanceData data, {String locale = 'es'}) {
+    financeBackend(data);
+    final c = ProviderContainer(
       retry: (_, _) => null,
       overrides: [
-        ...repo.overrides,
-        effectiveLocaleProvider.overrideWithValue(const Locale('es')),
+        ...data.overrides,
+        effectiveLocaleProvider.overrideWithValue(Locale(locale)),
       ],
     );
-    addTearDown(container.dispose);
+    addTearDown(c.dispose);
+    return c;
+  }
+
+  setUp(() {
+    finance = FinanceData();
+    container = containerOn(finance);
   });
 
   /// Today in the demo academy's zone, which is what the mock checks a
@@ -53,21 +66,18 @@ void main() {
     test(
       'an academy without a currency has no format until it chooses',
       () async {
-        final other = FakeFinanceRepository(tenant: mockTenantBId);
-        final c = ProviderContainer(
-          overrides: [
-            ...other.overrides,
-            effectiveLocaleProvider.overrideWithValue(const Locale('id')),
-          ],
-        );
-        addTearDown(c.dispose);
+        final other = FinanceData.empty();
+        final c = containerOn(other, locale: 'id');
         final settings = await c.read(financeSettingsProvider.future);
         expect(settings.currency, isNull);
         expect(settings.currencyLocked, isFalse);
         expect(c.read(moneyFormatProvider), isNull);
 
         await c.read(financeSettingsProvider.notifier).chooseCurrency('IDR');
-        expect(other.last['chooseCurrency'], 'IDR');
+        expect(
+          other.backend.lastBody(FinanceData.settingsPath, method: 'PUT'),
+          {'currency': 'IDR'},
+        );
         final money = c.read(moneyFormatProvider)!;
         expect(money.minorDigits, 2);
         expect(money.format(15000000), 'Rp150.000');
@@ -89,7 +99,7 @@ void main() {
     test('the format reads the money in the language of the user', () async {
       final c = ProviderContainer(
         overrides: [
-          ...repo.overrides,
+          ...finance.overrides,
           effectiveLocaleProvider.overrideWithValue(const Locale('en')),
         ],
       );
@@ -106,7 +116,12 @@ void main() {
       container.read(showArchivedPlansProvider.notifier).set(true);
       final all = await container.read(feePlansProvider.future);
       expect(all, hasLength(3));
-      expect(repo.last['feePlans'], true);
+      expect(
+        finance.backend
+            .lastQuery(FinanceData.plansPath)
+            .text('includeArchived'),
+        'true',
+      );
     });
 
     test('create adds the plan to the list', () async {
@@ -171,7 +186,7 @@ void main() {
           .set(const DueQuery(status: fin.DueStatus.OPEN));
       page = await container.read(duesProvider.future);
       expect(page.items.every((d) => d.status == fin.DueStatus.OPEN), isTrue);
-      expect(repo.last['dues'], const DueQuery(status: fin.DueStatus.OPEN));
+      expect(finance.dueQuery, const DueQuery(status: fin.DueStatus.OPEN));
     });
 
     test('a filter goes back to the first page', () async {
@@ -204,7 +219,10 @@ void main() {
           .page
           .totalElements;
       expect(after, before - 1);
-      expect(repo.last['payDue'], isNotNull);
+      expect(
+        finance.requests(FinanceData.payPath, method: 'POST'),
+        hasLength(1),
+      );
     });
 
     test('waive, change the amount and void', () async {
@@ -264,12 +282,15 @@ void main() {
       () async {
         // The seed has dues already; what matters is that settings are read again.
         await container.read(financeSettingsProvider.future);
-        final reads = repo.calls.where((c) => c == 'settings').length;
+        final reads = finance.requests(FinanceData.settingsPath).length;
         await container
             .read(duesProvider.notifier)
             .generate(MockFinanceApi.seasonPlanId, 'SEASON');
         await container.read(financeSettingsProvider.future);
-        expect(repo.calls.where((c) => c == 'settings').length, reads + 1);
+        expect(
+          finance.requests(FinanceData.settingsPath),
+          hasLength(reads + 1),
+        );
         final plans = await container.read(feePlansProvider.future);
         expect(
           plans.firstWhere((p) => p.id == MockFinanceApi.seasonPlanId).hasDues,
@@ -279,10 +300,10 @@ void main() {
     );
 
     test('a service that does not serve dues yet is a 501 AppError', () async {
-      repo.notYetServed();
+      finance.notYetServed();
       await expectLater(
         container.read(duesProvider.future),
-        throwsA(isA<AppError>().having((e) => e.status, 'status', 501)),
+        throwsA(notYetServed),
       );
       expect(isNotYetServed(container.read(duesProvider).error!), isTrue);
       expect(

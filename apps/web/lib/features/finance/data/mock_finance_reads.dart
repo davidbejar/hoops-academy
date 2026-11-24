@@ -55,7 +55,7 @@ extension _MockFinanceReads on MockFinanceApi {
       ('2026-11-10', 'SALARIES', 15000, 'Entrenadores, noviembre', null),
       ('2026-11-12', 'OTHER', 1500, 'Material de oficina', null),
     ]) {
-      _expenses.add(_newExpense(day, category, amount, text, note));
+      seedExpense(day, category, amount, text, note: note);
     }
   }
 

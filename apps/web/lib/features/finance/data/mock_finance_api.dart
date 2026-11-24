@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 
 import '../../../core/time/dates.dart';
@@ -22,7 +24,7 @@ part 'mock_finance_reads.dart';
 /// Expenses, the season balance, the coach's and the family's reads and the
 /// CSV exports are in `mock_finance_reads.dart`. The service answered 501
 /// `NOT_IMPLEMENTED` for them until WP123; the screens still degrade on that
-/// answer (tested with a fake).
+/// answer (tested with a failure injected in front of this mock).
 class MockFinanceApi {
   MockFinanceApi({required this.core, DateTime Function()? now})
     : _now = now ?? DateTime.now {
@@ -51,67 +53,118 @@ class MockFinanceApi {
   // ------------------------------------------------------------------- seed
   void _seed() {
     if (core.academy != MockAcademy.demo) return;
-    _currency = 'EUR';
-    _plans.addAll([
-      _newPlan(
-        id: monthlyPlanId,
-        name: 'Cuota mensual Mini A',
-        seasonId: 'season-2026',
-        teamId: MockCoreApi.ownTeamId,
-        amount: 4500,
-        cadence: 'MONTHLY',
-        first: '2026-09',
-      ),
-      _newPlan(
-        id: seasonPlanId,
-        name: 'Matrícula Mini',
-        seasonId: 'season-2026',
-        categoryId: 'cat-u12',
-        amount: 12000,
-        cadence: 'SEASON',
-      ),
-      _newPlan(
-        id: archivedPlanId,
-        name: 'Cuota Premini 2025/26',
-        seasonId: 'season-2025',
-        teamId: MockCoreApi.pastTeamId,
-        amount: 3000,
-        cadence: 'MONTHLY',
-        first: '2025-09',
-        archived: true,
-      ),
-    ]);
+    seedCurrency('EUR');
+    seedPlan(
+      id: monthlyPlanId,
+      name: 'Cuota mensual Mini A',
+      seasonId: 'season-2026',
+      teamId: MockCoreApi.ownTeamId,
+      amount: 4500,
+      cadence: 'MONTHLY',
+      first: '2026-09',
+    );
+    seedPlan(
+      id: seasonPlanId,
+      name: 'Matrícula Mini',
+      seasonId: 'season-2026',
+      categoryId: 'cat-u12',
+      amount: 12000,
+      cadence: 'SEASON',
+    );
+    seedPlan(
+      id: archivedPlanId,
+      name: 'Cuota Premini 2025/26',
+      seasonId: 'season-2025',
+      teamId: MockCoreApi.pastTeamId,
+      amount: 3000,
+      cadence: 'MONTHLY',
+      first: '2025-09',
+      archived: true,
+    );
     // Three months of the monthly plan: September settled (one waived),
     // October half paid, November just opened.
-    final players = _rosterOf(monthlyPlanId);
-    for (final (month, paidCount, waivedAt) in [
-      ('2026-09', 7, 5),
-      ('2026-10', 4, -1),
-      ('2026-11', 1, -1),
-    ]) {
-      final period = Period.tryParse(month)!;
-      for (final (i, p) in players.indexed) {
-        final due = _newDue(
-          _plans.firstWhere((x) => x['id'] == monthlyPlanId),
-          p,
-          period,
-        );
-        if (i == waivedAt) {
-          due['status'] = 'WAIVED';
-          due['reason'] = 'Beca de la temporada';
-        } else if (i < paidCount) {
-          _addPayment(
-            due,
-            paidOn: isoDateOf(period.start.year, period.start.month, 3 + i % 4),
-            method: ['CASH', 'BANK_TRANSFER', 'CARD'][i % 3],
-          );
-        }
-        _dues.add(due);
-      }
-    }
-    _plans.firstWhere((p) => p['id'] == monthlyPlanId)['hasDues'] = true;
+    seedDues(monthlyPlanId, '2026-09', paid: 7, waived: 5);
+    seedDues(monthlyPlanId, '2026-10', paid: 4);
+    seedDues(monthlyPlanId, '2026-11', paid: 1);
     _seedExpenses();
   }
+
+  // ------------------------------------------------------------ test seeding
+  // The demo seeds itself with these; the widget tests (ADR-0070) seed an
+  // empty academy with them, explicitly, instead of reading the demo's data.
+
+  /// The academy's currency (null: not chosen yet). Plans take the currency
+  /// of the moment they are seeded.
+  @visibleForTesting
+  void seedCurrency(String? code) => _currency = code;
+
+  /// A fee plan, as `POST /fee-plans` would have made it.
+  @visibleForTesting
+  void seedPlan({
+    required String id,
+    required String name,
+    required String seasonId,
+    String? teamId,
+    String? categoryId,
+    required int amount,
+    required String cadence,
+    String? first,
+    String? last,
+    bool archived = false,
+  }) => _plans.add(
+    _newPlan(
+      id: id,
+      name: name,
+      seasonId: seasonId,
+      teamId: teamId,
+      categoryId: categoryId,
+      amount: amount,
+      cadence: cadence,
+      first: first,
+      last: last,
+      archived: archived,
+    ),
+  );
+
+  /// The dues of [planId] for [period], one per player the plan charges (its
+  /// team's roster, in name order). The first [paid] players have paid (on
+  /// day 3 to 6 of the month, by cash, transfer and card in turn), except
+  /// the one at [waived], whose due is waived; the others are open.
+  @visibleForTesting
+  void seedDues(String planId, String period, {int paid = 0, int? waived}) {
+    final plan = _plans.firstWhere((x) => x['id'] == planId);
+    final p = Period.tryParse(period)!;
+    for (final (i, player) in _rosterOf(planId).indexed) {
+      final due = _newDue(plan, player, p);
+      if (i == waived) {
+        due['status'] = 'WAIVED';
+        due['reason'] = 'Beca de la temporada';
+      } else if (i < paid) {
+        _addPayment(
+          due,
+          paidOn: isoDateOf(p.start.year, p.start.month, 3 + i % 4),
+          method: ['CASH', 'BANK_TRANSFER', 'CARD'][i % 3],
+        );
+      }
+      _dues.add(due);
+    }
+    plan['hasDues'] = true;
+  }
+
+  /// An expense, as `POST /expenses` would have made it.
+  @visibleForTesting
+  void seedExpense(
+    String day,
+    String category,
+    int amount,
+    String description, {
+    String? note,
+  }) => _expenses.add(_newExpense(day, category, amount, description, note));
+
+  /// The dues as the service keeps them (with their payments), in the order
+  /// they were made.
+  @visibleForTesting
+  List<Map<String, Object?>> get dues => _dues;
 
   // ------------------------------------------------------------------ model
   Map<String, Object?> _newPlan({

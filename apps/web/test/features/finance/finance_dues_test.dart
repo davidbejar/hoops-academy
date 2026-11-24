@@ -1,13 +1,12 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hoops_app/core/errors/app_error.dart';
-import 'package:hoops_app/core/http/mock_api_adapter.dart';
 import 'package:hoops_app/core/ui/kit.dart';
 import 'package:hoops_app/features/finance/application/finance_providers.dart';
 import 'package:hoops_app/features/finance/domain/due_query.dart';
 import 'package:hoops_finance_api/hoops_finance_api.dart' as fin;
 
-import '../../support/fake_finance.dart';
+import '../../support/finance_seed.dart';
+import '../../support/harness.dart';
 import '../../support/finance_pump.dart';
 import '../../support/pump_helpers.dart';
 
@@ -20,32 +19,34 @@ void main() {
       'Esta parte de las finanzas todavía no está disponible en el '
       'servidor. Inténtalo más tarde.';
 
-  late FakeFinanceRepository repo;
-  setUp(() => repo = FakeFinanceRepository());
+  late FinanceData finance;
+  setUp(() => finance = FinanceData());
 
-  /// The dues the seed has for [query], read through a repository of their
-  /// own (the demo mock answers in real time, hence `runAsync`), so the tests
-  /// do not depend on the order of the list.
-  Future<List<fin.Due>> seed(WidgetTester tester, DueQuery query) async =>
-      (await tester.runAsync(() => FakeFinanceRepository().dues(query)))!.items
-          .toList();
+  /// The first due of the list the mock answered the screen with.
+  fin.Due firstListed() =>
+      finance.answered<fin.DuePage>(FinanceData.duesPath).items.first;
 
-  Future<fin.Due> firstDue(
+  /// Pumps the app and opens the first seeded due with [status] in [period]
+  /// (its id is the mock's, known once the backend is seeded).
+  Future<(Harness, fin.Due)> openDue(
     WidgetTester tester,
     fin.DueStatus status, {
     String period = '2026-11',
-  }) async => (await seed(
-    tester,
-    DueQuery(status: status, period: period, size: 50),
-  )).first;
+    Size size = const Size(360, 780),
+  }) async {
+    final h = await pumpFinance(tester, finance: finance, size: size);
+    final due = finance.due(status, period: period);
+    await h.go(tester, '/admin/finance/dues/${due.id}');
+    return (h, due);
+  }
 
   group('the list', () {
     const path = '/admin/finance/dues';
 
     testWidgets('shows who owes what, by period then player', (tester) async {
-      await pumpFinance(tester, repo: repo, location: path);
+      await pumpFinance(tester, finance: finance, location: path);
       expect(find.text('21 cuotas'), findsOneWidget);
-      final first = (await seed(tester, const DueQuery(size: 50))).first;
+      final first = firstListed();
       expect(find.text(first.playerName), findsWidgets);
       expect(
         find.text('Cuota mensual Mini A · septiembre de 2026'),
@@ -65,22 +66,27 @@ void main() {
     });
 
     testWidgets('loading and empty', (tester) async {
-      repo.hang = true;
-      await pumpFinance(tester, repo: repo, location: path, settle: false);
+      finance.hang();
+      await pumpFinance(
+        tester,
+        finance: finance,
+        location: path,
+        settle: false,
+      );
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets('a filter without matches says so', (tester) async {
-      await pumpFinance(tester, repo: repo, location: path);
+      await pumpFinance(tester, finance: finance, location: path);
       await pickDropdown(tester, 'dues-filter-team', 'Mini B');
-      expect(repo.last['dues'], const DueQuery(teamId: 'team-mini-b'));
+      expect(finance.dueQuery, const DueQuery(teamId: 'team-mini-b'));
       expect(find.text('No hay cuotas con estos filtros'), findsOneWidget);
     });
 
     testWidgets('filters by state and by plan', (tester) async {
-      await pumpFinance(tester, repo: repo, location: path);
+      await pumpFinance(tester, finance: finance, location: path);
       await tapKey(tester, 'dues-status-OPEN');
-      expect(repo.last['dues'], const DueQuery(status: fin.DueStatus.OPEN));
+      expect(finance.dueQuery, const DueQuery(status: fin.DueStatus.OPEN));
       expect(find.text('9 cuotas'), findsOneWidget);
       expect(
         find.descendant(
@@ -92,27 +98,27 @@ void main() {
 
       await pickDropdown(tester, 'dues-filter-plan', 'Cuota mensual Mini A');
       expect(
-        repo.last['dues'],
+        finance.dueQuery,
         const DueQuery(planId: 'fp-mini-a', status: fin.DueStatus.OPEN),
       );
       await tapKey(tester, 'dues-status-ALL');
-      expect(repo.last['dues'], const DueQuery(planId: 'fp-mini-a'));
+      expect(finance.dueQuery, const DueQuery(planId: 'fp-mini-a'));
       expect(find.text('21 cuotas'), findsOneWidget);
     });
 
     testWidgets('filters by period of the chosen plan', (tester) async {
-      await pumpFinance(tester, repo: repo, location: path);
+      await pumpFinance(tester, finance: finance, location: path);
       await pickDropdown(tester, 'dues-filter-plan', 'Cuota mensual Mini A');
       await pickDropdown(tester, 'dues-filter-period', 'octubre de 2026');
       expect(
-        repo.last['dues'],
+        finance.dueQuery,
         const DueQuery(planId: 'fp-mini-a', period: '2026-10'),
       );
       expect(find.text('7 cuotas'), findsOneWidget);
     });
 
     testWidgets('pages', (tester) async {
-      final h = await pumpFinance(tester, repo: repo, location: path);
+      final h = await pumpFinance(tester, finance: finance, location: path);
       h.container.read(dueQueryProvider.notifier).set(const DueQuery(size: 10));
       await settleMock(tester);
       expect(find.text('Página 1 de 3'), findsOneWidget);
@@ -124,29 +130,29 @@ void main() {
       );
       await tapKey(tester, 'dues-next');
       expect(find.text('Página 2 de 3'), findsOneWidget);
-      expect(repo.last['dues'], const DueQuery(size: 10, page: 1));
+      expect(finance.dueQuery, const DueQuery(size: 10, page: 1));
     });
 
     testWidgets('while the service does not serve dues: a clear message', (
       tester,
     ) async {
-      repo.notYetServed();
-      await pumpFinance(tester, repo: repo, location: path);
+      finance.notYetServed();
+      await pumpFinance(tester, finance: finance, location: path);
       expect(find.byKey(const Key('finance-not-yet')), findsOneWidget);
       expect(find.text(notYet), findsOneWidget);
       expect(find.byKey(const Key('retry-button')), findsOneWidget);
     });
 
     testWidgets('other failures use the generic message', (tester) async {
-      repo.failOn['dues'] = const AppError(kind: AppErrorKind.timeout);
-      await pumpFinance(tester, repo: repo, location: path);
+      finance.fail(path: FinanceData.duesPath, status: 504);
+      await pumpFinance(tester, finance: finance, location: path);
       expect(find.byKey(const Key('finance-not-yet')), findsNothing);
       expect(find.byKey(const Key('retry-button')), findsOneWidget);
     });
 
     testWidgets('a due opens its detail', (tester) async {
-      await pumpFinance(tester, repo: repo, location: path);
-      final due = (await seed(tester, const DueQuery(size: 50))).first;
+      await pumpFinance(tester, finance: finance, location: path);
+      final due = firstListed();
       await tapKey(tester, 'due-${due.id}');
       expect(find.byKey(const Key('due-detail')), findsOneWidget);
       expect(find.text(due.playerName), findsWidgets);
@@ -156,10 +162,16 @@ void main() {
   group('generating dues', () {
     const path = '/admin/finance/dues';
 
+    /// The plan and the body of the last generation the app asked for.
+    String generatedPlan() =>
+        finance.lastId(FinanceData.generatePath, method: 'POST');
+    Map<String, Object?> generated() =>
+        finance.backend.lastBody(FinanceData.generatePath);
+
     testWidgets('preview first, then create', (tester) async {
       await pumpFinance(
         tester,
-        repo: repo,
+        finance: finance,
         location: path,
         size: const Size(360, 1000),
       );
@@ -176,10 +188,12 @@ void main() {
       );
       await tapKey(tester, 'gen-preview');
       expect(find.text('Se crearán 7 cuotas; ya existen 0.'), findsOneWidget);
-      expect(repo.last['generateDues'], ('fp-mini-a', '2026-12', true));
+      expect(generatedPlan(), 'fp-mini-a');
+      expect(generated(), {'period': '2026-12', 'preview': true});
 
       await tapKey(tester, 'form-submit');
-      expect(repo.last['generateDues'], ('fp-mini-a', '2026-12', false));
+      expect(generatedPlan(), 'fp-mini-a');
+      expect(generated(), {'period': '2026-12', 'preview': false});
       expect(find.text('Se han creado 7 cuotas'), findsOneWidget);
       expect(find.text('28 cuotas'), findsOneWidget);
     });
@@ -187,7 +201,7 @@ void main() {
     testWidgets('changing the choice asks to calculate again', (tester) async {
       await pumpFinance(
         tester,
-        repo: repo,
+        finance: finance,
         location: path,
         size: const Size(360, 1000),
       );
@@ -211,7 +225,7 @@ void main() {
     ) async {
       await pumpFinance(
         tester,
-        repo: repo,
+        finance: finance,
         location: path,
         size: const Size(360, 1000),
       );
@@ -224,8 +238,8 @@ void main() {
     testWidgets('without an active plan there is nothing to generate', (
       tester,
     ) async {
-      final other = FakeFinanceRepository(tenant: mockTenantBId);
-      await pumpFinance(tester, repo: other, location: path);
+      final other = FinanceData.empty(currency: 'EUR');
+      await pumpFinance(tester, finance: other, location: path);
       await tapKey(tester, 'dues-generate');
       expect(find.text('Crea primero un plan de cuota activo'), findsOneWidget);
     });
@@ -233,10 +247,14 @@ void main() {
     testWidgets('a service without dues says so instead of failing', (
       tester,
     ) async {
-      repo.failOn['generateDues'] = notImplemented;
+      finance.fail(
+        path: FinanceData.generatePath,
+        status: 501,
+        code: 'NOT_IMPLEMENTED',
+      );
       await pumpFinance(
         tester,
-        repo: repo,
+        finance: finance,
         location: path,
         size: const Size(360, 1000),
       );
@@ -249,7 +267,7 @@ void main() {
     });
 
     testWidgets('offline it cannot be started', (tester) async {
-      final h = await pumpFinance(tester, repo: repo, location: path);
+      final h = await pumpFinance(tester, finance: finance, location: path);
       h.online.add(false);
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('finance-offline')), findsOneWidget);
@@ -265,13 +283,14 @@ void main() {
   });
 
   group('one due', () {
-    String detail(String id) => '/admin/finance/dues/$id';
+    final changeAmount = RegExp(r'^/api/finance/dues/[^/]+:change-amount$');
+    final waive = RegExp(r'^/api/finance/dues/[^/]+:waive$');
+    final voidPayment = RegExp(r'^/api/finance/payments/[^/]+:void$');
 
     testWidgets('an open due: amounts, state and the three actions', (
       tester,
     ) async {
-      final due = await firstDue(tester, fin.DueStatus.OPEN);
-      await pumpFinance(tester, repo: repo, location: detail(due.id));
+      final (_, due) = await openDue(tester, fin.DueStatus.OPEN);
       expect(find.byKey(const Key('due-detail')), findsOneWidget);
       expect(find.text(due.playerName), findsWidgets);
       expect(find.text('Pendiente'), findsWidgets);
@@ -283,11 +302,9 @@ void main() {
     });
 
     testWidgets('record a payment of the whole due', (tester) async {
-      final due = await firstDue(tester, fin.DueStatus.OPEN);
-      await pumpFinance(
+      final (_, due) = await openDue(
         tester,
-        repo: repo,
-        location: detail(due.id),
+        fin.DueStatus.OPEN,
         size: const Size(360, 1000),
       );
       await tapKey(tester, 'due-pay');
@@ -300,13 +317,11 @@ void main() {
       await enter(tester, 'pay-note', 'Recibo 12');
       await tapKey(tester, 'form-submit');
 
-      final (id, paidOn, method, note) =
-          repo.last['payDue']!
-              as (String, fin.Date, fin.PaymentMethod, String?);
-      expect(id, due.id);
-      expect(paidOn.toString(), academyToday());
-      expect(method, fin.PaymentMethod.BANK_TRANSFER);
-      expect(note, 'Recibo 12');
+      final pay = finance.sent<fin.PayDueRequest>(FinanceData.payPath);
+      expect(finance.lastId(FinanceData.payPath, method: 'POST'), due.id);
+      expect(pay.paidOn.toString(), academyToday());
+      expect(pay.method, fin.PaymentMethod.BANK_TRANSFER);
+      expect(pay.note, 'Recibo 12');
       expect(find.text('Pago registrado'), findsOneWidget);
       expect(find.text('Pagada'), findsWidgets);
       expect(find.byKey(const Key('due-pay')), findsNothing);
@@ -315,18 +330,12 @@ void main() {
     });
 
     testWidgets('a due that is no longer open is explained', (tester) async {
-      final due = await firstDue(tester, fin.DueStatus.OPEN);
-      repo.failOn['payDue'] = const AppError(
-        kind: AppErrorKind.conflict,
+      finance.fail(
+        path: FinanceData.payPath,
         status: 409,
         code: 'DUE_NOT_OPEN',
       );
-      await pumpFinance(
-        tester,
-        repo: repo,
-        location: detail(due.id),
-        size: const Size(360, 1000),
-      );
+      await openDue(tester, fin.DueStatus.OPEN, size: const Size(360, 1000));
       await tapKey(tester, 'due-pay');
       await tapKey(tester, 'form-submit');
       expect(
@@ -338,14 +347,12 @@ void main() {
     testWidgets('recording a payment while the service cannot says so', (
       tester,
     ) async {
-      final due = await firstDue(tester, fin.DueStatus.OPEN);
-      repo.failOn['payDue'] = notImplemented;
-      await pumpFinance(
-        tester,
-        repo: repo,
-        location: detail(due.id),
-        size: const Size(360, 1000),
+      finance.fail(
+        path: FinanceData.payPath,
+        status: 501,
+        code: 'NOT_IMPLEMENTED',
       );
+      await openDue(tester, fin.DueStatus.OPEN, size: const Size(360, 1000));
       await tapKey(tester, 'due-pay');
       await tapKey(tester, 'form-submit');
       expect(find.text(notYet), findsOneWidget);
@@ -353,11 +360,9 @@ void main() {
     });
 
     testWidgets('change the amount with a reason', (tester) async {
-      final due = await firstDue(tester, fin.DueStatus.OPEN);
-      await pumpFinance(
+      final (_, due) = await openDue(
         tester,
-        repo: repo,
-        location: detail(due.id),
+        fin.DueStatus.OPEN,
         size: const Size(360, 1000),
       );
       await tapKey(tester, 'due-change-amount');
@@ -371,11 +376,15 @@ void main() {
       await enter(tester, 'amount-field', '20');
       await tapKey(tester, 'form-submit');
       expect(find.text('Campo obligatorio'), findsOneWidget);
-      expect(repo.calls, isNot(contains('changeDueAmount')));
+      expect(finance.requests(changeAmount, method: 'POST'), isEmpty);
       await enter(tester, 'reason-field', 'Medio mes');
       await tapKey(tester, 'form-submit');
 
-      expect(repo.last['changeDueAmount'], (due.id, 2000, 'Medio mes'));
+      expect(finance.lastId(changeAmount, method: 'POST'), due.id);
+      expect(finance.backend.lastBody(changeAmount), {
+        'amountMinor': 2000,
+        'reason': 'Medio mes',
+      });
       expect(find.text('Importe cambiado'), findsOneWidget);
       expect(find.text('20,00 €'), findsWidgets);
       expect(find.text('Importe del plan: $eur45'), findsOneWidget);
@@ -383,11 +392,9 @@ void main() {
     });
 
     testWidgets('waive with a reason', (tester) async {
-      final due = await firstDue(tester, fin.DueStatus.OPEN);
-      await pumpFinance(
+      final (_, due) = await openDue(
         tester,
-        repo: repo,
-        location: detail(due.id),
+        fin.DueStatus.OPEN,
         size: const Size(360, 1000),
       );
       await tapKey(tester, 'due-waive');
@@ -397,7 +404,8 @@ void main() {
       );
       await enter(tester, 'reason-field', 'Beca');
       await tapKey(tester, 'form-submit');
-      expect(repo.last['waiveDue'], (due.id, 'Beca'));
+      expect(finance.lastId(waive, method: 'POST'), due.id);
+      expect(finance.backend.lastBody(waive), {'reason': 'Beca'});
       expect(find.text('Cuota condonada'), findsOneWidget);
       expect(find.text('Condonada'), findsWidgets);
       expect(find.text('Motivo: Beca'), findsOneWidget);
@@ -407,11 +415,10 @@ void main() {
     testWidgets('void a wrong payment: kept, marked, the due is open again', (
       tester,
     ) async {
-      final due = await firstDue(tester, fin.DueStatus.PAID, period: '2026-09');
-      await pumpFinance(
+      final (_, due) = await openDue(
         tester,
-        repo: repo,
-        location: detail(due.id),
+        fin.DueStatus.PAID,
+        period: '2026-09',
         size: const Size(360, 1000),
       );
       expect(find.text('Pagada'), findsWidgets);
@@ -429,7 +436,10 @@ void main() {
       await enter(tester, 'reason-field', 'Importe equivocado');
       await tapKey(tester, 'form-submit');
 
-      expect(repo.last['voidPayment'], (due.payment!.id, 'Importe equivocado'));
+      expect(finance.lastId(voidPayment, method: 'POST'), due.payment!.id);
+      expect(finance.backend.lastBody(voidPayment), {
+        'reason': 'Importe equivocado',
+      });
       expect(find.text('Pago anulado'), findsOneWidget);
       expect(find.text('Pendiente'), findsWidgets);
       expect(find.text('Anulado'), findsOneWidget);
@@ -441,16 +451,14 @@ void main() {
     testWidgets('while the service does not serve it: a clear message', (
       tester,
     ) async {
-      final due = await firstDue(tester, fin.DueStatus.OPEN);
-      repo.notYetServed();
-      await pumpFinance(tester, repo: repo, location: detail(due.id));
+      finance.notYetServed();
+      await openDue(tester, fin.DueStatus.OPEN);
       expect(find.byKey(const Key('finance-not-yet')), findsOneWidget);
       expect(find.text(notYet), findsOneWidget);
     });
 
     testWidgets('offline the actions are off', (tester) async {
-      final due = await firstDue(tester, fin.DueStatus.OPEN);
-      final h = await pumpFinance(tester, repo: repo, location: detail(due.id));
+      final (h, _) = await openDue(tester, fin.DueStatus.OPEN);
       h.online.add(false);
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('finance-offline')), findsOneWidget);

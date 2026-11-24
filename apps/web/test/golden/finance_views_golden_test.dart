@@ -4,14 +4,14 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../support/core_fixtures.dart';
-import '../support/fake_finance.dart';
+import '../support/finance_seed.dart';
 import '../support/finance_pump.dart';
 import '../support/pump_helpers.dart';
 
 /// Regenerate with `flutter test --update-goldens test/golden/finance_views_golden_test.dart`.
 ///
-/// What the coach and the family see of the dues (WP124): the demo mock's
-/// seed, whose dues are all of September to November 2026, so the picture
+/// What the coach and the family see of the dues (WP124): the finance seed,
+/// whose dues are all of September to November 2026, so the picture
 /// does not depend on the day the test runs (from 1 Nov 2026 on).
 void main() {
   const phone = Size(360, 780);
@@ -54,7 +54,7 @@ void main() {
         brightness,
         (size) => pumpFinance(
           tester,
-          repo: FakeFinanceRepository(roles: ['COACH']),
+          finance: FinanceData(),
           roles: {TenantRole.coach},
           location: '/teams/team-mini-a',
           staffTeamIds: {'team-mini-a'},
@@ -88,7 +88,7 @@ void main() {
       (tester) => shoot(tester, 'family', size, brightness, (size) async {
         await pumpFinance(
           tester,
-          repo: FakeFinanceRepository(roles: ['PARENT']),
+          finance: FinanceData(),
           roles: {TenantRole.parent},
           location: '/my-players',
           linkedPlayerIds: {'p-ana'},
