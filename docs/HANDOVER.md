@@ -152,10 +152,10 @@ project, not a commercial product (ADR-0025).
    calendar app, the server-side CSVs downloaded from the web, the avatar menu and the chooser's cards. The compose
    nginx does not serve the web app: start it locally (`./start.sh` or `flutter run`, README) and sign in, e.g. as
    `testcoach1@hoops-academy.com` with `TEST_ACADEMY_PASSWORD`.
-6. **Other stacks and `.env` files**: any `.env` other than the main checkout's renames `KEYCLOAK_URL` /
-   `E2E_KEYCLOAK_ADMIN_URL` to `KEYCLOAK_ADMIN_URL` or deletes them (the compose defaults fit) and has
+6. **Other stacks and `.env` files**: any `.env` other than the main checkout's renames the two retired Keycloak
+   variables of ADR-0071 to `KEYCLOAK_ADMIN_URL` or deletes them (the compose defaults fit) and has
    `FINANCE_MIGRATOR_PASSWORD` / `FINANCE_APP_PASSWORD`, which `just up` now requires; a private `values-local.yaml`
-   that sets `KEYCLOAK_URL` or calls `hoops-service.*` helpers follows (ADR-0071, `hoops-lib.*`). Any other stack after
+   that sets a retired name or calls `hoops-service.*` helpers follows (ADR-0071, `hoops-lib.*`). Any other stack after
    the eighth round still needs `just finance-up`, `just events-backfill force` and `just seed-academy`.
 7. **PR #21 (bump-pins) is stale**: opened before WP136, it edits the CNPG and Reloader pins in `deploy/kind/up.sh` and
    `deploy/cloud/install.sh`, which now live in `deploy/lib/platform.sh`. Close it and let the next weekly run open a
@@ -232,8 +232,9 @@ project, not a commercial product (ADR-0025).
   second compose stack can run beside the owner's (WP139).
 - **Realm and admin URLs** (ADR-0071): the realm is `OIDC_AUTH_SERVER_URL` (default
   `http://localhost:8080/auth/realms/academy`, set once in common-quarkus for the Quarkus services), the Admin API base
-  `KEYCLOAK_ADMIN_URL` (default `http://localhost:8080/auth`; core and the e2e suite). `KEYCLOAK_URL`,
-  `E2E_KEYCLOAK_ADMIN_URL` and `localhost:8180` are gone (`scripts/tests/test_realm_variables.py` fails on them).
+  `KEYCLOAK_ADMIN_URL` (default `http://localhost:8080/auth`; core and the e2e suite). The retired names and the old
+  port listed in ADR-0071 are gone: `scripts/tests/test_realm_variables.py` fails on them in any tracked file outside
+  `docs/adr` and `docs/wp` (so write them only there).
   `just up` requires `FINANCE_MIGRATOR_PASSWORD` and `FINANCE_APP_PASSWORD`. The owner's `.env` was checked at the
   WP139 merge and needed no change.
 - **Database roles from one list** (ADR-0006 amendment): the rows between `-- roles: begin` / `-- roles: end` of
