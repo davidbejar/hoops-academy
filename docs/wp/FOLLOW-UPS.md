@@ -522,7 +522,7 @@ under "Resolved", "Ninth round".
   admin base is `KEYCLOAK_ADMIN_URL`, the realm `OIDC_AUTH_SERVER_URL`; the compose defaults fit), and a private
   `values-local.yaml` that sets `KEYCLOAK_URL` or calls `hoops-service.*` helpers in a `tpl` string must follow
   (`hoops-lib.*` since WP136). The owner's `.env` was checked at the WP139 merge and needed no change.
-- **Delete the audit files** (decision 111): `audit/2026-11-23/` in the main checkout stays untracked and is deleted
+- **Delete the audit files** (decision 111): the audit files of 2026-11-23 stay untracked in the main checkout and are deleted
   at close-out after asking the owner; the briefs and handovers (finding IDs, ID-by-ID tables) are the record.
 - **Season rollover wizard** (WP138 part 2; owner decision open): the web wizard calls `rolloverSeason` with the season
   it was opened on as both the path's target and `fromSeasonId`; `core.yaml` and core-service (`RolloverSeason`)

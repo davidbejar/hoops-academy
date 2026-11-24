@@ -142,8 +142,8 @@ project, not a commercial product (ADR-0025).
 2. **Season rollover wizard** (owner decision; WP138 part 2): the web wizard sends the season it was opened on as both
    the target (path) and `fromSeasonId`; core refuses that (`ROLLOVER_SAME_SEASON`), so the wizard works only against
    the demo mock. Not checked on the real stack. A fix makes the wizard offer a target season.
-3. **Delete the audit files** (decision 111): `audit/2026-11-23/` in the main checkout is untracked; the orchestrator
-   asks the owner and deletes it. Nothing in the repository links to it.
+3. **Delete the audit files** (decision 111): the audit files of 2026-11-23 are untracked in the main checkout; the orchestrator
+   asks the owner and deletes them. Nothing in the repository links to them.
 4. **IDR minor digits** (owner decision, WP121 / WP124): finance stores IDR with 2 minor digits (ISO 4217) and the web
    shows whole amounts without decimals. Change the service's currency table and the web's copy together if 0 is
    wanted, before the first real IDR due.
