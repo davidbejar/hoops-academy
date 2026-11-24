@@ -14,6 +14,7 @@ import '../support/mock_backend.dart';
 /// (ADR-0070: the roster fakes did, the mock did not).
 void main() {
   const t = MockBackend.testTenantId;
+  cancelTests();
 
   api.CreatePlayerRequest request({String? email}) => api.CreatePlayerRequest(
     (b) => b
@@ -71,5 +72,18 @@ void main() {
         ),
       ),
     );
+  });
+}
+
+void cancelTests() {
+  test('the requesting coach cancels the own pending request '
+      '(cancelApprovalRequest: the requester)', () async {
+    final coach = MockBackend(roles: {TenantRole.coach})
+      ..seedApprovals([approval('a1')]);
+    final cancelled = await ApiApprovalsRepository(
+      coach.coreApi(),
+      MockBackend.testTenantId,
+    ).cancel('a1');
+    expect(cancelled.status, api.ApprovalStatus.CANCELLED);
   });
 }
