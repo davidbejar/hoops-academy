@@ -87,7 +87,8 @@ run_gate() { # run_gate <stub exit code> <command text>; prints "<rc>|<stderr>"
   rm -rf "$repo"
   echo "$rc|$out"
 }
-check() { # check <label> <actual> <expected>
+check() { # check <label> <actual> <expected glob>: a trailing * instead of `cut -c` (GNU cut counts bytes, so a cut
+  # through a multi-byte character such as ✗ differed between Linux and macOS: WP146)
   total=$((total + 1))
   # shellcheck disable=SC2053 # $3 may hold a glob
   [[ "$2" == $3 ]] && return 0
@@ -95,7 +96,7 @@ check() { # check <label> <actual> <expected>
   printf 'FAIL %s: got [%s] expected [%s]\n' "$1" "$2" "$3"
 }
 check "passing gate" "$(run_gate 0 'git commit -m x')" "0|tenancy-gate: isolation-check PASSED in [0-9]* s"
-check "failing gate blocks" "$(run_gate 1 'git commit -m x' | cut -c1-31)" "2|Blocked: the tenant isolation"
+check "failing gate blocks" "$(run_gate 1 'git commit -m x')" "2|Blocked: the tenant isolation*"
 check "unrelated command skips the gate" "$(run_gate 1 'git status')" "0|"
 
 # --- the gates cover every service with tenant data, the Go finance-service too (WP118, ADR-0055)
@@ -122,8 +123,30 @@ go_gate() { # go_gate <stub go output> <stub go exit code>; prints "<rc>|<last l
   echo "$rc|$(tail -1 <<<"$out")"
 }
 check "go tests pass" "$(go_gate '--- PASS: TestA (0.1s)\\n--- PASS: TestB (0.1s)\\nok\\n' 0)" "0|✓ check (finance-service): 2 Go tests passed in * s"
-check "go filter matched nothing" "$(go_gate 'ok  x 0.1s [no tests to run]\\n' 0 | cut -c1-40)" "1|✗ check (finance-service) ran no Go te*"
-check "go test fails" "$(go_gate '--- FAIL: TestA (0.1s)\\n' 1 | cut -c1-38)" "1|✗ check (finance-service) FAILED*"
+check "go filter matched nothing" "$(go_gate 'ok  x 0.1s [no tests to run]\\n' 0)" "1|✗ check (finance-service) ran no Go tests*"
+check "go test fails" "$(go_gate '--- FAIL: TestA (0.1s)\\n' 1)" "1|✗ check (finance-service) FAILED*"
+
+# maven_offline_first: offline first; online again only when offline lacked an artifact (stub ./mvnw, calls logged)
+mvn_gate() { # mvn_gate <stub output when offline> <stub exit code when offline>; prints "<rc>|<calls, one per line>"
+  local dir rc root=$PWD
+  dir=$(mktemp -d)
+  printf '#!/bin/sh\necho "$*" >>calls\ncase " $* " in *" -o "*) printf "%%s\\n" "%s"; exit %s ;; esac\nexit 0\n' \
+    "$1" "$2" >"$dir/mvnw"
+  chmod +x "$dir/mvnw"
+  (cd "$dir" && bash -c "source '$root/scripts/hooks/_common.sh' --functions-only; maven_offline_first log verify -q")
+  rc=$?
+  echo "$rc|$(cat "$dir/calls")"
+  rm -rf "$dir"
+}
+check "maven offline passes: no online run" "$(mvn_gate 'BUILD SUCCESS' 0)" "0|-o -B -ntp verify -q"
+check "maven offline lacks an artifact: online retry" \
+  "$(mvn_gate '[ERROR] Cannot access central in offline mode and the artifact x has not been downloaded' 1)" \
+  $'0|-o -B -ntp verify -q\n-B -ntp verify -q'
+check "maven artifact never downloaded from that repo: online retry" \
+  "$(mvn_gate '[ERROR] x was cached from a remote repository, but has not been downloaded from it before.' 1)" \
+  $'0|-o -B -ntp verify -q\n-B -ntp verify -q'
+check "maven test failure offline: no online retry" "$(mvn_gate '[ERROR] Tests run: 3, Failures: 1' 1)" \
+  "1|-o -B -ntp verify -q"
 
 echo "tenancy-gate matcher: $((total - fail))/$total passed"
 [ "$fail" -eq 0 ]
