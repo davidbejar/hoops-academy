@@ -77,7 +77,9 @@ files are not committed and not linked; finding IDs are the reference.
   call in `seasons_repository.dart` and `ROLLOVER_SAME_SEASON` in core, the `scripts` job of `ci.yml`, the pdf slug
   guard), `podman compose version` (Docker Compose v2.15.1), `gh run list` / `gh run view` for every run id and red
   cause quoted, `gh pr list` / `gh pr view`. `just docs-build` (strict): "No issues found". Relative links of every
-  changed file outside `docs/` resolve (script). finance: `gofmt -l .` clean; `go vet ./...` reports one finding,
+  changed file outside `docs/` resolve (script). `python3 -I -m unittest discover -s scripts/tests`: 108 tests OK, 1
+  skipped; it first failed on this pass's own HANDOVER, which named the retired realm variables
+  (`test_realm_variables.py` allows them only under `docs/adr` and `docs/wp`), fixed in 5b9bff3a. finance: `gofmt -l .` clean; `go vet ./...` reports one finding,
   `persistence/ports.go:17` "struct literal uses unkeyed fields", which is on `main` too (WP131's deliberate unkeyed
   `Ports` literal; golangci-lint's `govet` passes it); `go vet -composites=false ./...` clean. No build or test suite
   re-run; the test numbers are the handovers'.
