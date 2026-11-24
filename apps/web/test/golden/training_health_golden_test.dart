@@ -7,6 +7,7 @@ import 'package:hoops_app/features/training/application/training_providers.dart'
 
 import '../support/athlete_scenarios.dart';
 import '../support/core_fixtures.dart';
+import '../support/core_seed.dart';
 import '../support/fake_repos.dart';
 import '../support/fake_athlete.dart';
 import '../support/pump_helpers.dart';
@@ -45,13 +46,13 @@ ath.TrainingSession _demo(
 ).rebuild((b) => b..startsAt = _madrid(offset, hour, minute));
 
 FakeCore _demoCore() => FakeCore(
-  teams: FakeTeamsRepository(
+  teams: TeamsData(
     teams: [
       team('t1', 'Mini A', players: 3),
       team('t2', 'Infantil A', cat: u14, players: 1),
     ],
   ),
-  players: FakePlayersRepository([
+  players: PlayersData([
     player('p2', 'Leo Gil', cat: u12, teams: [assignment('t1', 'Mini A')]),
   ]),
 );

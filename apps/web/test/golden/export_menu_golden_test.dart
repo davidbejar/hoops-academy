@@ -7,6 +7,7 @@ import '../support/core_fixtures.dart';
 import '../support/fake_export.dart';
 import '../support/export_overrides.dart';
 import '../support/fake_game.dart';
+import '../support/core_seed.dart';
 import '../support/fake_repos.dart';
 import '../support/pump_helpers.dart';
 
@@ -34,9 +35,7 @@ void main() {
         tester,
         roles: {TenantRole.coach},
         staffTeamIds: {teamA},
-        core: FakeCore(
-          teams: FakeTeamsRepository(teams: [team(teamA, 'Mini A')]),
-        ),
+        core: FakeCore(teams: TeamsData(teams: [team(teamA, 'Mini A')])),
         game: FakeGame(
           matches: FakeMatchesRepository(
             matches: [

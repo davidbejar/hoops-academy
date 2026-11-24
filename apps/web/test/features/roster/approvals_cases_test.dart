@@ -4,6 +4,7 @@ import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/core_fixtures.dart';
+import '../../support/core_seed.dart';
 import '../../support/fake_repos.dart';
 import '../../support/pump_helpers.dart';
 
@@ -227,45 +228,22 @@ void main() {
         eligibilityCase('c1', 'p1', 'Ana Ruiz', 't1', 'Mini A'),
         eligibilityCase('c2', 'p2', 'Leo Gil', 't2', 'Infantil B'),
       ],
-      teams: FakeTeamsRepository(
+      // Ana (2015) fits Mini A, plays up in Infantil B, is refused by the
+      // girls' Cadete C; Leo (2010) is too old for every team.
+      teams: TeamsData(
         teams: [
           team('t1', 'Mini A'),
           team('t2', 'Infantil B', cat: u14),
+          team('t3', 'Cadete C', cat: u14, policy: api.GenderPolicy.FEMALE),
         ],
       ),
-      players: FakePlayersRepository(
-        [player('p1', 'Ana Ruiz'), player('p2', 'Leo Gil')],
-        eligible: {
-          'p1': [
-            api.EligibleTeam(
-              (b) => b
-                ..team.replace(team('t1', 'Mini A'))
-                ..eligibility.replace(
-                  check('t1', 'p1', api.EligibilityResult.ELIGIBLE),
-                ),
-            ),
-            api.EligibleTeam(
-              (b) => b
-                ..team.replace(team('t2', 'Infantil B', cat: u14))
-                ..eligibility.replace(
-                  check('t2', 'p1', api.EligibilityResult.PLAY_UP, playUp: 1),
-                ),
-            ),
-            api.EligibleTeam(
-              (b) => b
-                ..team.replace(team('t3', 'Cadete C', cat: u14))
-                ..eligibility.replace(
-                  check(
-                    't3',
-                    'p1',
-                    api.EligibilityResult.INELIGIBLE,
-                    reasons: [api.EligibilityReason.GENDER_POLICY],
-                  ),
-                ),
-            ),
-          ],
-        },
-      ),
+      players: PlayersData([
+        player('p1', 'Ana Ruiz'),
+        player(
+          'p2',
+          'Leo Gil',
+        ).rebuild((b) => b.birthDate = api.Date(2010, 3, 4)),
+      ]),
     );
 
     testWidgets('loading / error / empty', (tester) async {

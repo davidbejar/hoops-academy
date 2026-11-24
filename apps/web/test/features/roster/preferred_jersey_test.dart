@@ -3,17 +3,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/core_fixtures.dart';
+import '../../support/core_seed.dart';
 import '../../support/fake_repos.dart';
 import '../../support/pump_helpers.dart';
 
 FakeCore _core({String? preferred}) => FakeCore(
-  teams: FakeTeamsRepository(
+  teams: TeamsData(
     teams: [team('t1', 'Mini A', players: 1)],
     rosters: {
       't1': [teamPlayer('t1', 'p1', 'Ana Ruiz', jersey: '7')],
     },
   ),
-  players: FakePlayersRepository([
+  players: PlayersData([
     player(
       'p1',
       'Ana Ruiz',

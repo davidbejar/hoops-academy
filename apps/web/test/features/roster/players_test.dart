@@ -9,48 +9,52 @@ import '../../support/core_seed.dart';
 import '../../support/fake_repos.dart';
 import '../../support/pump_helpers.dart';
 
-FakeCore coreWithPlayers({bool coachRequests = false}) => FakeCore(
-  teams: FakeTeamsRepository(
+final _u16 = category(
+  'cat-u16',
+  'U16',
+  3,
+  maxAge: 16,
+).rebuild((b) => b.name = 'Cadete');
+
+/// Ana (2015, Mini) wears 7 in Mini A; Leo (2013, Infantil) is an orphan who
+/// plays up into Cadete C; Mia's addition waits for approval; Dan (2008) is
+/// too old for every team and lost his Mini A place. What a coach creates is
+/// a request (the mock's role rule).
+FakeCore coreWithPlayers() => FakeCore(
+  categories: [u12, u14, _u16],
+  teams: TeamsData(
     teams: [
       team('t1', 'Mini A', players: 1),
       team('t2', 'Infantil B', cat: u14),
+      team('t3', 'Cadete C', cat: _u16),
     ],
   ),
-  players: FakePlayersRepository(
-    [
-      player(
-        'p1',
-        'Ana Ruiz',
-        cat: u12,
-        teams: [assignment('t1', 'Mini A', jersey: '7')],
-      ),
-      player('p2', 'Leo Gil', cat: u14, status: api.PlayerStatus.ORPHAN),
-      player(
-        'p3',
-        'Mia Soto',
-        cat: u12,
-        status: api.PlayerStatus.PENDING_APPROVAL,
-      ),
-      player(
-        'p4',
-        'Dan Lopez',
-        cat: u12,
-        teams: [assignment('t1', 'Mini A', playUp: 1, valid: false)],
-      ),
-    ],
-    eligible: {
-      'p2': [
-        api.EligibleTeam(
-          (b) => b
-            ..team.replace(team('t2', 'Infantil B', cat: u14))
-            ..eligibility.replace(
-              check('t2', 'p2', api.EligibilityResult.PLAY_UP, playUp: 1),
-            ),
-        ),
-      ],
-    },
-    createdPending: coachRequests,
-  ),
+  players: PlayersData([
+    player(
+      'p1',
+      'Ana Ruiz',
+      cat: u12,
+      teams: [assignment('t1', 'Mini A', jersey: '7')],
+    ),
+    player(
+      'p2',
+      'Leo Gil',
+      cat: u14,
+      status: api.PlayerStatus.ORPHAN,
+    ).rebuild((b) => b.birthDate = api.Date(2013, 3, 4)),
+    player(
+      'p3',
+      'Mia Soto',
+      cat: u12,
+      status: api.PlayerStatus.PENDING_APPROVAL,
+    ),
+    player(
+      'p4',
+      'Dan Lopez',
+      cat: u12,
+      teams: [assignment('t1', 'Mini A', playUp: 1, valid: false)],
+    ).rebuild((b) => b.birthDate = api.Date(2008, 3, 4)),
+  ]),
   members: MembersData(
     [
       member('m2', 'Pat Parent', roles: {api.TenantRole.PARENT}),
@@ -300,9 +304,9 @@ void main() {
         );
         await tapKey(tester, 'player-assign');
         expect(find.text('Juega en categoría superior (+1)'), findsOneWidget);
-        await tapKey(tester, 'eligible-t2');
+        await tapKey(tester, 'eligible-t3');
         expect(core.teams.calls, contains('assign'));
-        expect(core.teams.rosters['t2']!.single.player.id, 'p2');
+        expect(core.teams.rosters['t3']!.single.player.id, 'p2');
       },
     );
 
@@ -344,7 +348,7 @@ void main() {
     );
 
     testWidgets('coach withdraw only files a request', (tester) async {
-      final core = coreWithPlayers(coachRequests: true);
+      final core = coreWithPlayers();
       await pumpAs(
         tester,
         roles: {TenantRole.coach},
@@ -461,7 +465,8 @@ void main() {
       'a player whose e-mail already has a login gets no dialog, only the note',
       (tester) async {
         final core = coreWithPlayers();
-        core.players.newLoginPassword = null;
+        // Noa's e-mail already signs in elsewhere: her login is linked.
+        core.members.loginsElsewhere.add('noa@example.org');
         await pumpAs(
           tester,
           roles: {TenantRole.admin},
@@ -497,7 +502,7 @@ void main() {
     testWidgets(
       'a coach request with an e-mail creates no login yet: no dialog',
       (tester) async {
-        final core = coreWithPlayers(coachRequests: true);
+        final core = coreWithPlayers();
         await pumpAs(
           tester,
           roles: {TenantRole.coach},
@@ -516,7 +521,7 @@ void main() {
     testWidgets('coach files a request with an initial own team and a note', (
       tester,
     ) async {
-      final core = coreWithPlayers(coachRequests: true);
+      final core = coreWithPlayers();
       await pumpAs(
         tester,
         roles: {TenantRole.coach},

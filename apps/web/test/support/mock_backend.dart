@@ -161,25 +161,68 @@ class MockBackend extends MockApiAdapter {
     }
     final answer = await super.fetch(options, requestStream, cancelFuture);
     final type = answer.headers[Headers.contentTypeHeader]?.firstOrNull ?? '';
-    if (!type.contains('json')) return answer;
-    final bytes = await answer.stream.fold<List<int>>(
-      [],
-      (a, b) => a..addAll(b),
+    final bytes = Uint8List.fromList(
+      await answer.stream.fold<List<int>>([], (a, b) => a..addAll(b)),
     );
+    final edit = _edits
+        .where(
+          (e) =>
+              _matches(e.path, options.path) &&
+              (e.method == null || e.method == options.method.toUpperCase()),
+        )
+        .firstOrNull;
+    final headers = {
+      for (final h in answer.headers.entries)
+        if (edit == null || !edit.dropHeaders.contains(h.key.toLowerCase()))
+          h.key: h.value,
+    };
     _answers.add((
       request: options,
       status: answer.statusCode,
-      json: bytes.isEmpty ? null : jsonDecode(utf8.decode(bytes)),
+      json: type.contains('json') && bytes.isNotEmpty
+          ? jsonDecode(utf8.decode(bytes))
+          : null,
+      bytes: bytes,
+      headers: headers,
     ));
-    return ResponseBody.fromBytes(
-      Uint8List.fromList(bytes),
-      answer.statusCode,
-      headers: answer.headers,
-    );
+    return ResponseBody.fromBytes(bytes, answer.statusCode, headers: headers);
   }
 
-  final List<({RequestOptions request, int status, Object? json})> _answers =
+  final List<
+    ({
+      RequestOptions request,
+      int status,
+      Object? json,
+      Uint8List bytes,
+      Map<String, List<String>> headers,
+    })
+  >
+  _answers = [];
+
+  final List<({Pattern path, String? method, Set<String> dropHeaders})> _edits =
       [];
+
+  /// Leaves the named response headers out of the mock's answers to [path]
+  /// (a server that sends no file name, say).
+  void dropHeaders(Pattern path, Set<String> names, {String? method}) =>
+      _edits.add((
+        path: path,
+        method: method?.toUpperCase(),
+        dropHeaders: {for (final n in names) n.toLowerCase()},
+      ));
+
+  /// The bytes and headers the mock answered the last request to [path] with.
+  ({Uint8List bytes, Map<String, List<String>> headers}) lastFile(
+    Pattern path, {
+    String? method = 'GET',
+  }) {
+    final a = _answers.lastWhere(
+      (a) =>
+          _matches(path, a.request.path) &&
+          (method == null || a.request.method.toUpperCase() == method),
+    );
+    return (bytes: a.bytes, headers: a.headers);
+  }
 
   /// The JSON the mock answered the last request to [path] with (a map: an
   /// object; a list: an array).

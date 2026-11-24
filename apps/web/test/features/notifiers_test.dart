@@ -10,9 +10,12 @@ import 'package:hoops_app/features/admin/data/academy_repository.dart';
 import 'package:hoops_app/features/admin/data/age_categories_repository.dart';
 import 'package:hoops_app/features/admin/data/members_repository.dart';
 import 'package:hoops_app/features/admin/data/seasons_repository.dart';
+import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/features/roster/application/roster_providers.dart';
 import 'package:hoops_app/features/roster/data/approvals_repository.dart';
 import 'package:hoops_app/features/roster/data/cases_repository.dart';
+import 'package:hoops_app/features/roster/data/players_repository.dart';
+import 'package:hoops_app/features/roster/data/teams_repository.dart';
 
 import '../support/core_fixtures.dart';
 import '../support/core_seed.dart';
@@ -40,8 +43,12 @@ ProviderContainer containerFor(FakeCore core, {MockBackend? backend}) {
       ageCategoriesRepositoryProvider.overrideWithValue(
         ApiAgeCategoriesRepository(b.coreApi(), tenant),
       ),
-      teamsRepositoryProvider.overrideWithValue(core.teams),
-      playersRepositoryProvider.overrideWithValue(core.players),
+      teamsRepositoryProvider.overrideWithValue(
+        ApiTeamsRepository(b.coreApi(), tenant),
+      ),
+      playersRepositoryProvider.overrideWithValue(
+        ApiPlayersRepository(b.coreApi(), tenant),
+      ),
       approvalsRepositoryProvider.overrideWithValue(
         ApiApprovalsRepository(b.coreApi(), tenant),
       ),
@@ -119,7 +126,7 @@ void main() {
 
   test('teams are listed for the active season only', () async {
     final core = FakeCore(
-      teams: FakeTeamsRepository(
+      teams: TeamsData(
         teams: [
           team('t1', 'Mini A'),
           team('t0', 'Old', sid: pastSeasonId),
@@ -154,10 +161,19 @@ void main() {
     'roster: assign adds the player and refreshes the team list counts',
     () async {
       final core = FakeCore(
-        teams: FakeTeamsRepository(teams: [team('t1', 'Mini A')]),
+        teams: TeamsData(teams: [team('t1', 'Mini A')]),
+        players: PlayersData([player('p9', 'Nico Paz')]),
       );
       final c = containerFor(core);
       await c.read(teamsProvider.future);
+      c.listen(
+        teamDetailProvider('t1'),
+        (_, _) {},
+      ); // auto-dispose, as on screen
+      c.listen(
+        teamDetailProvider('t1'),
+        (_, _) {},
+      ); // auto-dispose, as on screen
       await c.read(teamDetailProvider('t1').future);
       final notifier = c.read(teamDetailProvider('t1').notifier);
 
@@ -189,31 +205,33 @@ void main() {
   );
 
   test('eligibility check is forwarded without mutating the roster', () async {
+    // Born in 2012: too old for Mini A (U12), the mock's verdict.
     final core = FakeCore(
-      teams: FakeTeamsRepository(
-        teams: [team('t1', 'Mini A')],
-        checks: {
-          't1/p1': check(
-            't1',
-            'p1',
-            api.EligibilityResult.INELIGIBLE,
-            reasons: [api.EligibilityReason.CATEGORY_TOO_LOW],
-          ),
-        },
-      ),
+      teams: TeamsData(teams: [team('t1', 'Mini A')]),
+      players: PlayersData([
+        player('p1', 'Ana').rebuild((b) => b.birthDate = api.Date(2012, 3, 4)),
+      ]),
     );
     final c = containerFor(core);
+    c.listen(teamDetailProvider('t1'), (_, _) {}); // auto-dispose, as on screen
     await c.read(teamDetailProvider('t1').future);
     final verdict = await c.read(teamDetailProvider('t1').notifier).check('p1');
     expect(verdict.result, api.EligibilityResult.INELIGIBLE);
+    expect(verdict.reasons, [api.EligibilityReason.CATEGORY_TOO_LOW]);
     expect(core.teams.rosters['t1'] ?? [], isEmpty);
   });
 
   test('players: category filter is applied client-side, status/team go to the API', () async {
     final core = FakeCore(
-      players: FakePlayersRepository([
+      players: PlayersData([
         player('p1', 'Ana', cat: u12),
-        player('p2', 'Leo', cat: u14, status: api.PlayerStatus.ORPHAN),
+        // born in 2013: the mock places him in U14 (Infantil)
+        player(
+          'p2',
+          'Leo',
+          cat: u14,
+          status: api.PlayerStatus.ORPHAN,
+        ).rebuild((b) => b.birthDate = api.Date(2013, 3, 4)),
       ]),
     );
     final c = containerFor(core);
@@ -235,10 +253,13 @@ void main() {
     'creating a player returns the command result (APPROVED vs PENDING)',
     () async {
       for (final pending in [false, true]) {
-        final core = FakeCore(
-          players: FakePlayersRepository([], createdPending: pending),
+        // An admin's player is approved at once; a coach's is a request.
+        final c = containerFor(
+          FakeCore(),
+          backend: MockBackend(
+            roles: pending ? {TenantRole.coach} : {TenantRole.admin},
+          ),
         );
-        final c = containerFor(core);
         final r = await c
             .read(playersProvider.notifier)
             .create(

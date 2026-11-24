@@ -10,6 +10,7 @@ import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
 import '../../../support/core_fixtures.dart';
 import '../../../support/fake_game.dart';
+import '../../../support/core_seed.dart';
 import '../../../support/fake_repos.dart';
 import '../../../support/harness.dart';
 import '../../../support/pump_helpers.dart';
@@ -19,7 +20,7 @@ const sched = 'm-sched';
 const fin = 'm-fin';
 
 FakeCore coreWithTeam() => FakeCore(
-  teams: FakeTeamsRepository(
+  teams: TeamsData(
     teams: [team(teamA, 'Mini A')],
     rosters: {
       teamA: [
@@ -248,9 +249,7 @@ void main() {
         tester,
         roles: {TenantRole.coach},
         staffTeamIds: {teamA},
-        core: FakeCore(
-          teams: FakeTeamsRepository(teams: [team(teamA, 'Mini A')]),
-        ),
+        core: FakeCore(teams: TeamsData(teams: [team(teamA, 'Mini A')])),
         game: game,
         location: '/matches/$sched/setup',
       );
@@ -699,9 +698,7 @@ void main() {
         tester,
         roles: {TenantRole.coach},
         staffTeamIds: {teamA},
-        core: FakeCore(
-          players: FakePlayersRepository([player('p1', 'Ana Ruiz')]),
-        ),
+        core: FakeCore(players: PlayersData([player('p1', 'Ana Ruiz')])),
         game: game,
         location: '/players/p1',
       );

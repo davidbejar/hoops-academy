@@ -9,8 +9,11 @@ import '../../support/core_seed.dart';
 import '../../support/fake_repos.dart';
 import '../../support/pump_helpers.dart';
 
+final _u10 = category('cat-u10', 'U10', 0, maxAge: 10);
+
 FakeCore coreWithTeams() => FakeCore(
-  teams: FakeTeamsRepository(
+  categories: [_u10, u12, u14],
+  teams: TeamsData(
     teams: [
       team('t1', 'Mini A', alias: 'Leones', players: 2),
       team(
@@ -37,24 +40,18 @@ FakeCore coreWithTeams() => FakeCore(
         ),
       ],
     },
-    checks: {
-      't1/p3': check('t1', 'p3', api.EligibilityResult.PLAY_UP, playUp: 1),
-      't1/p4': check(
-        't1',
-        'p4',
-        api.EligibilityResult.INELIGIBLE,
-        reasons: [
-          api.EligibilityReason.CATEGORY_TOO_LOW,
-          api.EligibilityReason.GENDER_POLICY,
-        ],
-      ),
-    },
   ),
-  players: FakePlayersRepository([
+  players: PlayersData([
     player('p1', 'Ana Ruiz'),
     player('p2', 'Leo Gil'),
-    player('p3', 'Mia Soto'),
-    player('p4', 'Dan Lopez', status: api.PlayerStatus.ORPHAN),
+    // 2017: U10, so Mini A (U12) is a play-up for her
+    player('p3', 'Mia Soto').rebuild((b) => b.birthDate = api.Date(2017, 3, 4)),
+    // 2010: too old for every category, and a boy for the girls' Infantil B
+    player(
+      'p4',
+      'Dan Lopez',
+      status: api.PlayerStatus.ORPHAN,
+    ).rebuild((b) => b.birthDate = api.Date(2010, 3, 4)),
     player('p5', 'Withdrawn One', status: api.PlayerStatus.WITHDRAWN),
   ]),
   members: MembersData([
@@ -418,12 +415,16 @@ void main() {
   });
 
   group('assign player (eligibility)', () {
-    Future<void> openDialog(WidgetTester tester, FakeCore core) async {
+    Future<void> openDialog(
+      WidgetTester tester,
+      FakeCore core, {
+      String teamId = 't1',
+    }) async {
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
         core: core,
-        location: '/teams/t1',
+        location: '/teams/$teamId',
       );
       await tapKey(tester, 'roster-assign');
     }
@@ -483,8 +484,9 @@ void main() {
     testWidgets(
       'ineligible verdict lists the reasons and blocks the assignment',
       (tester) async {
+        // Dan in the girls' Infantil B: too old and not a girl.
         final core = coreWithTeams();
-        await openDialog(tester, core);
+        await openDialog(tester, core, teamId: 't2');
         await tapKey(tester, 'assign-candidate-p4');
         expect(find.text('No elegible'), findsOneWidget);
         expect(

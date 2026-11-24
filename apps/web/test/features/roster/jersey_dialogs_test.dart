@@ -1,16 +1,24 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
-import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/core_fixtures.dart';
+import '../../support/core_seed.dart';
 import '../../support/fake_repos.dart';
+import '../../support/harness.dart';
 import '../../support/pump_helpers.dart';
 
-/// Ana wears 7 and Leo 10 in Mini A; Mia (p3) and Dan (p4) can be assigned.
-FakeCore _core() => FakeCore(
-  teams: FakeTeamsRepository(
+/// Ana wears 7 and Leo 10 in Mini A; Mia (p3) and Dan (p4, born 2013: an
+/// Infantil) can be assigned. Without a requested, preferred or previous
+/// number the mock assigns none; [miaPreferred], [miaPrevious] (her number in
+/// Infantil) and [danPreferred] give the other rules something to apply.
+FakeCore _core({
+  String? miaPreferred,
+  String? miaPrevious,
+  String? danPreferred,
+}) => FakeCore(
+  teams: TeamsData(
     teams: [
       team('t1', 'Mini A', players: 2),
       team('t2', 'Infantil', cat: u14),
@@ -20,27 +28,23 @@ FakeCore _core() => FakeCore(
         teamPlayer('t1', 'p1', 'Ana Ruiz', jersey: '7'),
         teamPlayer('t1', 'p2', 'Leo Gil', jersey: '10'),
       ],
+      if (miaPrevious != null)
+        't2': [teamPlayer('t2', 'p3', 'Mia Soto', jersey: miaPrevious)],
     },
   ),
-  players: FakePlayersRepository(
-    [
-      player('p1', 'Ana Ruiz'),
-      player('p2', 'Leo Gil'),
-      player('p3', 'Mia Soto'),
-      player('p4', 'Dan Lopez', status: api.PlayerStatus.ORPHAN),
-    ],
-    eligible: {
-      'p4': [
-        api.EligibleTeam(
-          (b) => b
-            ..team.replace(team('t2', 'Infantil', cat: u14))
-            ..eligibility.replace(
-              check('t2', 'p4', api.EligibilityResult.ELIGIBLE),
-            ),
-        ),
-      ],
-    },
-  ),
+  players: PlayersData([
+    player('p1', 'Ana Ruiz'),
+    player('p2', 'Leo Gil'),
+    player(
+      'p3',
+      'Mia Soto',
+    ).rebuild((b) => b.preferredJerseyNumber = miaPreferred),
+    player('p4', 'Dan Lopez', status: api.PlayerStatus.ORPHAN).rebuild(
+      (b) => b
+        ..birthDate = api.Date(2013, 3, 4)
+        ..preferredJerseyNumber = danPreferred,
+    ),
+  ]),
 );
 
 Future<void> _assignMia(WidgetTester tester, FakeCore core) async {
@@ -68,9 +72,7 @@ void main() {
     });
 
     testWidgets('the preferred number', (tester) async {
-      final core = _core()
-        ..teams.assignSource = api.JerseySource.PREFERRED
-        ..teams.carriedNumber = '5';
+      final core = _core(miaPreferred: '5');
       await _assignMia(tester, core);
       await tapKey(tester, 'assign-confirm');
 
@@ -81,9 +83,7 @@ void main() {
     });
 
     testWidgets('the number of the previous team', (tester) async {
-      final core = _core()
-        ..teams.assignSource = api.JerseySource.PREVIOUS
-        ..teams.carriedNumber = '12';
+      final core = _core(miaPrevious: '12');
       await _assignMia(tester, core);
       await tapKey(tester, 'assign-confirm');
 
@@ -96,7 +96,7 @@ void main() {
     testWidgets('none free: says so and offers the jersey dialog at once', (
       tester,
     ) async {
-      final core = _core()..teams.assignSource = api.JerseySource.NONE;
+      final core = _core(); // no preferred or previous number
       await _assignMia(tester, core);
       await tapKey(tester, 'assign-confirm');
 
@@ -116,9 +116,7 @@ void main() {
     testWidgets('assigning from the player screen tells the rule too', (
       tester,
     ) async {
-      final core = _core()
-        ..teams.assignSource = api.JerseySource.PREFERRED
-        ..teams.carriedNumber = '3';
+      final core = _core(danPreferred: '3');
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
@@ -137,12 +135,12 @@ void main() {
   });
 
   group('jersey dialog', () {
-    Future<void> open(
+    Future<Harness> open(
       WidgetTester tester,
       FakeCore core,
       String playerId,
     ) async {
-      await pumpAs(
+      final h = await pumpAs(
         tester,
         roles: {TenantRole.admin},
         core: core,
@@ -151,6 +149,7 @@ void main() {
       await tapKey(tester, 'roster-menu-$playerId');
       await tester.tap(find.text('Cambiar dorsal'));
       await tester.pumpAndSettle();
+      return h;
     }
 
     testWidgets('shows the taken numbers with their players and the free '
@@ -193,16 +192,11 @@ void main() {
 
     testWidgets('a 409 from the server reloads the numbers and names the '
         'holder', (tester) async {
-      final core = _core();
-      await open(tester, core, 'p1');
-      // somebody took 9 after the dialog loaded the list
-      core.teams.rosters['t1']![1] = core.teams.rosters['t1']![1].rebuild(
-        (b) => b.jerseyNumber = '9',
-      );
-      core.teams.setJerseyFailure = const AppError(
-        kind: AppErrorKind.conflict,
-        status: 409,
-      );
+      final h = await open(tester, _core(), 'p1');
+      // somebody gave Leo the 9 after the dialog loaded the list: the mock
+      // answers 409
+      final leo = h.backend.core.players.firstWhere((p) => p['id'] == 'p2');
+      ((leo['teams']! as List).single as Map)['jerseyNumber'] = '9';
       await tester.enterText(find.byKey(const Key('jersey-field')), '9');
       await tapKey(tester, 'form-submit');
 

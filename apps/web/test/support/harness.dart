@@ -19,7 +19,6 @@ import 'package:hoops_app/core/connectivity/connectivity_providers.dart';
 import 'package:hoops_app/core/storage/preferences.dart';
 import 'package:hoops_app/core/ui/deferred_screen.dart';
 import 'package:hoops_app/features/me/application/me_providers.dart';
-import 'package:hoops_app/features/roster/application/roster_providers.dart';
 import 'package:hoops_app/features/me/data/me_repository.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/features/tenant/application/tenant_providers.dart';
@@ -222,10 +221,6 @@ class Harness {
         tenantRepositoryProvider.overrideWithValue(tenant),
         onlineProvider.overrideWith((ref) => online.stream),
         ...backend.overrides,
-        if (core != null) ...[
-          teamsRepositoryProvider.overrideWithValue(core!.teams),
-          playersRepositoryProvider.overrideWithValue(core!.players),
-        ],
         ...game.overrides,
         ...athlete.overrides,
         ...extraOverrides,

@@ -15,6 +15,7 @@ import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 import '../support/core_fixtures.dart';
 import '../support/fake_athlete.dart';
 import '../support/fake_game.dart';
+import '../support/core_seed.dart';
 import '../support/fake_repos.dart';
 import '../support/pump_helpers.dart';
 
@@ -31,7 +32,7 @@ FakeCore _core() => FakeCore(
     season(_past, '2025/26', endsOn: api.Date(2026, 6, 30)),
     season(seasonId, '2026/27', current: true),
   ],
-  teams: FakeTeamsRepository(
+  teams: TeamsData(
     teams: [
       team(_tOld, 'Mini A 25', sid: _past, seasonEnded: true),
       team(_tNew, 'Mini A'),
@@ -299,7 +300,6 @@ void main() {
       tester,
     ) async {
       final core = _core();
-      core.teams.historicStaffIds.add(_tOld);
       await pumpAs(
         tester,
         roles: {TenantRole.coach},

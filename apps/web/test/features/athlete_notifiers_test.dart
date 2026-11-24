@@ -11,6 +11,7 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/features/platform/application/platform_providers.dart';
 import 'package:hoops_app/features/platform/data/platform_repository.dart';
 import 'package:hoops_app/features/roster/application/roster_providers.dart';
+import 'package:hoops_app/features/roster/data/teams_repository.dart';
 import 'package:hoops_app/features/training/application/training_providers.dart';
 
 import 'package:flutter_riverpod/misc.dart' show Override;
@@ -33,7 +34,12 @@ ProviderContainer _container(
       capabilitiesProvider.overrideWithValue(caps),
       effectiveLocaleProvider.overrideWithValue(const Locale('es')),
       ...a.overrides,
-      teamsRepositoryProvider.overrideWithValue((core ?? athleteCore()).teams),
+      teamsRepositoryProvider.overrideWithValue(
+        ApiTeamsRepository(
+          (core ?? athleteCore()).seededBackend().coreApi(),
+          MockBackend.testTenantId,
+        ),
+      ),
       ...more,
     ],
   );
@@ -143,6 +149,8 @@ void main() {
     test('saveAttendance forwards the entries and refreshes', () async {
       final a = weekAthlete();
       final c = _container(a, const Capabilities(roles: {TenantRole.admin}));
+      // Watched like the session screen does: the provider is auto-dispose.
+      c.listen(sessionDetailProvider('s1'), (_, _) {});
       await c.read(sessionDetailProvider('s1').future);
       await c.read(sessionDetailProvider('s1').notifier).saveAttendance([
         ath.AttendanceInput(

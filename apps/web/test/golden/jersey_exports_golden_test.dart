@@ -1,19 +1,25 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../support/core_fixtures.dart';
+import '../support/core_seed.dart';
 import '../support/fake_repos.dart';
 import '../support/harness.dart';
 import '../support/pump_helpers.dart';
 
 /// The jersey dialogs and the wish of the family (WP101). Regenerate with
 /// `flutter test --update-goldens test/golden/jersey_exports_golden_test.dart`.
-FakeCore _core() => FakeCore(
-  teams: FakeTeamsRepository(
-    teams: [team('t1', 'Mini A', alias: 'Leones', players: 4)],
+/// [miaPrevious]: Mia's number in another team (the "previous" rule).
+FakeCore _core({String? miaPrevious}) => FakeCore(
+  teams: TeamsData(
+    teams: [
+      team('t1', 'Mini A', alias: 'Leones', players: 4),
+      if (miaPrevious != null) team('t2', 'Mini B'),
+    ],
     rosters: {
+      if (miaPrevious != null)
+        't2': [teamPlayer('t2', 'p3', 'Mia Soto', jersey: miaPrevious)],
       't1': [
         teamPlayer('t1', 'p1', 'Ana Ruiz', jersey: '7'),
         teamPlayer('t1', 'p2', 'Leo Gil', jersey: '10'),
@@ -22,7 +28,7 @@ FakeCore _core() => FakeCore(
       ],
     },
   ),
-  players: FakePlayersRepository([
+  players: PlayersData([
     player(
       'p1',
       'Ana Ruiz',
@@ -81,9 +87,7 @@ void main() {
   testWidgets('assignment outcome, the number of the previous team', (
     tester,
   ) async {
-    final core = _core()
-      ..teams.assignSource = api.JerseySource.PREVIOUS
-      ..teams.carriedNumber = '12';
+    final core = _core(miaPrevious: '12');
     await _pump(
       tester,
       const Size(360, 780),
@@ -102,7 +106,7 @@ void main() {
   testWidgets('assignment outcome, nothing free: the jersey dialog opens', (
     tester,
   ) async {
-    final core = _core()..teams.assignSource = api.JerseySource.NONE;
+    final core = _core(); // no preferred or previous number
     await _pump(
       tester,
       const Size(360, 780),

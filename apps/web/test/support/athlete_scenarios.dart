@@ -3,6 +3,7 @@ import 'package:hoops_app/features/training/domain/week.dart';
 
 import 'core_fixtures.dart';
 import 'fake_athlete.dart';
+import 'core_seed.dart';
 import 'fake_repos.dart';
 
 /// Monday of the current week (what the calendar opens on).
@@ -13,7 +14,7 @@ DateTime weekday(int offset) =>
 
 /// Two teams, a roster for t1 and the players used by the athlete tests.
 FakeCore athleteCore() => FakeCore(
-  teams: FakeTeamsRepository(
+  teams: TeamsData(
     teams: [
       team('t1', 'Mini A', alias: 'Leones', players: 3),
       team('t2', 'Infantil B', cat: u14, players: 1),
@@ -27,7 +28,7 @@ FakeCore athleteCore() => FakeCore(
       't2': [teamPlayer('t2', 'p4', 'Dan Lopez')],
     },
   ),
-  players: FakePlayersRepository([
+  players: PlayersData([
     player(
       'p1',
       'Ana Ruiz',

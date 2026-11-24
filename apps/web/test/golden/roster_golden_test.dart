@@ -12,7 +12,7 @@ import '../support/pump_helpers.dart';
 /// screens. Regenerate with
 /// `flutter test --update-goldens test/golden/roster_golden_test.dart`.
 FakeCore _core() => FakeCore(
-  teams: FakeTeamsRepository(
+  teams: TeamsData(
     teams: [
       team('t1', 'Mini A', alias: 'Leones', players: 12),
       team(
@@ -42,7 +42,7 @@ FakeCore _core() => FakeCore(
       ],
     },
   ),
-  players: FakePlayersRepository([
+  players: PlayersData([
     player(
       'p1',
       'Ana Ruiz',

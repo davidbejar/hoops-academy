@@ -12,6 +12,7 @@ import '../../../support/core_fixtures.dart';
 import '../../../support/fake_athlete.dart';
 import '../../../support/fake_export.dart';
 import '../../../support/fake_game.dart';
+import '../../../support/core_seed.dart';
 import '../../../support/fake_repos.dart';
 import '../../../support/export_overrides.dart';
 import '../../../support/pump_helpers.dart';
@@ -37,7 +38,7 @@ EventMeta _meta(String id, int clock) => EventMeta(
 );
 
 FakeCore coreWithTeam() => FakeCore(
-  teams: FakeTeamsRepository(
+  teams: TeamsData(
     teams: [team(teamA, 'Mini A')],
     rosters: {
       teamA: [
@@ -46,7 +47,7 @@ FakeCore coreWithTeam() => FakeCore(
       ],
     },
   ),
-  players: FakePlayersRepository([player('p1', 'Ana Ruiz')]),
+  players: PlayersData([player('p1', 'Ana Ruiz')]),
 );
 
 FakeGame game() {

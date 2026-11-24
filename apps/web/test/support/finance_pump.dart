@@ -8,6 +8,7 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import 'core_fixtures.dart';
 import 'fake_finance.dart';
+import 'core_seed.dart';
 import 'fake_repos.dart';
 import 'harness.dart';
 import 'pump_helpers.dart';
@@ -31,7 +32,7 @@ FakeCore financeCore({Map<String, List<api.TeamStaffMember>>? staff}) =>
         ),
         season(seasonId, '2026/27', current: true),
       ],
-      teams: FakeTeamsRepository(
+      teams: TeamsData(
         teams: [
           team('team-mini-a', 'Mini A', alias: 'Leones', players: 7),
           team('team-mini-b', 'Mini B', players: 1),

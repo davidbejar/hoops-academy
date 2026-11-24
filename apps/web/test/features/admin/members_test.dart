@@ -22,10 +22,7 @@ FakeCore coreWithMembers() => FakeCore(
       invitation: api.InvitationStatus.PENDING,
     ),
   ]),
-  players: FakePlayersRepository([
-    player('p1', 'Ana Ruiz'),
-    player('p2', 'Leo Gil'),
-  ]),
+  players: PlayersData([player('p1', 'Ana Ruiz'), player('p2', 'Leo Gil')]),
 );
 
 DioException _problem(int status, String code) {

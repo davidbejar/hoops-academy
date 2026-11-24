@@ -1,18 +1,18 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/errors/app_error.dart';
-import 'package:hoops_app/core/export/server_file.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/core_fixtures.dart';
 import '../../support/export_overrides.dart';
 import '../../support/fake_export.dart';
+import '../../support/core_seed.dart';
 import '../../support/fake_repos.dart';
 import '../../support/harness.dart';
 import '../../support/pump_helpers.dart';
 
 FakeCore _core() => FakeCore(
-  teams: FakeTeamsRepository(
+  teams: TeamsData(
     teams: [team('t1', 'Mini A', players: 1)],
     rosters: {
       't1': [teamPlayer('t1', 'p1', 'Ana Ruiz', jersey: '7')],
@@ -110,17 +110,19 @@ void main() {
       expect(core.teams.rosterPdfs, [('t1', 'es')]);
       expect(core.teams.rosterExports, isEmpty, reason: 'not the CSV');
       final file = downloader.saved.single;
-      expect(file.fileName, 'hoops-role-test-roster-mini-a-20261116.pdf');
-      expect(file.bytes, core.teams.rosterPdf.bytes);
+      final serverName = core.teams.lastExportName!;
+      expect(serverName, startsWith('hoops-demo-roster-mini-a-'));
+      expect(file.fileName, serverName);
+      expect(file.bytes, core.teams.lastExport.bytes);
       expect(file.mediaType, 'application/pdf');
-      expect(find.textContaining('Descargado hoops-role-test'), findsOneWidget);
+      expect(find.textContaining('Descargado $serverName'), findsOneWidget);
     });
 
     testWidgets('without a name from the server the app names the file', (
       tester,
     ) async {
       final core = _core();
-      core.teams.rosterPdf = ServerFile(core.teams.rosterPdf.bytes);
+      core.teams.noServerFileName = true;
       final downloader = FakeFileDownloader();
       await _pump(tester, core, downloader, roles: {TenantRole.admin});
 

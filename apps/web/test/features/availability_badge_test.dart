@@ -6,6 +6,7 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 import '../support/core_fixtures.dart';
 import '../support/fake_athlete.dart';
 import '../support/fake_game.dart' show teamA;
+import '../support/core_seed.dart';
 import '../support/fake_repos.dart';
 import '../support/pump_helpers.dart';
 import 'match/presentation/match_screens_test.dart'
@@ -22,7 +23,7 @@ FakeAthlete _withInjury() => FakeAthlete(
 void main() {
   testWidgets('team roster rows show who is injured', (tester) async {
     final core = FakeCore(
-      teams: FakeTeamsRepository(
+      teams: TeamsData(
         teams: [team('t1', 'Mini A', players: 2)],
         rosters: {
           't1': [

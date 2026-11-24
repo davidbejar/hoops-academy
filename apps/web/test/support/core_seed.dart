@@ -162,9 +162,8 @@ extension CoreSeed on MockBackend {
 /// mock, and the other getters from the requests the app sent. Failures go to
 /// the backend.
 class MembersData {
-  MembersData(List<api.Member> members, {List<api.GuardianLink>? links})
-    : _members = members,
-      _links = links ?? [];
+  MembersData(this._members, {List<api.GuardianLink>? links})
+    : _links = links ?? [];
 
   final List<api.Member> _members;
   final List<api.GuardianLink> _links;
@@ -325,4 +324,294 @@ class MembersData {
           _ => '${r.method} ${r.path}',
         },
   ];
+}
+
+/// Turns a fake's `failWith` / `hang` into a fault of [backend] on [path].
+void _injectInto(MockBackend backend, Object error, Pattern path) {
+  if (error is AppError) {
+    if (error.kind == AppErrorKind.network) {
+      return backend.networkDown(path);
+    }
+    final status =
+        error.status ??
+        switch (error.kind) {
+          AppErrorKind.conflict => 409,
+          AppErrorKind.timeout => 504,
+          AppErrorKind.validation => 422,
+          AppErrorKind.notFound => 404,
+          _ => 500,
+        };
+    return backend.fail(path, status: status, code: error.code);
+  }
+  if (error is DioException) {
+    final data = error.response?.data as Map?;
+    return backend.fail(
+      path,
+      status: error.response?.statusCode ?? 500,
+      code: data?['code'] as String?,
+    );
+  }
+  backend.fail(path);
+}
+
+T _fromJson<T>(Object? json) =>
+    api.standardSerializers.deserialize(json, specifiedType: FullType(T)) as T;
+
+/// The teams of a test (`/api/core/teams`, rosters as the players'
+/// assignments, staff), then what the app did with them (ADR-0070).
+class TeamsData {
+  TeamsData({
+    required List<api.Team> teams,
+    Map<String, List<api.TeamPlayer>>? rosters,
+    Map<String, List<api.TeamStaffMember>>? staff,
+  }) : _teams = teams, // ignore: prefer_initializing_formals
+       _rosters = rosters ?? {},
+       _staff = staff ?? {};
+
+  final List<api.Team> _teams;
+  final Map<String, List<api.TeamPlayer>> _rosters;
+  final Map<String, List<api.TeamStaffMember>> _staff;
+  MockBackend? _backend;
+  MockBackend get _b => _backend!;
+
+  static final _api = RegExp('^/api/core/teams');
+  static const _list = '/api/core/teams';
+
+  final List<(Object, Pattern)> _pending = [];
+  bool _hang = false;
+
+  void seedInto(MockBackend backend) {
+    _backend = backend;
+    backend.seedTeams(_teams);
+    _rosters.forEach(backend.seedRoster);
+    _staff.forEach(backend.seedStaff);
+    if (noServerFileName) {
+      backend.dropHeaders(RegExp(r'/roster:export$'), {'content-disposition'});
+    }
+    if (_hang) backend.hang(_api);
+    for (final (error, path) in _pending) {
+      _injectInto(backend, error, path);
+    }
+  }
+
+  void _fault(Object? error, Pattern path) {
+    if (error == null) {
+      _pending.clear();
+      _backend?.heal();
+      return;
+    }
+    _backend == null
+        ? _pending.add((error, path))
+        : _injectInto(_b, error, path);
+  }
+
+  List<api.Team> get teams => _backend == null
+      ? _teams
+      : [for (final t in _b.core.teams) _fromJson<api.Team>(t)];
+
+  /// The rosters: before seeding the seed (mutable), afterwards the mock's,
+  /// read from the players' assignments.
+  Map<String, List<api.TeamPlayer>> get rosters {
+    if (_backend == null) return _rosters;
+    final out = <String, List<api.TeamPlayer>>{};
+    for (final p in _b.core.players) {
+      for (final a in (p['teams']! as List).cast<Map<String, Object?>>()) {
+        final teamId = (a['team']! as Map)['id']! as String;
+        (out[teamId] ??= []).add(
+          api.TeamPlayer(
+            (b) => b
+              ..player.replace(
+                api.PlayerRef(
+                  (r) => r
+                    ..id = p['id']! as String
+                    ..displayName = p['displayName']! as String,
+                ),
+              )
+              ..teamId = teamId
+              ..jerseyNumber = a['jerseyNumber'] as String?
+              ..joinedOn = api.Date(2026, 9, 1)
+              ..playUpLevels = (a['playUpLevels'] as int?) ?? 0
+              ..playerStatus = _fromJson<api.PlayerStatus>(p['status']),
+          ),
+        );
+      }
+    }
+    return out;
+  }
+
+  Map<String, List<api.TeamStaffMember>> get staffByTeam => _backend == null
+      ? _staff
+      : {
+          for (final e in _b.core.staff.entries)
+            e.key: [for (final s in e.value) _fromJson<api.TeamStaffMember>(s)],
+        };
+
+  set hang(bool value) {
+    _hang = value;
+    if (value && _backend != null) _b.hang(_api);
+  }
+
+  /// Fails every team call (null: heals).
+  set failWith(Object? error) => _fault(error, _api);
+
+  /// Fails only the change of a jersey number.
+  set setJerseyFailure(Object? error) =>
+      _fault(error, RegExp(r'^/api/core/teams/[^/]+/players/[^/]+$'));
+
+  /// Fails only the roster exports.
+  set exportFailure(Object? error) => _fault(error, RegExp(r'/roster:export$'));
+
+  api.CreateTeamRequest? get lastCreate {
+    final sent = _b.requestsTo(_list, method: 'POST');
+    return sent.isEmpty
+        ? null
+        : _fromJson<api.CreateTeamRequest>(MockBackend.bodyOf(sent.last));
+  }
+
+  api.UpdateTeamRequest? get lastUpdate {
+    final sent = _b.requestsTo(
+      RegExp(r'^/api/core/teams/[^/]+$'),
+      method: 'PATCH',
+    );
+    return sent.isEmpty
+        ? null
+        : _fromJson<api.UpdateTeamRequest>(MockBackend.bodyOf(sent.last));
+  }
+
+  /// The roster exports asked for, CSV and PDF: team id and language.
+  List<(String, String)> _exports(bool pdf) => [
+    for (final r in _b.requestsTo(RegExp(r'/roster:export$')))
+      if ('${r.headers['Accept'] ?? ''}'.contains('application/pdf') == pdf)
+        (r.path.split('/')[4], '${r.headers['Accept-Language']}'),
+  ];
+
+  List<(String, String)> get rosterExports => _exports(false);
+
+  /// The server leaves the file name out of its roster exports.
+  bool noServerFileName = false;
+
+  /// The file the mock answered the last roster export with.
+  ({Uint8List bytes, Map<String, List<String>> headers}) get lastExport =>
+      _b.lastFile(RegExp(r'/roster:export$'));
+
+  /// The file name the server gave the last roster export.
+  String? get lastExportName {
+    final d = lastExport.headers['content-disposition']?.firstOrNull;
+    return d == null ? null : RegExp('filename="([^"]+)"').firstMatch(d)?[1];
+  }
+
+  List<(String, String)> get rosterPdfs => _exports(true);
+
+  /// The team operations the app called, by the fakes' names.
+  List<String> get calls => [
+    for (final r in _b.requests)
+      if (_api.hasMatch(r.path)) _name(r.method.toUpperCase(), r.path),
+  ];
+
+  static String _name(String method, String path) {
+    final seg = path.split('/'); // '', api, core, teams, {id}, sub, ...
+    final sub = seg.length > 5 ? seg[5] : null;
+    final deep = seg.length > 6;
+    return switch ((method, sub, deep)) {
+      ('GET', null, _) => seg.length > 4 ? 'get' : 'list',
+      ('POST', null, _) => 'create',
+      ('PATCH', null, _) => 'update',
+      ('GET', 'players', false) => 'roster',
+      ('POST', 'players', false) => 'assign',
+      ('DELETE', 'players', true) => 'unassign',
+      ('PATCH', 'players', true) => 'setJersey',
+      ('GET', 'players', true) => 'check',
+      ('GET', 'staff', _) => 'staff',
+      ('PUT', 'staff', _) => 'putStaff',
+      ('DELETE', 'staff', _) => 'removeStaff',
+      ('GET', 'jersey-numbers', _) => 'jerseyNumbers',
+      ('GET', 'roster:export', _) => 'exportRoster',
+      _ => '$method $path',
+    };
+  }
+}
+
+/// The players of a test (`/api/core/players`), then what the app did with
+/// them (ADR-0070).
+class PlayersData {
+  PlayersData(this._players);
+
+  final List<api.Player> _players;
+  MockBackend? _backend;
+  MockBackend get _b => _backend!;
+
+  static final _api = RegExp('^/api/core/players');
+  static const _list = '/api/core/players';
+  final List<Object> _pending = [];
+  bool _hang = false;
+
+  void seedInto(MockBackend backend) {
+    _backend = backend;
+    backend.seedPlayers(_players);
+    if (_hang) backend.hang(_api);
+    for (final e in _pending) {
+      _injectInto(backend, e, _api);
+    }
+  }
+
+  List<api.Player> get players => _backend == null
+      ? _players
+      : [for (final p in _b.core.players) _fromJson<api.Player>(p)];
+
+  set hang(bool value) {
+    _hang = value;
+    if (value && _backend != null) _b.hang(_api);
+  }
+
+  /// Fails every player call (null: heals).
+  set failWith(Object? error) {
+    if (error == null) {
+      _pending.clear();
+      _backend?.heal();
+    } else {
+      _backend == null ? _pending.add(error) : _injectInto(_b, error, _api);
+    }
+  }
+
+  api.CreatePlayerRequest? get lastCreate {
+    final sent = _b.requestsTo(_list, method: 'POST');
+    return sent.isEmpty
+        ? null
+        : _fromJson<api.CreatePlayerRequest>(MockBackend.bodyOf(sent.last));
+  }
+
+  /// The password of the last login the mock created with a player.
+  String? get newLoginPassword {
+    if (_b.requestsTo(_list, method: 'POST').isEmpty) return null;
+    final a = _b.lastAnswer(_list, method: 'POST');
+    return a is Map ? a['temporaryPassword'] as String? : null;
+  }
+
+  /// The player of the last withdrawal.
+  String? get withdrawn {
+    final sent = _b.requestsTo(RegExp(r'/withdraw$'), method: 'POST');
+    return sent.isEmpty ? null : sent.last.path.split('/')[4];
+  }
+
+  /// The player and number of the last preferred-number change (null: none
+  /// sent; a null number: removed).
+  (String, String?)? get lastPreferred {
+    final sent = _b.requestsTo(
+      RegExp(r'^/api/core/players/[^/]+$'),
+      method: 'PATCH',
+    );
+    if (sent.isEmpty) return null;
+    final body = MockBackend.bodyOf(sent.last);
+    return (
+      sent.last.path.split('/')[4],
+      body['preferredJerseyNumber'] as String?,
+    );
+  }
+
+  api.PlayerStatus? get lastStatus {
+    final s = _b.lastQuery(_list).text('status');
+    return s == null ? null : _fromJson<api.PlayerStatus>(s);
+  }
+
+  String? get lastTeamId => _b.lastQuery(_list).text('teamId');
 }
