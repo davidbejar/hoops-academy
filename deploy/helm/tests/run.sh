@@ -706,9 +706,12 @@ for s in core game athlete; do
     && echo "$c" | grep -qx '  QUARKUS_OTEL_RESOURCE_ATTRIBUTES: "service.namespace=hoops-academy,deployment.environment.name=kind,k8s.namespace.name=hoops"' \
     && ok "kind: $s-service exports to otel-collector:4317, all traces sampled, resource attributes without a tenant" \
     || bad "kind: $s-service OTel env"
-  p=services/$s-service/src/main/resources/application.properties
+  # Build-time keys: since WP137 (ADR-0069) they are set once, in the library every service is built with, and no
+  # service may set them again (LibraryDefaultsContract checks each service sees the library's value).
+  p=libs/common-quarkus/src/main/resources/META-INF/microprofile-config.properties
   grep -qx 'quarkus.otel.logs.enabled=true' "$p" && grep -qx 'quarkus.otel.traces.sampler=parentbased_traceidratio' "$p" \
-    && ok "$s-service build: logs exporter and parent-based ratio sampler compiled in (build-time keys)" || bad "$s-service OTel build keys"
+    && ! grep -q '^quarkus.otel.\(logs.enabled\|traces.sampler\)=' "services/$s-service/src/main/resources/application.properties" \
+    && ok "$s-service build: logs exporter and parent-based ratio sampler compiled in (build-time keys, from common-quarkus)" || bad "$s-service OTel build keys"
   doc "$s-service-env" ConfigMap "$D" | grep -qx '  QUARKUS_OTEL_SDK_DISABLED: "true"' && ! doc "$s-service-env" ConfigMap "$D" | grep -q 'OTLP_ENDPOINT' \
     && ok "default: $s-service OTel SDK off, no endpoint" || bad "default: $s-service OTel env"
 done
