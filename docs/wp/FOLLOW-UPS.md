@@ -516,9 +516,9 @@ fresh volume, the seeds, the checks and the e2e journey; on failure back to the 
 
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
-| 1 | WP142 | Infra: apply the outdated pins; the bump script tracks PostgreSQL | Sonnet · high | Running |
-| 1 | WP143 | Services: the SQL calls of every service appear in its traces | Opus · medium | Running |
-| 2 | WP144 | Database: PostgreSQL 17 to 19 (18.7 if a dependency refuses 19) | Opus · high | After wave 1 |
+| 1 | WP142 | Infra: apply the outdated pins; the bump script tracks PostgreSQL | Sonnet · high | Done (12 pins applied; bump script tracks PostgreSQL; local stack on Redpanda v26.3.1, e2e 38/38) |
+| 1 | WP143 | Services: the SQL calls of every service appear in its traces | Opus · medium | Done (ADR-0074; Maven 3,794 tests; proven in Tempo on compose: 1,660 database spans, no orphan, no value) |
+| 2 | WP144 | Database: PostgreSQL 17 to 19 (18.7 if a dependency refuses 19) | Opus · high | Running |
 | 3 | WP145 | athlete: a trigram index for the exercise search | Opus · medium | After wave 2 |
 | 3 | WP146 | kind and CI: the install waits for Keycloak under load; the skipped shell tests run in CI | Opus · medium | After wave 2 |
 | 4 | WP147 | Docs pass | Opus · medium | Last alone |
