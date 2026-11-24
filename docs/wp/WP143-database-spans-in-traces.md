@@ -81,9 +81,9 @@ database calls as spans. ADR-0074 is reserved for you (an amendment of ADR-0046 
     same constructor plus `otelhttp` as `main` does.
 - Span counts, one request, SDK on (tests): core roster read 1 -> 5 (4 database: `set_config`, team, team_player,
   player+person); game feed 1 -> 5 (4); athlete session sheet 1 -> 5 (4); finance dues list 1 -> 11 (10: two
-  transactions of BEGIN, `set_config`, SELECTs, COMMIT). Nothing near "a few dozen". Outbox poll: per-poll statement
-  count not measured (in the test profile the poll returns before the database); the orphan test shows such
-  statements no longer become traces.
+  transactions of BEGIN, `set_config`, SELECTs, COMMIT). Nothing near "a few dozen". Outbox poll: a probe run of
+  `OutboxPublisherJob.run()` under a span in the test profile showed 0 database spans (cause not established), so the
+  per-poll figure is not measured; the orphan test shows a statement outside any span no longer becomes a trace.
 - Privacy: red shown with a value planted on the server span (`Span.current().setAttribute(...)` with the roster DTO in
   `TeamPlayerResource.list`, not committed): `noSpanOfTheRosterReadCarriesAValueATenantOrAName` failed on
   "Zelphine", "Quorrowby"; reverted, green. The Java exception event of a refused insert names the constraint only:
@@ -93,28 +93,42 @@ database calls as spans. ADR-0074 is reserved for you (an amendment of ADR-0046 
     32 skipped, all coverage checks met. (The earlier run, before the sampler, had one wall-clock failure in core
     `TenantUsageResourceTest.aPeerSlowerThanTheTimeoutCountsAsUnavailable`, 3583 ms > 3400 ms while the commit hook's
     Keycloak check ran alongside; green alone and in the fresh run.)
-  - `just test-go`: gofmt, tidy, golangci-lint 0 issues, tests ok, coverage module 88.68 %, domain 98.84 %,
+  - `just test-go`: gofmt, tidy, golangci-lint 0 issues, tests ok (174 top-level tests, 0 failed, 0 skipped, counted
+    with `go test -count=1 -v ./...`), coverage module 88.68 %, domain 98.84 %,
     govulncheck: no vulnerabilities reached (go.mod unchanged).
   - `bash deploy/helm/tests/run.sh`: ALL CHART TESTS PASSED (237 ok; red before the key, only the three build-key
     checks). No chart snapshot changed.
   - `just isolation-check` (6 Java + 4 Go tests) and `just db-role-check` (13 + 2) passed in the worktree (no `.env`
     needed). `just docs-build` strict: no issues.
-- Not run: the Tempo proof on compose (`just observability-up` reads the owner's `.env`). At merge, from the main
-  checkout with `just up` running: rebuild/restart the services from the merged code (a build-time key), then
-  `just observability-up`, start core/game/athlete with `QUARKUS_OTEL_SDK_DISABLED=false` (`./mvnw -pl
-  services/<svc>-service quarkus:dev`) and finance with `HOOPS_OTEL_SDK_DISABLED=false` (`just finance-up`), make one
-  request each (team players list, match events feed, session attendance, `GET /api/finance/dues`). In Grafana
-  (http://localhost:3000, Explore, Tempo) search `{ span.db.system = "postgresql" }` or by service: each request's trace
-  shows the server span with 4 (finance 10) child spans named `SELECT core.team` etc. (finance `SELECT`, `BEGIN`,
-  `COMMIT`); `db.statement` holds `?`/`$n`, never a value; `select set_config(?, ?, true)` is the first child; no trace
-  consists of database spans alone (the outbox poll leaves none).
+- Not run: the Tempo proof on compose (`just observability-up` and `just finance-up` read the owner's `.env`). At
+  merge, from the main checkout (images and dev builds must come from the merged code: the JDBC key is build-time):
+  ```
+  source scripts/env.sh && just up && just observability-up
+  export QUARKUS_OTEL_SDK_DISABLED=false QUARKUS_OTEL_TRACES_SAMPLER_ARG=1.0
+  ./mvnw -pl services/core-service quarkus:dev      # :8081, one terminal each
+  ./mvnw -pl services/game-service quarkus:dev      # :8082
+  ./mvnw -pl services/athlete-service quarkus:dev   # :8083
+  HOOPS_OTEL_SDK_DISABLED=false just finance-up     # :8085, rebuilt (--build)
+  . scripts/lib/oidc-login.sh                       # an ADMIN of a seeded academy; password in a variable, e.g. PW
+  oidc_login http://localhost:8080/auth/realms/academy <redirect URI of client web> <admin login> PW
+  H=(-H "Authorization: Bearer $OIDC_ACCESS_TOKEN" -H "X-Tenant-Id: <tenant id>")
+  curl -s "${H[@]}" localhost:8081/api/core/teams/<team id>/players >/dev/null
+  curl -s "${H[@]}" localhost:8082/api/game/matches/<match id>/events >/dev/null
+  curl -s "${H[@]}" localhost:8083/api/athlete/training-sessions/<session id>/attendance >/dev/null
+  curl -s "${H[@]}" localhost:8085/api/finance/dues >/dev/null
+  ```
+  In Grafana (http://localhost:3000, Explore, data source Tempo), TraceQL `{ span.db.system = "postgresql" }`: each
+  request's trace has its server span with 4 children (`select set_config(?, ?, true)` first, then e.g.
+  `SELECT core.team`), finance 10 (`BEGIN`, `SELECT`, `COMMIT`); `db.statement` shows `?` / `$n`, never a value or the
+  tenant id. Orphans: `{ span.db.system = "postgresql" && nestedSetParent = -1 }` (a database span as a trace's root)
+  must find nothing after a minute of idling (core's outbox poll runs every second).
 - Decisions/ADRs: ADR-0074 (amends ADR-0046, pointer amendment added there; line at the end of `docs/adr/README.md`):
   statement attribute = parameterised text, values never; `set_config` span kept (evidence of the tenant binding,
   tenant id is a bound value); database spans need a parent; finance's own tracer instead of `otelpgx`.
 - Open points / follow-ups:
   - `quarkus.otel.traces.sampler` can only stay `parentbased_traceidratio` while `DatabaseSpansNeedAParent` exists.
-  - Residual (untested): a driver/server message that echoes malformed input could reach a Java exception event; the
-    services validate input before SQL.
+  - Residual (untested): a driver/server message that echoes refused input (e.g. text PostgreSQL cannot store, which
+    `ProblemMapping` maps to a Problem) could reach a Java exception event; no test sends such a value.
   - Tracing the scheduled jobs (`quarkus.scheduler.tracing.enabled`) would give the nightly jobs traces with their
     SQL; a separate decision.
   - The compose collector file is unchanged (no attribute needed dropping).

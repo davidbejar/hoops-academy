@@ -32,8 +32,8 @@ carry a bound value, a tenant's data or a statement with literals (P-11 stance, 
    contains`) when the table has row-level security for the role, and every table here forces RLS for the app roles
    (`RlsSchemaMetaTest`); proved on `core.team` (a duplicate name: the event names the constraint, not the name or the
    tenant). Finance keeps only the SQLSTATE (`db.response.status_code`, status `SQLSTATE 23505`) and no server text.
-   Residual, not tested: a driver or server message that echoes malformed input (an unparsable value); the services
-   validate input before it reaches SQL.
+   Residual, not tested: a driver or server message that echoes refused input (text PostgreSQL cannot store reaches the
+   database and is mapped to a Problem by `ProblemMapping`) could land in the Java exception event.
 5. **The `set_config` span is kept.** It is `select set_config(?, ?, true)` (Java, the setting name sanitised too) or
    `select set_config(?, $1, true)` (finance): the tenant id is a bound value and never on the span. It costs one span
    per transaction, and it is the evidence that the tenant binding ran in the transaction that read the rows, which is
