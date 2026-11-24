@@ -4,7 +4,7 @@ Sources: `wp/FOLLOW-UPS.md`, the WP handovers, `security/review-2026-11.md`, `PL
 ordered by date; there are no committed dates. IDs F-nn refer to the security review. "Seam" means the extension point
 already exists in v1. The plans of 2026-11-05 (`wp/FOLLOW-UPS.md`, WP26–WP37) and of 2026-11-06/07 (WP38–WP42, third
 round WP43–WP51, fourth round WP52–WP71, fifth round WP72–WP90) of 2026-11-10 (sixth round WP91–WP103), of 2026-11-14 (seventh round WP104–WP110) of 2026-11-15/16 (eighth round
-WP111–WP125) and of 2026-11-23/24 (ninth round WP126–WP140, from an audit for duplication and inefficiencies) are done (JDK 25 merged on 2026-11-15); the items they closed are no longer listed here. Hoops Academy is a learning project, not commercial (yet) (ADR-0025): the "if it goes commercial"
+WP111–WP125) of 2026-11-23/24 (ninth round WP126–WP140, from an audit for duplication and inefficiencies) and of 2026-11-24/25 (tenth round WP142–WP147: PostgreSQL 19 and four items beside it) are done (JDK 25 merged on 2026-11-15); the items they closed are no longer listed here. Hoops Academy is a learning project, not commercial (yet) (ADR-0025): the "if it goes commercial"
 items below are deliberately not planned.
 
 ## Product and billing
@@ -100,7 +100,8 @@ service worker exists since WP14b.)
   commit SHAs and Dependabot waits 7 days for a release (WP50, WP84). Drop the guava pin once the Quarkus BOM ships
   >= 33.7.2 (3.40.1.2 still manages 33.6.0-jre). The Java images are on distroless Java 25 since WP114 (ADR-0054),
   which cleared the `krb5-libs` findings; the pdf and finance base images are not in `bump-pins` yet. Envoy Gateway is
-  on v1.10.0 since WP100. The weekly PR cannot carry workflow-file pins (the Actions token
+  on v1.10.0 since WP100. Since WP142 the script also tracks the PostgreSQL minor (five places, a minor only when Docker
+  Hub and CloudNativePG both publish it; a new major only with `--major` and the runbook, ADR-0073). The weekly PR cannot carry workflow-file pins (the Actions token
   may not push workflows): Trivy, Semgrep and the ZAP digest are bumped by hand with `scripts/bump-pins.sh --apply`, or
   a fine-grained token lets the PR include them.
 - **json-schema-validator 3.x** (WP43): blocked until the strict OpenAPI validator (ADR-0027) moves to networknt 3.x;
@@ -164,8 +165,9 @@ leads: `domain/norms.md`.
 - **Observability.** An OpenTelemetry collector ships the services' traces and logs (and Envoy's spans) when
   `global.observability.enabled` is set (WP86, ADR-0046); since WP120 it also scrapes metrics and sends all three to one
   Grafana LGTM pod on kind and in a compose profile (24 h retention, anonymous Viewer, three dashboards); the cloud
-  values keep the in-memory Jaeger, and a real environment brings its own backend. Still open: database spans,
-  request metrics for pdf and finance, alerting on audit and authz failures (`hoops_authz_denied_total`, WP85),
+  values keep the in-memory Jaeger, and a real environment brings its own backend. Since WP143 the services' SQL shows
+  as spans of the request, never with a bound value (ADR-0074). Still open: traces for the scheduled jobs, ids in
+  exception messages on spans (P-11 / ADR-0043 question), request metrics for pdf and finance, alerting on audit and authz failures (`hoops_authz_denied_total`, WP85),
   Keycloak, Envoy access and Redpanda logs to the collector.
 - **Mail.** Core sends the sign-up decision e-mails (WP90); since chart 0.10.0 (WP100) the chart sets core's SMTP keys
   (Mailpit on kind, an optional `hoops-smtp` Secret for a real server; ESO has no `hoops-smtp` entry by default).

@@ -58,7 +58,10 @@ rule is common's `authz.MembershipRule` (ADR-0066): a service implements `Member
 authz-matrix cases against it. A change of the rule names finance-service's Go copy in the same PR.
 Readiness: common's `CoreReachabilityCheck` adds an always-UP `core-service` check (`data.core = reachable|unreachable`)
 to every service that depends on common; a service that must not probe core sets
-`hoops.core.reachability-check.enabled=false` (build-time, as core does). Test lock contention by releasing the other
+`hoops.core.reachability-check.enabled=false` (build-time, as core does). Database spans (ADR-0074): common sets
+`quarkus.datasource.jdbc.telemetry=true` and the `DatabaseSpansNeedAParent` sampler, which refuses to start unless
+`quarkus.otel.traces.sampler` is `parentbased_traceidratio`; never put a value into a span attribute (each service's
+`DatabaseSpansTest` greps the exported spans). Test lock contention by releasing the other
 connection's advisory lock explicitly (`pg_advisory_unlock`), never by closing the connection.
 
 ## Scheduled jobs

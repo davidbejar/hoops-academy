@@ -110,19 +110,25 @@ docs/                 guides, runbooks, architecture, ADRs, security, work packa
 | Domain rules and models | [`docs/domain/`](docs/domain): authz matrix, glossary, norms; generated ER and class diagrams per service: [core](docs/domain/core-model.md), [game](docs/domain/game-model.md), [athlete](docs/domain/athlete-model.md) (`just diagrams`); the finance model in [ADR-0056](docs/adr/0056-finance-domain-model.md) |
 | Runbooks | [`docs/runbooks/`](docs/runbooks): [local stack](docs/runbooks/local-stack.md), [onboard tenant](docs/runbooks/onboard-tenant.md), [rotate secrets](docs/runbooks/rotate-secrets.md), [backup/restore (design)](docs/runbooks/backup-restore.md), [release](docs/runbooks/release.md), [kind](docs/runbooks/kind.md), [cloud (not yet applied)](docs/runbooks/cloud.md), [e2e](docs/runbooks/e2e.md), [events](docs/runbooks/events.md), [observability](docs/runbooks/observability.md), [troubleshooting](docs/runbooks/troubleshooting.md), [documentation site](docs/runbooks/docs-site.md) (all of `docs/` with search at <https://davidbejar.github.io/hoops-academy/>, or `just docs-serve` locally; ADR-0057) |
 | Security | [`docs/security/`](docs/security): [review](docs/security/review-2026-11.md), [threat model](docs/security/threat-model.md), [ASVS checklist](docs/security/asvs-checklist.md), [SAST/DAST](docs/security/sast-dast.md), [privacy threat model (LINDDUN)](docs/security/privacy-threat-model.md); quality: [mutation testing](docs/quality/mutation.md), [PMD / CPD gate](docs/quality/pmd.md) |
-| Roadmap, plan and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) (plans of 2026-11-05, the four rounds of 2026-11-06/07, the sixth round of 2026-11-10, the seventh of 2026-11-14, the eighth of 2026-11-15/16 and the ninth of 2026-11-23/24), [`docs/HANDOVER.md`](docs/HANDOVER.md) (current state) |
+| Roadmap, plan and open items | [`docs/roadmap.md`](docs/roadmap.md), [`docs/wp/FOLLOW-UPS.md`](docs/wp/FOLLOW-UPS.md) (plans of 2026-11-05, the four rounds of 2026-11-06/07, the sixth round of 2026-11-10, the seventh of 2026-11-14, the eighth of 2026-11-15/16, the ninth of 2026-11-23/24 and the tenth of 2026-11-24/25), [`docs/HANDOVER.md`](docs/HANDOVER.md) (current state) |
 | Agent conventions | [`CLAUDE.md`](CLAUDE.md) |
 
 ## Project status
-Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages **WP0–WP140 are done** (no
-WP79), with handovers in `docs/wp/` (the ninth round, WP126–WP140, on 2026-11-23 and 2026-11-24). As the last
-handovers of 2026-11-24 report: Maven `verify` runs **3,780 tests** (the sum of WP139's module counts; 32 of them, the
-e2e journey steps, skipped without a running stack), `just test-rust` **105 tests** (WP132), `just test-go` green
-(**167** top-level tests at WP131), all with their coverage gates; `flutter test` **1,954 tests** (WP138); the e2e
-journey (38 tests) was green on a compose stack after the last merge of the round; the CI `e2e` workflow runs it on
+Hoops Academy is a learning project, not a commercial product (ADR-0025). Work packages **WP0–WP147 are done** (no
+WP79), with handovers in `docs/wp/` (the tenth round, WP142–WP147, on 2026-11-24 and 2026-11-25). As the last
+handovers report: Maven `verify` runs **3,794 tests** (the sum of the module counts of WP146's `just test`; 32 of them,
+the e2e journey steps, skipped without a running stack), `just test-rust` **105 tests**, `just test-go` **174**
+top-level tests (WP143), all with their coverage gates; `flutter test` **1,958 tests** (WP141); the e2e journey (38
+tests) was green on the owner's compose stack after the WP144 merge, on PostgreSQL 19.0; the CI `e2e` workflow runs it on
 every push, with a browser login round trip and ZAP API scans of core, game, athlete and finance. Contract versions:
 core 3.7.0, game 2.4.0, athlete 3.0.0, common 1.1.1, pdf 1.0.0, finance 1.1.0; roster event schemas in
 `libs/contracts/events`.
+
+- **Tenth round**: PostgreSQL 19.0 everywhere (compose, the test harnesses, CloudNativePG on kind), one minor pinned
+  and bumped by `scripts/bump-pins.sh`, a compose volume per major and `scripts/pg-major-move.sh` to move a stack
+  (ADR-0073); the services report their SQL as spans of the request, never with a bound value (ADR-0074); no trigram
+  index for the exercise search, because under row-level security it cannot be used (measured, ADR-0075); kind probes
+  for a busy VM (ADR-0076); every shell test runs in CI; the outdated pins applied.
 
 - **Ninth round**: no new features; a read-only audit of the repository for duplication and inefficiencies (173
   findings) became fourteen work packages. The roster replica pipeline, the membership rule, paging, Problem plumbing
