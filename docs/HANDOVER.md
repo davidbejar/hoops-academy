@@ -1,125 +1,116 @@
-# Session handover (updated 2026-11-16 — eighth round WP111–WP125 done: pdf-service in Rust, finance-service in Go)
+# Session handover (updated 2026-11-24 — ninth round WP126–WP140 done: the audit's duplication and inefficiencies)
 
 Read `CLAUDE.md` first. This page is the short "where are we" for a fresh session; the detail is in the linked files.
 The original request is `docs/SPEC.md` (verbatim); the approved plan with its status box is `docs/PLAN.md`; what was built
 versus the spec is `docs/conformance.md`; the plans of 2026-11-05, the four rounds of 2026-11-06/07, the sixth round
-of 2026-11-10, the seventh of 2026-11-14 and the eighth of 2026-11-15/16, the product owner's decisions 1–103 and the
-backlog are in `docs/wp/FOLLOW-UPS.md`. The former OneDrive planning folder (`.../Code/Claude/projects/dummy-project2`)
-is archived and must not be written to. Hoops Academy is a learning project, not a commercial product (ADR-0025).
+of 2026-11-10, the seventh of 2026-11-14, the eighth of 2026-11-15/16 and the ninth of 2026-11-23/24, the product
+owner's decisions 1–113 and the backlog are in `docs/wp/FOLLOW-UPS.md`. The former OneDrive planning folder
+(`.../Code/Claude/projects/dummy-project2`) is archived and must not be written to. Hoops Academy is a learning
+project, not a commercial product (ADR-0025).
 
 ## State
 - Built and committed: all v1 work packages (WP0–WP20), WP21–WP25, the twelve WPs of 2026-11-05 (WP26–WP37), the
-  rounds of 2026-11-06/07 (WP38–WP90, no WP79), the sixth round (WP91–WP103), the seventh round (WP104–WP110; WP109's
-  JDK 25 merged on 2026-11-15, bef81d3d) and the eighth round of 2026-11-15/16 (WP111–WP125; details in FOLLOW-UPS
-  "Resolved", "Eighth round"). Five deployables now: core, game, athlete (Quarkus, Java 25), `pdf-service` (Rust) and
-  `finance-service` (Go), plus the web image (ADR-0051).
-  Merged into `main` in this order (handover or last commit of each; WP112 and WP115 on 2026-11-15, the rest on
-  2026-11-16, Jakarta time):
-  - WP112 (af408107) LINDDUN privacy threat model `docs/security/privacy-threat-model.md`, findings P-01..P-13
-    (P-01..P-05 must be closed before real academies).
-  - WP115 (7c4421eb) language and theme on the academy chooser; compose nginx `limit_req` (10/min + 2/s per IP) for the
-    CSV exports and the public academy request; `team.roster_exported` wording.
-  - WP113 (bea1365c) PMD 7.29.0 and CPD in `verify` (ADR-0053, `docs/quality/pmd.md`).
-  - WP114 (d56c43eb) Java services on distroless `java25-debian13:nonroot` by digest, no shell, uid 65532 (ADR-0054):
-    closes the `images` red of the seventh round.
-  - Orchestrator: 4d10d7cf (the WP115 nginx limit counted the super admin's list of academy requests; now only the
-    public POST), 54e7a2da (`tenant_timezone_test.dart` failed late on Sundays in UTC), ef6cb697 (dated ZAP acceptance,
-    40018 on `/platform/academy-requests`, until 2027-05-16).
-  - WP111 (2a8172c2) `pdf-service` in Rust: Cargo workspace with crates as layers, krilla, Clippy pedantic, coverage
-    gates, `cargo deny`, distroless image, compose profile `pdf`, chart 0.11.0 sub-chart without a route (ADR-0052,
-    ADR-0051 amendment). Orchestrator dd54179d: the realm's `pdf-service` audience mappers on `core-service` and
-    `game-service`.
-  - WP116 (c06988b0) core 3.7.0: the roster export as PDF by `Accept: application/pdf` through pdf-service (audited,
-    `format` `pdf`; 503 `UPSTREAM_UNAVAILABLE`, 422 over the sheet's limits); the audit `team` target named (ADR-0048,
-    ADR-0034 amendments).
-  - WP117 (a8ac9890) game 2.4.0: `GET /api/game/matches/{id}/box-score:pdf`, the match sheet for every member who sees
-    the box score; game V7 keeps the academy name in its replica; the start guard for `replica` without its consumer.
-  - WP118 (a40d3960) `finance-service` in Go: the whole `finance.yaml` 1.0.0 (26 operations), settings and fee plans,
-    the tenancy harness in Go wired into `just isolation-check` / `just db-role-check`, membership replica, distroless
-    static image, compose profile `finance`, chart 0.12.0 (ADR-0055, ADR-0056). Orchestrator fe0a1e9a (the web client's
-    `finance-service` audience in core's `RealmTokenPolicyTest`), 0c9309aa (the `images` finance check's cleanup),
-    a9649e02 (Go before CodeQL's init).
-  - WP122 (55de9963) web: PDF buttons on the team page (ADMIN, the team's current coach) and on the live match (every
-    role that opens it).
-  - WP120 (d677c9c9) one Grafana LGTM pod behind the collector on kind and as a compose profile, metrics through the
-    collector, three dashboards, 24 h retention, anonymous Viewer; chart 0.13.0; the cloud values keep the in-memory
-    Jaeger (ADR-0046 amendment).
-  - WP121 (3e932f7e) web: the Finance area for ADMIN under the admin hub (currency, fee plans, dues, payments).
-  - WP119 (1edf2029) finance: full roster replica (V10–V12), dues by hand (with a preview) and by an hourly-ticking
-    daily job under an advisory lock, payments and voids, waivers, amount changes, the coach's and the family's reads
-    (ADR-0056 amendment).
-  - WP124 (94c27d7c) web: expenses, the season balance and both CSV exports for ADMIN; "Dues up to date" on the team
-    page for its current coach; a "Dues" tab for parents and players.
-  - WP123 (faa732eb) finance: expenses (V20), season balance, CSV exports, no operation left 501 (V21, V22: slug and
-    team names in the replica); journey steps 14–18 and 55; the `e2e` workflow starts pdf-service and finance-service
-    and scans finance with ZAP; the finance demo data in `just seed-academy` (ADR-0056 amendment).
-  - Orchestrator after the docs pass was cut: 9bb4bdb2 (the seed's finance phase failed on macOS: a `-0` day offset
-    that BSD `date` rejects, HTTP 400 after the dues), 031e1155 (`services-up.sh` starts pdf and finance with
-    `--no-deps`: in CI compose had recreated Postgres, Redpanda and Keycloak under the running jars, e2e run
-    43813211365, login page 502), 3f964fb2 (`HOOPS_FINANCE_BIND`, default 127.0.0.1, 0.0.0.0 in the e2e workflow: on
-    Linux nginx could not reach a loopback-published port, e2e run 43814612481, 502 on `/api/finance`).
+  rounds of 2026-11-06/07 (WP38–WP90, no WP79), the sixth round (WP91–WP103), the seventh (WP104–WP110), the eighth
+  (WP111–WP125) and the ninth round of 2026-11-23/24 (WP126–WP140; details in FOLLOW-UPS "Resolved", "Ninth round").
+  Five deployables: core, game, athlete (Quarkus, Java 25), `pdf-service` (Rust) and `finance-service` (Go), plus the
+  web image (ADR-0051).
+- **The ninth round** came from a read-only audit of the whole repository for duplication and inefficiencies on
+  2026-11-23 (173 findings: 119 confirmed, 49 confirmed with corrections, 5 already known). The audit files are local,
+  untracked working material (decision 111); every brief names its finding IDs (`CORE-01`, `X-03`, `INF-03`, …) and
+  every handover ends with an ID-by-ID table, so the record is in `docs/wp/WP126-*.md` … `WP139-*.md`. No new feature;
+  bugs found on the way were fixed with a red test first.
+  Merged into `main` in this order (handover or last docs commit of each; 2026-11-23 and 2026-11-24, Jakarta time):
+  - WP129 (983691e2) web: lists a screen needs whole read every page through `fetchAll`, one kit `Pager` (ADR-0061);
+    the live match stops polling when left; dead keys and `ModulePlaceholder` gone.
+  - WP126 (45273b84) game: one read of the match per ingest batch, `sync_receipt` dropped (V9), the feed cursor race
+    and a record parked twice fixed (V8) (ADR-0030, ADR-0037 amendments).
+  - WP127 (a93bbb2a) athlete: per-request roster answers and `teamsOf`, the tenant zone from the caller's context
+    (ADR-0059; V11), the 90 % domain gate (athlete had none), the Monday-dependent `ScheduleApiTest`.
+  - WP128 (df5fcf26) core: guardian-link N+1, the outbox sent per batch (ADR-0060), one paged-query builder, dead
+    code, V20 / V21, Quarkus test boots 6 → 4.
+  - Orchestrator 2c47222f: Semgrep rule `hoops-tenant-setting-rebound-by-hand` and the six call sites accepted again
+    after WP128's `SessionSettingsRepository`; core's model page regenerated.
+  - WP132 (8a76ebb9) pdf-service: test helpers, one test binary, token leeway 0 s and the common Problem slugs
+    (ADR-0064).
+  - WP133 (ee44cd18) CI: concurrency groups, each gate once, six composite actions, a `scripts` job, pin tests,
+    `gen-api.sh` reads the generator version (ADR-0065).
+  - WP131 (896b56d6) finance: test support once, one Postgres per `just test-go`, `applied_event` retention, the
+    contract guard strict, leeway 0 s (ADR-0063).
+  - WP130 (7937a127) the roster replica pipeline once in common-quarkus (ADR-0062, ADR-0037 amendment; game V10).
+  - WP135 (65120abb) web: one home for dates, validators, error words, block states and server exports (ADR-0067).
+  - WP136 (87e5fd68) chart 0.14.0: library chart `hoops-lib`, one pins file `deploy/lib/platform.sh` for kind and the
+    cloud, delta snapshots (ADR-0068).
+  - WP134 (5a5f6745) the membership rule once in common-quarkus, under PIT once (ADR-0066, ADR-0053 amendment).
+  - WP138 parts 1 (699be74a) and 2 (5c0049c2) web: tests on the seeded demo mock (ADR-0070).
+  - WP137 (ffe907ee, 7197ffa8) common plumbing, shared properties, poms, test support, one copy of the vectors;
+    `finance.yaml` 1.1.0 (ADR-0069, ADR-0053 and ADR-0014 amendments).
+  - WP138 part 3 (6d126f83); orchestrator bf586552 (the chart test reads the OTel build keys from common-quarkus,
+    where WP137 put them); WP138 part 4 (b0f374b3).
+  - WP139 (bb12d2e0) chart 0.15.0: one name for the realm URL and one for the admin base (ADR-0071), one PKCE login
+    helper for the scripts, database roles from one list (ADR-0006, ADR-0055 amendments); kind proof of 0.14.0 /
+    0.15.0. Orchestrator b8443244: `e2e/bin/services-up.sh` builds in its own compose call; then `just e2e` on compose:
+    38 tests green.
+  - WP138 part 5 (e0cf6902, 17d3dbb1): the last fakes go; no repository fake is left in the web tests.
   Contract versions now (read from the files): **core 3.7.0, game 2.4.0, athlete 3.0.0, common 1.1.1, pdf 1.0.0,
-  finance 1.0.0**; event schemas unchanged (finance and game read the existing `core.*` topics). Dart packages: core
-  3.7.0, game 2.4.0, `hoops_finance_api` 1.0.0 (new). Helm chart **0.13.0** (`databases` 0.1.0, `keycloak` 0.6.0,
-  `hoops-service` 0.9.0 for core / game / athlete, `web` 0.2.0, `pdf-service` 0.2.0 as `pdf`, `finance-service` 0.2.0 as
-  `finance`). New ADRs 0052–0056; amended ADR-0051 (twice), ADR-0046, ADR-0048 (twice), ADR-0034, ADR-0056 (twice).
-- Tests, as the last handovers report them (none re-run by WP125):
-  - **Java**: `just test` at WP123 (its worktree, 2026-11-16): Maven **3,556 tests**, 0 failures, 0 errors, 32 skipped
-    (the e2e module runs 38: 6 `MailSinkTest` and 32 journey steps skipped without `e2e.baseUrl`); PMD / CPD,
-    SpotBugs and JaCoCo gates met. Last per-module counts: common-quarkus 403, core 1,225 (WP116), game 541, athlete
-    1,003, contracts 322 (WP117; WP116's branch had 323); WP118 then added finance contract suites. Under `-T 1C` the
-    console can lose module summaries (WP117): count from the surefire reports.
-  - **Rust** (`just test-rust`): **100 tests**, line coverage 95.41 % workspace / 99.80 % domain, `cargo deny` ok
-    (WP111; the same in WP118, WP119, WP123).
-  - **Go** (`just test-go`): **204 tests** (158 top-level), coverage 89.05 % module / 98.84 % domain, golangci-lint 0
-    issues, govulncheck nothing reachable (WP123).
-  - **Flutter**: `flutter test` **1,801 passed** (WP124; 1,507 at the start of the round, 1,542 after WP122, 1,652
-    after WP121).
-  - **Mutation**: core 932/933 (WP116), game 555/557 (WP117); common 337/338 and athlete 690/690 unchanged since WP109;
-    web: every file of the manifest at 100 % (494 viable mutants, 2026-11-15). No mutation testing for Rust or Go yet.
-  - **Gates and scripts**: `just isolation-check` 6 Java + 4 Go tests, `just db-role-check` 13 Java + 2 Go (WP123);
-    `just test-hooks` 55/55 + 5/5 + 3/3 and 43 Python tests OK, 1 skipped (WP120, WP123); `deploy/helm/tests/run.sh`
-    ALL CHART TESTS PASSED, 231 checks, kubeconform 397 resources (WP120).
-  - **e2e on compose**: the orchestrator's `just e2e` from the main checkout after the WP123 merge: 38 tests, 0
-    failures, `JourneyTest` 32 steps, none skipped: the first real core -> pdf-service and game -> pdf-service calls
-    (WP116, WP117 and WP123 had only stubs; their worktrees could not sign in to the shared database).
-- **Kind this round** (each in its own window with compose stopped, cluster deleted afterwards): WP111 on 0.11.0
-  (`smoke.sh` 52 ok twice; core's token refused until the audience mappers were added at runtime, then a roster PDF
-  rendered by pdf-service), WP118 on 0.12.0 (`smoke.sh` with finance 61 ok: replica lag 0, a fee plan through the
-  gateway, academy B 404, `finance_app` not owner / superuser / BYPASSRLS), WP120 on 0.13.0 (`smoke.sh` 60 ok; a trace
-  gateway -> core -> pdf-service -> render in Grafana; logs of all five services in Loki). **Not proven on kind**: `tilt
-  ci` (last on 0.9.0), the e2e journey, the dues / payments / expenses code of WP119 and WP123 (WP120's images predate
-  them), ESO and Reloader with the new Secrets. Nothing in the cloud (decision 88).
-- **Local stack**: compose has pdf-service and finance-service (started by the orchestrator's `just e2e`); after
-  9bb4bdb2 the orchestrator ran `just events-backfill force` and then `just seed-academy` twice ("7 things created",
-  then "nothing to create"; `just events-drift` equal), so the Test Academy holds the finance demo data. The compose
-  database still holds junk tenants and admins from the ZAP scans.
-- **Security**: F-01..F-24 unchanged (22 fixed, F-11 and F-22 accepted by design; SD-03 accepted until 2027-05-07).
-  New: privacy findings P-01..P-13 (2 Medium, 8 Low, 3 Info; P-07 and P-12 partly mitigated, P-10 for finance, P-11
-  in code: `docs/security/privacy-threat-model.md` "Status after the eighth round"). New acceptances until 2027-05-16:
-  ZAP 40018 on `/platform/academy-requests` (core) and on the two finance export paths (pre-accepted, not yet seen).
-  Trivy on the new images: 0 HIGH / CRITICAL (core, game, athlete on distroless; pdf; finance after golang.org/x/net
-  0.62.0).
-- **Interruptions**: a network outage stopped wave 2 for about five hours (the watchdog resumed the agents); a usage
-  limit stopped wave 4 once (resumed after the reset).
-- CI on `main` (observed with `gh run list -b main -L 15` on 2026-11-16, after the orchestrator's 3f964fb2): on
-  3f964fb2 `ci` 43815905569, `e2e` 43815905637 (`JourneyTest` 32 run, 0 failures, 0 skipped; ZAP API scans of core,
-  game, athlete and finance through the gate), `codeql` 43815905544 and `semgrep` 43815905530 all **green**; no
-  `images` run for it (no image input changed): the last `images` is 43813211306 on 2f51edb3, **green**. Reds of the
-  round, all followed by a fix or a re-run: `images` red until WP114 (last red 43739416660 on 97b10331; first green
-  43739804752 on d31dfd05) and on 53df1e6e (43792899975, fixed by 0c9309aa); `codeql` red on 53df1e6e and 0c9309aa
-  (fixed by a9649e02); `ci` job `flutter` red on 97b10331, d31dfd05, 4d10d7cf (the Sunday time-zone test, 54e7a2da);
-  `ci` job `dependency-check` red on 54e7a2da (43741030041), on 2f51edb3 (43813211248) and on the first attempt of
-  7f7d4284 (43811663987, green on re-run) through NVD API errors (a third-party outage); `e2e` red on 5af6b6ea,
-  97b10331, d31dfd05, 4d10d7cf (the WP115 nginx limit, 4d10d7cf / ef6cb697), on 2f51edb3 (43813211365, 031e1155) and
-  on 031e1155 (43814612481, 3f964fb2).
-- GitHub: `davidbejar/hoops-academy` (public, AGPL-3.0), branch `main`. Open: pull request #6 (bump-pins) and the
-  Dependabot PRs #8, #9, #10, #11, #13 (the first `cargo` updates for pdf-service among them). Repository variable
+  finance 1.1.0** (`pdf.yaml` lost an unused schema without a version change); event schemas unchanged. Dart packages:
+  core 3.7.0, game 2.4.0, athlete 3.0.0, `hoops_finance_api` 1.1.0. Helm chart **0.15.0** (library chart `hoops-lib`
+  0.1.0; sub-charts unchanged: `databases` 0.1.0, `keycloak` 0.6.0, `hoops-service` 0.9.0, `web` 0.2.0, `pdf-service`
+  0.2.0, `finance-service` 0.2.0). New ADRs 0059–0071 (0058 reserved and unused); amended ADR-0006, ADR-0014,
+  ADR-0030, ADR-0031, ADR-0037, ADR-0040, ADR-0053 (twice), ADR-0055, ADR-0070 (twice).
+- Tests, as the last handovers report them (none re-run by WP140):
+  - **Java**: WP139's fresh `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0` (2026-11-24): contracts 346,
+    common-quarkus 580, core 1,262, game 528, athlete 1,026, e2e 38 (32 skipped) — **3,780** as the sum of those
+    counts; 0 failures; coverage, SpotBugs, PMD / CPD gates met. The round started at 3,556 (WP123).
+  - **Rust**: **105 tests**, 95.72 % lines / 99.80 % domain, `cargo deny` ok (WP132; the same in WP137).
+  - **Go**: `just test-go` green with 88.66 % / 98.84 % domain and govulncheck clean (WP137, WP139); the last count is
+    WP131's **167 top-level tests** (158 before).
+  - **Flutter**: `flutter test` **1,954 passed** (WP138 part 5; 1,801 at the start of the round, 1,861 after WP129,
+    1,921 after WP135, 1,953 after WP138 part 4). Every widget and provider test runs on the seeded demo mock.
+  - **Mutation** (WP137, the last run): common 486/487, core 920/921, game 505/507, athlete 620/620; web unchanged
+    (every manifest file at 100 %, 2026-11-15). `docs/quality/mutation.md` has the history of the round.
+  - **Gates and scripts**: `just isolation-check` 6 Java + 4 Go tests and `just db-role-check` 13 Java + 2 Go, run by
+    hand in each worktree (every handover of the round); Python tests of `scripts/tests` 108 OK, 1 skipped, shell tests
+    tenancy-gate 55/55, doctor drop-in 5/5, env-jdk 3/3, `deploy/helm/tests/run.sh` ALL CHART TESTS PASSED with
+    kubeconform 397/397 (WP139).
+  - **e2e on compose**: the orchestrator's `just e2e` after the WP139 merge, 38 tests green (b8443244); CI `e2e` on
+    17d3dbb1: 38 tests, 0 failures, 0 skipped.
+- **Kind this round**: WP136's proof on chart 0.14.0 did not reach a Ready stack (VM load about 30; API-server TLS
+  time-outs; the bash 3.2 bug of `up.sh` it found was fixed). WP139 proved 0.14.0 and 0.15.0 together:
+  `up.sh --deploy --from-host`, the first `helm --wait` failed on Keycloak's progress deadline at load 31, the same
+  `helm upgrade --install` passed once Keycloak was Ready; `seed-users.sh`, then `smoke.sh core game athlete` **57
+  checks** (logins through the new PKCE helper, events into both replicas, finance isolation and `finance_app`,
+  pdf-service). Cluster deleted. **Not proven on kind**: `tilt ci` (last on 0.9.0), the e2e journey, ESO and Reloader
+  with the finance Secrets. Nothing in the cloud (decision 88).
+- **Local stack**: the owner's compose stack runs the merged round (the orchestrator's `just e2e` after the WP139
+  merge). Its database was not rebuilt, so the role bootstrap from the one list ran there only through `db-roles.sh`
+  (`just finance-up`), and its Keycloak volume predates the current realm file (the INF-07 retrofit in
+  `infra/keycloak/seed-users.sh` stays until it is rebuilt). The compose database still holds junk tenants and admins
+  from the ZAP scans.
+- **Security**: F-01..F-24 and P-01..P-13 unchanged. New acceptances without an expiry: Semgrep's
+  `hoops-tenant-setting-rebound-by-hand` on six call sites in core (2c47222f) and one `PagedQuery` acceptance in
+  common instead of three (WP137). Seen once and not accepted: ZAP 40018 on core's `audit-events:export` (e2e
+  45235457191; FOLLOW-UPS "Security").
+- CI on `main` (observed with `gh run list -b main` on 2026-11-24 by WP140): on **17d3dbb1** `ci` 45330282441, `e2e`
+  45330282648 (38 tests, 0 skipped; the ZAP API scans of core, game, athlete and finance through their gates),
+  `codeql` 45330282845, `semgrep` 45330282755, `images` 45330282631 and `pages` 45330283134 all **green**; on
+  **b8443244** `ci` 45329697215, `e2e` 45329697578, `codeql` 45329697262, `semgrep` 45329697245, `images` 45329697306,
+  `pages` 45329697209 all green; on f856d929 (the orchestrator's observation) `ci` 45318729233, `e2e` 45318729015,
+  `semgrep` 45318729086, `codeql` 45318729135, `images` 45318729040, `pages` 45318729128 green. Reds of the round,
+  each followed by a fix or a green next run: `semgrep` on 4317662a, 745f40f7, 498519fb and `model-diagrams` on
+  745f40f7, 498519fb (2c47222f); `ci` `backend` on 7f2a75a7 (the Monday-dependent athlete test, WP127); `ci`
+  `helm-chart-tests` on 2195fa03 and 21af40a0 (bf586552); Maven Central download failures in `e2e` on 35e685d8, `ci`
+  `backend` on 498519fb, `images` athlete on beaaffaf, `ci` `trivy-fs` on 393b5676 and 2195fa03, `ci` `zap-baseline`
+  on fe792e33; the `e2e` ZAP step on 2c47222f (core 40018 on the audit export), 312cf764 and 0c1ac2ae (one scan's
+  ZAP daemon could not bind its proxy port, "Address already in use"). Run ids in FOLLOW-UPS "Infra, CI, e2e".
+- GitHub: `davidbejar/hoops-academy` (public, AGPL-3.0), branch `main`. Open: the `bump-pins` PR #21 (2026-11-23,
+  stale since WP136 moved the CNPG and Reloader pins) and Dependabot PR #22 (pub). PR #6 was merged on 2026-11-22,
+  the eighth round's Dependabot PRs are merged or closed. Repository variable
   `IMAGE_REGISTRY=ghcr.io/davidbejar/hoops-academy`; secrets `NVD_API_KEY` (repository and Dependabot). Images per
-  commit on ghcr.io with their SBOMs as OCI referrers, now also `pdf-service` and `finance-service`. Dependabot: weekly
-  grouped updates (Maven, pub, GitHub Actions as SHA + tag, and since this round `cargo` and `gomod`) with a 7-day
-  cooldown; the `json-schema-validator` major is ignored (WP43). The weekly `bump-pins` PR covers the Java runtime
-  digest and the LGTM pin, not the pdf / finance base images nor pins inside workflow files.
+  commit on ghcr.io with their SBOMs as OCI referrers. Dependabot: weekly grouped updates (Maven, pub, GitHub Actions
+  as SHA + tag including `.github/actions/*` since WP133, `cargo`, `gomod`) with a 7-day cooldown; the
+  `json-schema-validator` major is ignored (WP43).
+- The eighth round's state (pdf-service, finance-service, its kind proofs and CI) is in FOLLOW-UPS "Resolved",
+  "Eighth round", and in the WP111–WP125 handovers.
 
 ## 2026-11-21: Java4Shell patch and documentation site
 - **CVE-2026-114938 ("Java4Shell")**, memory corruption in the JDK's hardware-accelerated Base64 decoder (x86-64 with
@@ -133,44 +124,53 @@ is archived and must not be written to. Hoops Academy is a learning project, not
 - **Documentation site** (ADR-0057): `docs/` built by Zensical, strict build in `ci` (`docs-site`), published to
   GitHub Pages by `pages.yml`. `just docs-serve` / `just docs-build`; `docs/runbooks/docs-site.md`.
 
+## 2026-11-22/23: dependency merges before the ninth round
+- Merged: the `bump-pins` PR #6 (container and kind pins) and Dependabot PRs #11, #14–#18 (pdf `base64`, `skrifa`
+  0.50.0, finance `golang.org/x/text`, Maven, Actions, pub); #19 made `main` green after them; #20 ignores Python
+  bytecode caches. pdf-service: `jiff` replaces the unmaintained `chrono` / `chrono-tz` (2d9c08d7, ADR-0052
+  amendment), which ended the `rust` job's `cargo deny` red; `url` 2.5.9 (RUSTSEC-2026-0592). Also nginx 1.30.7 in the
+  web image, sqlite3.wasm and the drift worker of sqlite3 3.9.1, and a pin bump now moves every copy of a pin
+  (f5d431d4).
+
 ## Pending user actions
 1. **First real `tofu apply`** (still the first candidate; WP104 handover, `docs/runbooks/cloud.md` "Before the
    first apply"). The owner prepares: an Alibaba Cloud international account with a payment method; a RAM user
    `hoops-tofu` with programmatic access only and the runbook's regional ECS/VPC policy; its key in `.env`
    (`ALIBABA_CLOUD_ACCESS_KEY_ID` / `_SECRET`) or an aliyun profile; `TF_VAR_state_passphrase` (16+ characters, backed
    up); `terraform.tfvars` with their IP as /32 and their public key; a `main` commit whose images are on ghcr.io; strong
-   fresh values everywhere in `.env` (`install.sh` refuses `change-me`), including the three finance keys.
-2. **Other stacks after the round**: on the owner's compose stack the orchestrator already ran the backfill and the
-   seed (State). Any other stack (another machine, kind, the cloud): `just finance-up` (roles, migrations to V22),
-   `just events-backfill force` (slug and team names in finance's replica, academy names in game's: until then the
-   match sheet prints "Hoops Academy"), then `just seed-academy`. `.env` has three new keys (`FINANCE_MIGRATOR_PASSWORD`,
-   `FINANCE_APP_PASSWORD`, `REDPANDA_FINANCE_SERVICE_PASSWORD`): the main checkout's `.env` has them since 2026-11-16;
-   any other `.env` needs them (kind's `env-keys.sh` refuses to start without).
-3. **IDR minor digits** (owner decision, WP121 / WP124): finance stores IDR with 2 minor digits (ISO 4217) and the web
+   fresh values everywhere in `.env` (`install.sh` refuses `change-me`), including the finance keys.
+2. **Season rollover wizard** (owner decision; WP138 part 2): the web wizard sends the season it was opened on as both
+   the target (path) and `fromSeasonId`; core refuses that (`ROLLOVER_SAME_SEASON`), so the wizard works only against
+   the demo mock. Not checked on the real stack. A fix makes the wizard offer a target season.
+3. **Delete the audit files** (decision 111): `audit/2026-11-23/` in the main checkout is untracked; the orchestrator
+   asks the owner and deletes it. Nothing in the repository links to it.
+4. **IDR minor digits** (owner decision, WP121 / WP124): finance stores IDR with 2 minor digits (ISO 4217) and the web
    shows whole amounts without decimals. Change the service's currency table and the web's copy together if 0 is
    wanted, before the first real IDR due.
-4. **Real-browser checks nobody ran**: the two PDF buttons (a real download, the name from `Content-Disposition`, the
-   PDF opening) and **the whole Finance area** against the real finance-service (admin screens, coach status, family
-   dues, the CSV exports): built and tested against the demo mock only (WP121, WP122, WP124). Older ones still open:
-   sign in as `superadmin@hoops-academy.com` (should land on the application admin hub); the hub and the context
-   switcher on the real stack; a calendar `.ics` in a calendar app; the server-side roster and audit CSVs downloaded
-   from the web; the avatar menu and the chooser's language and theme cards; the families' catalogue; the WP107 demo
-   data next to the landing screenshots. The compose nginx does not serve the web app: start it locally (`./start.sh`
-   or `flutter run`, README) and sign in, e.g. as `testcoach1@hoops-academy.com` with `TEST_ACADEMY_PASSWORD`.
-5. **bump-pins PR #6** (mailpit v1.33.1, External Secrets Operator v2.15.0): close and reopen it so `ci` / `e2e`
-   start (a `GITHUB_TOKEN` PR starts no checks); the ESO bump needs a kind proof (`up.sh --eso --deploy --from-host`,
-   ExternalSecrets synced) before merging. Review the Dependabot PRs #8–#13.
-6. **Workflow-file pins by hand**: Trivy, Semgrep and the ZAP digest with `scripts/bump-pins.sh --apply`, then
-   `actionlint`. Optional: a fine-grained PAT (contents + pull requests + workflows) so the weekly PR includes them and
-   starts its own checks.
-7. **File the Envoy Gateway issue** from `docs/upstream/envoy-gateway-global-ratelimit-descriptor-collision.md`
+5. **Real-browser checks nobody ran** (FOLLOW-UPS "Pending user actions"): the two PDF buttons and the whole Finance
+   area against the real services, the super admin's landing on the application admin hub, a calendar `.ics` in a
+   calendar app, the server-side CSVs downloaded from the web, the avatar menu and the chooser's cards. The compose
+   nginx does not serve the web app: start it locally (`./start.sh` or `flutter run`, README) and sign in, e.g. as
+   `testcoach1@hoops-academy.com` with `TEST_ACADEMY_PASSWORD`.
+6. **Other stacks and `.env` files**: any `.env` other than the main checkout's renames `KEYCLOAK_URL` /
+   `E2E_KEYCLOAK_ADMIN_URL` to `KEYCLOAK_ADMIN_URL` or deletes them (the compose defaults fit) and has
+   `FINANCE_MIGRATOR_PASSWORD` / `FINANCE_APP_PASSWORD`, which `just up` now requires; a private `values-local.yaml`
+   that sets `KEYCLOAK_URL` or calls `hoops-service.*` helpers follows (ADR-0071, `hoops-lib.*`). Any other stack after
+   the eighth round still needs `just finance-up`, `just events-backfill force` and `just seed-academy`.
+7. **PR #21 (bump-pins) is stale**: opened before WP136, it edits the CNPG and Reloader pins in `deploy/kind/up.sh` and
+   `deploy/cloud/install.sh`, which now live in `deploy/lib/platform.sh`. Close it and let the next weekly run open a
+   fresh one (close and reopen a `GITHUB_TOKEN` PR so `ci` / `e2e` start). Review Dependabot PR #22.
+8. **Workflow-file pins by hand**: Trivy 0.76.2, Semgrep 1.186.0 and the ZAP digest (listed in PR #21) with
+   `scripts/bump-pins.sh --apply`, then `actionlint`. Optional: a fine-grained PAT (contents + pull requests +
+   workflows) so the weekly PR includes them and starts its own checks.
+9. **File the Envoy Gateway issue** from `docs/upstream/envoy-gateway-global-ratelimit-descriptor-collision.md`
    (decision 49; WP100 re-tested on v1.10.0: still collides, add that to the draft); drop the `path: /` selector once
    fixed upstream.
-8. **Podman machine, in a quiet window (optional)**: `just doctor`'s real write-and-restart path for the drop-in ran only
-   against stubs, and `podman machine init --playbook infra/podman/machine-playbook.yml` was never run (WP93).
-9. **Local chromedriver** is 156, CI pins Chrome for Testing + chromedriver 157.0.8103.38; update the local one when the
-   local Chrome moves.
-10. Review the Dependabot and `bump-pins` PRs as they arrive (weekly, Monday).
+10. **Podman machine, in a quiet window (optional)**: `just doctor`'s real write-and-restart path for the drop-in ran
+    only against stubs, and `podman machine init --playbook infra/podman/machine-playbook.yml` was never run (WP93).
+11. **Local chromedriver** is 156, CI pins Chrome for Testing + chromedriver 157.0.8103.38; update the local one when
+    the local Chrome moves.
+12. Review the Dependabot and `bump-pins` PRs as they arrive (weekly, Monday).
 
 ## Working conventions learned the hard way
 - **Parallel sessions and rounds of work packages:** follow `.claude/skills/wp-round` (one worktree per session or WP
@@ -191,8 +191,9 @@ is archived and must not be written to. Hoops Academy is a learning project, not
   container; extra JVM flags go in `JDK_JAVA_OPTIONS`. Pods run as 65532.
 - **The commit hook gates the main checkout, not the worktree**: `.claude/hooks/tenancy-gate.sh` runs `just
   isolation-check` in the session's working directory, so an agent committing in its worktree checks `main`'s tree.
-  Agents of this round ran `just isolation-check` / `just db-role-check` by hand in their worktrees (open item in
-  FOLLOW-UPS).
+  Agents of the eighth and ninth rounds ran `just isolation-check` / `just db-role-check` by hand in their worktrees
+  (open item in FOLLOW-UPS). A `git commit` run inside a helper script is not seen by the hook at all (WP128): commit
+  one at a time with a plain `git commit` in the Bash call.
 - **Agents' worktrees have no usable `.env` for the shared compose database**: a worktree `.env` built from
   `.env.example` is refused by Postgres (`core_app`, `finance_app` password authentication failed), and agents were
   told not to copy the main checkout's values. So real calls against compose (the journey, pdf-service, the seed) run
@@ -220,12 +221,36 @@ is archived and must not be written to. Hoops Academy is a learning project, not
 - **Load on the 2-CPU, 8 GB Podman VM.** Four parallel builds hold, but under load the hook's isolation check can time
   out (retry once a build has finished; never bypass it), a parallel build can take a fixed port (WP119: "Port already
   bound: 8081"; re-run the module with `-Dquarkus.http.test-port=0`), and on kind liveness probes restart services at
-  load 13–66 (WP120 at 40). The LGTM pod needs about 1.2 GiB: kind with it fits only with compose stopped.
+  load 13–66 (WP120 at 40). At load about 30 kind's API server timed out TLS handshakes (WP136) and Keycloak's first
+  start (about 150 s of re-augmentation) missed its Deployment's progress deadline, so `up.sh --deploy` failed its
+  `helm --wait` once; the same `helm upgrade --install` passed once Keycloak was Ready (WP139). The LGTM pod needs about 1.2 GiB: kind with it fits only with compose stopped.
 - **Podman API idle timeout**: the `--time=0` drop-in (WP87) is on the VM; `just doctor` checks it and rewrites it when
   missing (WP93), `infra/podman/machine-playbook.yml` restores it after a re-init.
+- **`podman compose` on this Mac delegates to Docker.app's `docker-compose` v2.15.1** (`podman compose version`), not
+  to `podman-compose`. It refuses `up --no-deps --build` ("no such service: keycloak"), so `e2e/bin/services-up.sh`
+  builds in its own call since b8443244. `compose.yaml` fixes the project name, container names and ports, so no
+  second compose stack can run beside the owner's (WP139).
+- **Realm and admin URLs** (ADR-0071): the realm is `OIDC_AUTH_SERVER_URL` (default
+  `http://localhost:8080/auth/realms/academy`, set once in common-quarkus for the Quarkus services), the Admin API base
+  `KEYCLOAK_ADMIN_URL` (default `http://localhost:8080/auth`; core and the e2e suite). `KEYCLOAK_URL`,
+  `E2E_KEYCLOAK_ADMIN_URL` and `localhost:8180` are gone (`scripts/tests/test_realm_variables.py` fails on them).
+  `just up` requires `FINANCE_MIGRATOR_PASSWORD` and `FINANCE_APP_PASSWORD`. The owner's `.env` was checked at the
+  WP139 merge and needed no change.
+- **Database roles from one list** (ADR-0006 amendment): the rows between `-- roles: begin` / `-- roles: end` of
+  `infra/db/init/01_roles_schemas.sql`; `02_passwords.sh` requires `<ROLE>_PASSWORD` for every role, and
+  `infra/compose/db-roles.sh` (run by `just finance-up` and `services-up.sh`, was `finance-db.sh`) re-applies roles and
+  every password from `.env` on an existing volume.
+- **Shared settings live in common-quarkus** (ADR-0069): its `META-INF/microprofile-config.properties` holds the
+  keys all three Quarkus services share (OTel build keys, realm URL, broker defaults, …). Checks outside a service's
+  build read them there: the chart test under `deploy/helm/tests` reads the OTel build keys from that file
+  (bf586552, after WP137 moved them). When a change moves build properties, run `deploy/helm/tests/run.sh` too.
+- **Transient Maven Central failures in CI**: on 2026-11-23/24 downloads from Maven Central failed in `ci`
+  (`trivy-fs`, `zap-baseline`, `backend`), `images` and `e2e`; each passed on the next push. Read the failed step
+  before suspecting the change; once `trivy-fs` resolved `dependency:` to the wrong plugin after such a failure.
 - **Roster replicas are the default**: a service started without a broker in prod or dev mode needs
   `GAME_ROSTER_SOURCE=rest` / `ATHLETE_ROSTER_SOURCE=rest` (the test profile pins `rest`); since WP117 game, like
-  athlete, refuses `replica` with its consumer off. After seeding or a manual change, `just events-drift` checks core
+  athlete, refuses `replica` with its consumer off. Since WP130 both run common's pipeline with one policy
+  (`hoops.roster.replica.max-attempts` 5, `GAME_ROSTER_REPLICA_MAX_ATTEMPTS` replaced game's `apply-attempts`). After seeding or a manual change, `just events-drift` checks core
   against both Quarkus replicas (not finance's, and not game's new academy name column); a replica lags 1–2 s.
 - **Model diagrams**: after a Flyway migration or a `domain` / `application` type change in core, game or athlete run
   `just diagrams` and commit the pages; `just diagrams-check` (CI job `model-diagrams`) fails otherwise. Finance has no
@@ -242,14 +267,19 @@ is archived and must not be written to. Hoops Academy is a learning project, not
   for `quarkus:dev`); `just down` stops all of them. A change to `infra/compose/nginx*.conf` needs `podman exec
   hoops-nginx nginx -s reload` (WP115).
 - **Rate-limit and outage pauses** (agent sessions): an agent may pause and resume in the same worktree; check the
-  worktree's `git status` and log before trusting its last report.
+  worktree's `git status` and log before trusting its last report. An agent whose context runs out hands back at a
+  green commit and a fresh agent continues in the same worktree (WP138 ran in five parts).
 - **Fresh Helm install with events on**: core's producer is created at the first send and recovers by itself;
   `smoke.sh` checks the producer login after the seed.
 - `flutter drive` on web needs `-d web-server` (`-d chrome` hangs forever); chromedriver matching Chrome must be on PATH.
 - Workflows: run `actionlint .github/workflows/*.yml` before pushing. Goldens are macOS-exact; CI uses
   `GOLDEN_DIFF_TOLERANCE=0.06`. ZAP acceptances live in `.zap/*.conf` with `[alert=..][url=..][expires=..]` scoping (one
   file per scanned API, `api-finance.conf` since WP123). The Actions token cannot push workflow files. The `ci` job
-  `dependency-check` can fail on NVD API errors: re-run it.
+  `dependency-check` can fail on NVD API errors: re-run it. Since WP133 a pull request run is cancelled by a newer
+  push, never a run on `main`; tool versions live in the composite actions under `.github/actions` (setup-java,
+  setup-flutter, setup-pinned-chrome, setup-go, setup-chart-tools, image-publish); `scripts/tests` runs in the `ci` job
+  `scripts`, but not `env-jdk.test.sh` and `tenancy-gate.test.sh`, which fail on Linux and run only in
+  `just test-hooks` on macOS.
 - `.env` needs `RATELIMIT_REDIS_PASSWORD`, the `REDPANDA_*_PASSWORD` keys and (since WP118) the finance keys, otherwise
   `deploy/kind/secrets.sh` and `eso-store.sh` stop; the SMTP keys are optional locally.
 - Time-dependent tests: CI runs at any hour; derive dates from the test's "now" in the zone the code uses, never a fixed
@@ -263,20 +293,25 @@ is archived and must not be written to. Hoops Academy is a learning project, not
 
 ## Next candidates without a work package (see FOLLOW-UPS.md for the full list)
 - **First candidate: the real `tofu apply` on Alibaba Cloud** once the owner has prepared the account and key
-  (Pending 1): plan, apply, kubeconfig, `install.sh` (now with pdf-service and finance-service), seed and smoke through
-  `with-cloud.sh`, destroy, each step of `docs/runbooks/cloud.md` marked NOT YET RUN today; then narrow the RAM policy.
-- **The round on a real stack**: the owner's browser walk-through of the Finance area and the PDF buttons (Pending 4)
-  after Pending 2; then a kind proof of the whole round (`up.sh --deploy` with current images, the journey on kind,
-  `tilt ci` on 0.13.0, ESO and Reloader with the finance Secrets).
+  (Pending 1): plan, apply, kubeconfig, `install.sh`, seed and smoke through `with-cloud.sh`, destroy, each step of
+  `docs/runbooks/cloud.md` marked NOT YET RUN today; then narrow the RAM policy.
+- **The rollover wizard** once the owner decides (Pending 2): offer a target season, then a check against the real
+  stack.
+- **The rounds on a real stack**: `just up` on a fresh `hoops_pgdata` volume (the one role list has not run there), the
+  owner's browser walk-through (Pending 5), the Keycloak volume rebuilt from the current realm file so the INF-07
+  retrofit can go; then the journey on kind, `tilt ci` on 0.15.0, ESO and Reloader with the finance Secrets, and a
+  longer Keycloak start allowance on kind (`startupProbe` or `progressDeadlineSeconds`).
 - **Privacy gate before real academies** (P-01..P-05): an ADR for erasure as pseudonymisation and a per-person export
   across the four data services; the purge job with written periods (finance included); a core job deleting old
   published outbox rows; an audit trail for health writes; a privacy notice in es / en / id and a DPIA note.
-- **Observability depth**: database spans (`quarkus.datasource.jdbc.telemetry=true`, a pgx tracer), request metrics
-  for pdf and finance, Keycloak / Envoy / Redpanda logs to the collector, alerting on `hoops_authz_denied_total`.
-- **Tooling for the new languages**: mutation testing for Rust (`cargo-mutants`) and Go (`gremlins`), the pdf / finance
-  base images in `bump-pins`, a finance replica lag metric and `applied_event` retention, generated finance diagrams;
-  the commit hook following the commit's worktree.
-- **Recapture the landing screenshots** (owner's wish; now also the PDF icons and the Finance area).
+- **Observability depth**: database spans, request metrics for pdf and finance, Keycloak / Envoy / Redpanda logs to the
+  collector, alerting on `hoops_authz_denied_total`.
+- **Tooling and CI**: mutation testing for Rust (`cargo-mutants`) and Go (`gremlins`), a finance replica lag metric,
+  the commit hook following the commit's worktree, the shell tests that fail on Linux made portable (then into the
+  `scripts` job), full plugin coordinates for `dependency:go-offline` in `ci.yml`, compose on Mailpit like kind.
+- **Leftovers of the audit round** (FOLLOW-UPS "Ninth-round findings left on purpose", "Web helpers left as they are",
+  "CI findings left", "Infra findings left"): each with its reason; none blocks anything.
+- **Recapture the landing screenshots** (owner's wish; also the PDF icons and the Finance area).
 - **Users area depth**: e-mail change and a temporary password from the application admin's Users list.
 - **Billing** module on the existing seams (`billing.*`, `EntitlementService`, the published outbox events; the hub's
   placeholder); stays in core, in Java (ADR-0051).
