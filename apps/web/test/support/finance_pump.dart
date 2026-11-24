@@ -19,7 +19,7 @@ const financeTestZone = 'Europe/Madrid';
 FakeCore financeCore({Map<String, List<api.TeamStaffMember>>? staff}) =>
     FakeCore(
       // The demo mock's two seasons: last season's, ended, and this one.
-      seasons: FakeSeasonsRepository([
+      seasons: [
         api.Season(
           (b) => b
             ..id = 'season-2025'
@@ -30,7 +30,7 @@ FakeCore financeCore({Map<String, List<api.TeamStaffMember>>? staff}) =>
             ..current = false,
         ),
         season(seasonId, '2026/27', current: true),
-      ]),
+      ],
       teams: FakeTeamsRepository(
         teams: [
           team('team-mini-a', 'Mini A', alias: 'Leones', players: 7),

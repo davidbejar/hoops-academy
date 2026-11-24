@@ -103,7 +103,7 @@ void main() {
     });
 
     testWidgets('no season yet asks to create one first', (tester) async {
-      final core = FakeCore(seasons: FakeSeasonsRepository([]));
+      final core = FakeCore(seasons: []);
       await pumpAs(
         tester,
         roles: {TenantRole.admin},

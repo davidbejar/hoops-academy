@@ -27,10 +27,10 @@ const _tNew = 'team-new';
 final _l = AppLocalizationsEs();
 
 FakeCore _core() => FakeCore(
-  seasons: FakeSeasonsRepository([
+  seasons: [
     season(_past, '2025/26', endsOn: api.Date(2026, 6, 30)),
     season(seasonId, '2026/27', current: true),
-  ]),
+  ],
   teams: FakeTeamsRepository(
     teams: [
       team(_tOld, 'Mini A 25', sid: _past, seasonEnded: true),

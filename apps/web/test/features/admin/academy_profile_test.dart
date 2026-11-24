@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/core/l10n/locale_controller.dart';
 import 'package:hoops_app/features/admin/application/admin_providers.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';

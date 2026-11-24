@@ -7,9 +7,12 @@ import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/admin/application/admin_providers.dart';
 import 'package:hoops_app/features/admin/application/logo_revision.dart';
 import 'package:hoops_app/features/admin/data/academy_repository.dart';
+import 'package:hoops_app/features/admin/data/age_categories_repository.dart';
+import 'package:hoops_app/features/admin/data/seasons_repository.dart';
 import 'package:hoops_app/features/roster/application/roster_providers.dart';
 
 import '../support/core_fixtures.dart';
+import '../support/core_seed.dart';
 import '../support/fake_repos.dart';
 import '../support/mock_backend.dart';
 
@@ -26,8 +29,12 @@ ProviderContainer containerFor(FakeCore core, {MockBackend? backend}) {
         ApiAcademyRepository(b.coreApi(), tenant),
       ),
       membersRepositoryProvider.overrideWithValue(core.members),
-      seasonsRepositoryProvider.overrideWithValue(core.seasons),
-      ageCategoriesRepositoryProvider.overrideWithValue(core.categories),
+      seasonsRepositoryProvider.overrideWithValue(
+        ApiSeasonsRepository(b.coreApi(), tenant),
+      ),
+      ageCategoriesRepositoryProvider.overrideWithValue(
+        ApiAgeCategoriesRepository(b.coreApi(), tenant),
+      ),
       teamsRepositoryProvider.overrideWithValue(core.teams),
       playersRepositoryProvider.overrideWithValue(core.players),
       approvalsRepositoryProvider.overrideWithValue(core.approvals),
@@ -82,22 +89,20 @@ void main() {
 
   test('active season: selection beats current beats newest', () async {
     final core = FakeCore(
-      seasons: FakeSeasonsRepository([
+      seasons: [
         season('a', '2024/25'),
         season('b', '2025/26', current: true),
         season('c', '2026/27'),
-      ]),
+      ],
     );
     final c = containerFor(core);
     expect((await c.read(activeSeasonProvider.future))!.id, 'b');
     c.read(selectedSeasonIdProvider.notifier).select('c');
     expect((await c.read(activeSeasonProvider.future))!.id, 'c');
 
-    final none = containerFor(
-      FakeCore(seasons: FakeSeasonsRepository([season('x', 'x')])),
-    );
+    final none = containerFor(FakeCore(seasons: [season('x', 'x')]));
     expect((await none.read(activeSeasonProvider.future))!.id, 'x');
-    final empty = containerFor(FakeCore(seasons: FakeSeasonsRepository([])));
+    final empty = containerFor(FakeCore(seasons: []));
     expect(await empty.read(activeSeasonProvider.future), isNull);
   });
 
@@ -115,22 +120,23 @@ void main() {
   });
 
   test('rollover returns the orphan list and reloads seasons', () async {
-    final result = api.SeasonRolloverResult(
-      (b) => b
-        ..fromSeasonId = seasonId
-        ..toSeasonId = 'next'
-        ..openedCaseIds.replace(['c1']),
-    );
-    final core = FakeCore(
-      seasons: FakeSeasonsRepository([
-        season(seasonId, 'S', current: true),
-      ], rolloverResult: result),
-    );
-    final c = containerFor(core);
+    // Mini A (U12) with a player born in 2014: too old for it next season.
+    final backend = MockBackend()
+      ..seedTeams([team('t1', 'Mini A')])
+      ..seedPlayers([
+        player(
+          'p1',
+          'Ana Ruiz',
+          teams: [assignment('t1', 'Mini A')],
+        ).rebuild((b) => b.birthDate = api.Date(2014, 3, 4)),
+      ]);
+    final core = FakeCore(seasons: [season(seasonId, 'S', current: true)]);
+    final c = containerFor(core, backend: backend);
     await c.read(seasonsProvider.future);
     final r = await c.read(seasonsProvider.notifier).rollover(seasonId);
-    expect(r.openedCaseIds.single, 'c1');
-    expect(core.seasons.calls.where((x) => x == 'list').length, 2);
+    expect(r.orphans.single.player.displayName, 'Ana Ruiz');
+    expect(r.openedCaseIds, hasLength(1));
+    expect(backend.requestsTo('/api/core/seasons'), hasLength(2));
   });
 
   test(

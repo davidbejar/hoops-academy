@@ -6,9 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:built_collection/built_collection.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/core/export/server_file.dart';
-import 'package:hoops_app/features/admin/data/age_categories_repository.dart';
 import 'package:hoops_app/features/admin/data/members_repository.dart';
-import 'package:hoops_app/features/admin/data/seasons_repository.dart';
 import 'package:hoops_app/features/roster/data/approvals_repository.dart';
 import 'package:hoops_app/features/roster/data/cases_repository.dart';
 import 'package:hoops_app/features/roster/data/players_repository.dart';
@@ -224,99 +222,6 @@ class FakeMembersRepository with Faulty implements MembersRepository {
   @override
   Future<void> removeGuardianLink(String linkId) =>
       run('removeLink', () => links.removeWhere((l) => l.id == linkId));
-}
-
-class FakeSeasonsRepository with Faulty implements SeasonsRepository {
-  FakeSeasonsRepository(this.seasons, {this.rolloverResult});
-  final List<api.Season> seasons;
-  api.SeasonRolloverResult? rolloverResult;
-  String? rolledFrom;
-  bool? lastCloneStaff;
-  bool? lastClonePlayers;
-
-  @override
-  Future<List<api.Season>> list() => run('list', () => [...seasons]);
-  @override
-  Future<api.Season> create({
-    required String name,
-    required api.Date startsOn,
-    required api.Date endsOn,
-    required int referenceYear,
-  }) => run('create', () {
-    final s = season('s-${seasons.length}', name);
-    seasons.add(s);
-    return s;
-  });
-  @override
-  Future<api.Season> update(
-    String id, {
-    required String name,
-    required api.Date startsOn,
-    required api.Date endsOn,
-    required int referenceYear,
-  }) => run('update', () {
-    final i = seasons.indexWhere((s) => s.id == id);
-    seasons[i] = seasons[i].rebuild((b) => b.name = name);
-    return seasons[i];
-  });
-  @override
-  Future<api.SeasonRolloverResult> rollover(
-    String fromSeasonId, {
-    bool cloneStaff = true,
-    bool clonePlayers = true,
-  }) => run('rollover', () {
-    rolledFrom = fromSeasonId;
-    lastCloneStaff = cloneStaff;
-    lastClonePlayers = clonePlayers;
-    return rolloverResult ??
-        api.SeasonRolloverResult(
-          (b) => b
-            ..fromSeasonId = fromSeasonId
-            ..toSeasonId = 'next',
-        );
-  });
-}
-
-class FakeAgeCategoriesRepository
-    with Faulty
-    implements AgeCategoriesRepository {
-  FakeAgeCategoriesRepository(this.categories);
-  final List<api.AgeCategory> categories;
-
-  @override
-  Future<List<api.AgeCategory>> list() => run('list', () => [...categories]);
-  @override
-  Future<api.AgeCategory> create({
-    required String code,
-    required String name,
-    int? maxAge,
-    required int rank,
-  }) => run('create', () {
-    final c = category('c-${categories.length}', code, rank, maxAge: maxAge);
-    categories.add(c);
-    return c;
-  });
-  @override
-  Future<api.AgeCategory> update(
-    String id, {
-    required String code,
-    required String name,
-    int? maxAge,
-    required int rank,
-  }) => run('update', () {
-    final i = categories.indexWhere((c) => c.id == id);
-    categories[i] = categories[i].rebuild(
-      (b) => b
-        ..code = code
-        ..name = name
-        ..maxAge = maxAge
-        ..rank = rank,
-    );
-    return categories[i];
-  });
-  @override
-  Future<void> delete(String id) =>
-      run('delete', () => categories.removeWhere((c) => c.id == id));
 }
 
 class FakeTeamsRepository with Faulty implements TeamsRepository {
@@ -733,8 +638,8 @@ class FakeCore {
     api.TenantProfile? profile,
     api.TenantSettings? settings,
     FakeMembersRepository? members,
-    FakeSeasonsRepository? seasons,
-    FakeAgeCategoriesRepository? categories,
+    List<api.Season>? seasons,
+    List<api.AgeCategory>? categories,
     FakeTeamsRepository? teams,
     FakePlayersRepository? players,
     FakeApprovalsRepository? approvals,
@@ -742,10 +647,8 @@ class FakeCore {
   }) : profile = profile ?? profileFixture(),
        settings = settings ?? settingsFixture(),
        members = members ?? FakeMembersRepository([]),
-       seasons =
-           seasons ??
-           FakeSeasonsRepository([season(seasonId, '2026/27', current: true)]),
-       categories = categories ?? FakeAgeCategoriesRepository([u12, u14]),
+       seasons = seasons ?? [season(seasonId, '2026/27', current: true)],
+       categories = categories ?? [u12, u14],
        teams = teams ?? FakeTeamsRepository(teams: []),
        players = players ?? FakePlayersRepository([]),
        approvals = approvals ?? FakeApprovalsRepository([]),
@@ -755,8 +658,10 @@ class FakeCore {
   final api.TenantProfile profile;
   final api.TenantSettings settings;
   final FakeMembersRepository members;
-  final FakeSeasonsRepository seasons;
-  final FakeAgeCategoriesRepository categories;
+
+  /// The seasons and age categories (`/api/core/seasons`, `/age-categories`).
+  final List<api.Season> seasons;
+  final List<api.AgeCategory> categories;
   final FakeTeamsRepository teams;
   final FakePlayersRepository players;
   final FakeApprovalsRepository approvals;
@@ -768,6 +673,8 @@ class FakeCore {
     backend
       ..seedProfile(profile)
       ..seedSettings(settings)
+      ..seedSeasons(seasons)
+      ..seedCategories(categories)
       ..seedTeams(teams.teams);
   }
 }

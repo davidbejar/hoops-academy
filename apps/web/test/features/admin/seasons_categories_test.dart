@@ -1,44 +1,45 @@
-import 'package:built_collection/built_collection.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
-import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/core_fixtures.dart';
+import '../../support/core_seed.dart';
 import '../../support/fake_repos.dart';
 import '../../support/pump_helpers.dart';
+
+const _seasons = '/api/core/seasons';
+const _categories = '/api/core/age-categories';
 
 void main() {
   group('seasons', () {
     const path = '/admin/seasons';
 
     testWidgets('loading / error / empty', (tester) async {
-      final loading = FakeCore()..seasons.hang = true;
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
-        core: loading,
+        core: FakeCore(),
         location: path,
         settle: false,
+        prepare: (b) => b.hang(_seasons),
       );
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets('error', (tester) async {
-      final core = FakeCore()
-        ..seasons.failWith = const AppError(kind: AppErrorKind.timeout);
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
-        core: core,
+        core: FakeCore(),
         location: path,
+        prepare: (b) => b.fail(_seasons, status: 504),
       );
       expect(find.byKey(const Key('retry-button')), findsOneWidget);
     });
 
     testWidgets('empty', (tester) async {
-      final core = FakeCore(seasons: FakeSeasonsRepository([]));
+      final core = FakeCore(seasons: []);
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
@@ -60,11 +61,10 @@ void main() {
     });
 
     testWidgets('create with the date pickers', (tester) async {
-      final core = FakeCore();
-      await pumpAs(
+      final h = await pumpAs(
         tester,
         roles: {TenantRole.admin},
-        core: core,
+        core: FakeCore(),
         location: path,
       );
       await tapKey(tester, 'season-new');
@@ -84,7 +84,7 @@ void main() {
       await pickDay('season-start', '10');
       await pickDay('season-end', '20');
       await tapKey(tester, 'form-submit');
-      expect(core.seasons.calls, contains('create'));
+      expect(h.backend.lastBody(_seasons)['name'], '2027/28');
       expect(find.text('2027/28'), findsOneWidget);
     });
   });
@@ -93,46 +93,33 @@ void main() {
     testWidgets(
       'confirm -> result lists orphans with a link to eligibility cases',
       (tester) async {
-        final result = api.SeasonRolloverResult(
-          (b) => b
-            ..fromSeasonId = seasonId
-            ..toSeasonId = 'next'
-            ..clonedTeams.replace([
-              teamRef('t1', 'Mini A'),
-              teamRef('t2', 'Mini B'),
-            ])
-            ..orphans.replace([
-              api.Orphan(
-                (o) => o
-                  ..player.replace(playerRef('p9', 'Ana Ruiz'))
-                  ..previousTeam.replace(teamRef('t1', 'Mini A'))
-                  ..reasons = ListBuilder<api.EligibilityReason>([
-                    api.EligibilityReason.CATEGORY_TOO_LOW,
-                  ]),
-              ),
-            ])
-            ..openedCaseIds.replace(['c1']),
-        );
-        final core = FakeCore(
-          seasons: FakeSeasonsRepository([
-            season(seasonId, '2026/27', current: true),
-          ], rolloverResult: result),
-        );
-        await pumpAs(
+        // Two teams; Ana (born 2014) is too old for Mini A (U12) next season.
+        final h = await pumpAs(
           tester,
           roles: {TenantRole.admin},
-          core: core,
+          core: FakeCore(),
           location: '/admin/seasons/$seasonId/rollover',
           size: const Size(360, 1100),
+          prepare: (b) => b
+            ..seedTeams([team('t1', 'Mini A'), team('t2', 'Mini B')])
+            ..seedPlayers([
+              player(
+                'p9',
+                'Ana Ruiz',
+                teams: [assignment('t1', 'Mini A')],
+              ).rebuild((b) => b.birthDate = api.Date(2014, 3, 4)),
+            ]),
         );
+        const rollover = '$_seasons/$seasonId/rollover';
         expect(find.byKey(const Key('rollover-intro')), findsOneWidget);
-        expect(core.seasons.rolledFrom, isNull);
+        expect(h.backend.requestsTo(rollover, method: 'POST'), isEmpty);
 
         await tapKey(tester, 'rollover-clone-players'); // untick
         await tapKey(tester, 'rollover-run');
-        expect(core.seasons.rolledFrom, seasonId);
-        expect(core.seasons.lastCloneStaff, isTrue);
-        expect(core.seasons.lastClonePlayers, isFalse);
+        final sent = h.backend.lastBody(rollover);
+        expect(sent['fromSeasonId'], seasonId);
+        expect(sent['cloneStaff'], isTrue);
+        expect(sent['clonePlayers'], isFalse);
         expect(find.text('Cambio de temporada completado'), findsOneWidget);
         expect(find.text('Equipos copiados: 2'), findsOneWidget);
         expect(find.text('Ana Ruiz (antes: Mini A)'), findsOneWidget);
@@ -149,17 +136,13 @@ void main() {
     testWidgets(
       'a failing rollover keeps the confirm step and shows a localized error',
       (tester) async {
-        final core = FakeCore();
-        await pumpAs(
+        final h = await pumpAs(
           tester,
           roles: {TenantRole.admin},
-          core: core,
+          core: FakeCore(),
           location: '/admin/seasons/$seasonId/rollover',
         );
-        core.seasons.failWith = const AppError(
-          kind: AppErrorKind.conflict,
-          status: 409,
-        );
+        h.backend.fail('$_seasons/$seasonId/rollover', status: 409);
         await tapKey(tester, 'rollover-run');
         expect(find.byKey(const Key('rollover-run')), findsOneWidget);
         expect(find.byKey(const Key('rollover-done')), findsNothing);
@@ -184,7 +167,7 @@ void main() {
     const path = '/admin/age-categories';
 
     testWidgets('empty / error', (tester) async {
-      final empty = FakeCore(categories: FakeAgeCategoriesRepository([]));
+      final empty = FakeCore(categories: []);
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
@@ -195,13 +178,12 @@ void main() {
     });
 
     testWidgets('error', (tester) async {
-      final core = FakeCore()
-        ..categories.failWith = const AppError(kind: AppErrorKind.network);
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
-        core: core,
+        core: FakeCore(),
         location: path,
+        prepare: (b) => b.networkDown(_categories),
       );
       expect(find.byKey(const Key('retry-button')), findsOneWidget);
     });
@@ -224,11 +206,10 @@ void main() {
     testWidgets('create validates numbers, saves, and delete confirms', (
       tester,
     ) async {
-      final core = FakeCore();
-      await pumpAs(
+      final h = await pumpAs(
         tester,
         roles: {TenantRole.admin},
-        core: core,
+        core: FakeCore(),
         location: path,
       );
       await tapKey(tester, 'category-new');
@@ -245,14 +226,17 @@ void main() {
       await enter(tester, 'category-max-age', '');
       await enter(tester, 'category-rank', '3');
       await tapKey(tester, 'form-submit');
-      expect(core.categories.categories.last.code, 'U16');
-      expect(core.categories.categories.last.maxAge, isNull);
+      expect(h.backend.core.categories.last['code'], 'U16');
+      expect(h.backend.core.categories.last['maxAge'], isNull);
       expect(find.text('Sin límite de edad'), findsOneWidget);
 
       await tapKey(tester, 'category-delete-$catU12Id');
       expect(find.textContaining('¿Eliminar la categoría'), findsOneWidget);
       await tapKey(tester, 'dialog-confirm');
-      expect(core.categories.categories.any((c) => c.id == catU12Id), isFalse);
+      expect(
+        h.backend.core.categories.any((c) => c['id'] == catU12Id),
+        isFalse,
+      );
     });
   });
 }

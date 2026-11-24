@@ -225,8 +225,6 @@ class Harness {
         ...backend.overrides,
         if (core != null) ...[
           membersRepositoryProvider.overrideWithValue(core!.members),
-          seasonsRepositoryProvider.overrideWithValue(core!.seasons),
-          ageCategoriesRepositoryProvider.overrideWithValue(core!.categories),
           teamsRepositoryProvider.overrideWithValue(core!.teams),
           playersRepositoryProvider.overrideWithValue(core!.players),
           approvalsRepositoryProvider.overrideWithValue(core!.approvals),
