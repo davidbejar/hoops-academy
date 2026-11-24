@@ -13,6 +13,13 @@ Both are mounted into `/docker-entrypoint-initdb.d/` by compose and by the Testc
 
 Verify locally: `podman exec -it hoops-postgres psql -U core_app -d hoops -c "select app.current_tenant()"` → error 42501.
 
-`finance_migrator` / `finance_app` (WP118): `02_passwords.sh` sets their passwords only when `FINANCE_*_PASSWORD` are
-given, so a test resource or `.env` from before finance keeps working. A compose database created earlier gets the roles
-with `just finance-up` (`infra/compose/finance-db.sh` re-applies `01_roles_schemas.sql`, which is idempotent).
+One list (INF-03, WP139): the `-- roles: begin` / `-- roles: end` rows of `01_roles_schemas.sql` name every role with
+its schemas, connection limit and whether it migrates; the grants and search paths come from the rows. `02_passwords.sh`
+sets the password of every role the SQL marked (comment `hoops service role`) from `<ROLE>_PASSWORD`, each one
+required. `roles.sh` prints the list for scripts and workflows; the Java (`BootstrapRoles`) and Go (`pgtest`) test
+harnesses read it from the SQL; `scripts/tests/test_db_roles.py` checks the lists that stay literal (compose,
+`.env.example`, the chart's CNPG roles and Secrets, kind's `secrets.sh` and `env-keys.sh`). A new service adds its rows
+here, its schema row, and the names in those lists.
+
+A compose database created before a role existed gets it with `just finance-up` or `e2e/bin/services-up.sh`
+(`infra/compose/db-roles.sh` re-applies `01_roles_schemas.sql`, which is idempotent, and runs `02_passwords.sh`).

@@ -149,11 +149,12 @@ jobs:
           case "${user%%:*}" in ''|0|root) echo "::error::image user is '$user'"; exit 1 ;; esac
           pw() { head -c 18 /dev/urandom | base64 | tr -dc 'A-Za-z0-9'; }
           app=$(pw); migrator=$(pw)
-          args=(); for v in CORE_MIGRATOR CORE_APP CORE_PLATFORM GAME_MIGRATOR GAME_APP ATHLETE_MIGRATOR ATHLETE_APP; do
-            args+=(-e "${v}_PASSWORD=$(pw)"); done
+          # one password per role of the bootstrap SQL's list (infra/db/roles.sh, INF-03); finance's two are kept
+          args=(); for role in $(infra/db/roles.sh); do
+            case "$role" in finance_app) p="$app" ;; finance_migrator) p="$migrator" ;; *) p=$(pw) ;; esac
+            args+=(-e "$(echo "$role" | tr '[:lower:]' '[:upper:]')_PASSWORD=$p"); done
           podman network create finance-check
           podman run -d --name db --network finance-check -e POSTGRES_PASSWORD="$(pw)" -e POSTGRES_DB=hoops "${args[@]}" \
-            -e FINANCE_APP_PASSWORD="$app" -e FINANCE_MIGRATOR_PASSWORD="$migrator" \
             -v "$PWD/infra/db/init:/docker-entrypoint-initdb.d:ro,Z" docker.io/library/postgres:17
           for _ in $(seq 1 60); do podman exec db pg_isready -U postgres -d hoops >/dev/null 2>&1 && break; sleep 1; done
           sleep 3

@@ -92,7 +92,7 @@ lock `finance.replica-retention`, daily (`job.Retention`), counted in `hoops_ros
 ## Image, compose, chart, kind
 - `deploy/containers/finance.Containerfile` (context `services/finance-service`): bump the golang tag + index digest with
   go.mod's toolchain line, and the distroless static digest. `images.yml` job `finance`.
-- Compose: `just finance-up` (profile `finance`, :8085; roles on an existing database by `infra/compose/finance-db.sh`);
+- Compose: `just finance-up` (profile `finance`, :8085; roles on an existing database by `infra/compose/db-roles.sh`);
   nginx routes `/api/finance/`. On the host: `go run ./cmd/finance-service` with `FINANCE_*_PASSWORD` exported.
 - Chart: sub-chart `charts/finance-service` (alias `finance`): routes, rate-limited exports, NetworkPolicy (in: gateway;
   out: DNS, Postgres, Keycloak, Redpanda, collector). `deploy/helm/tests/run.sh` (`--update` re-records snapshots).

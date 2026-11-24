@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -91,9 +92,31 @@ func Start(t testing.TB) *Database {
 // Password of a bootstrap role in tests only (as TestRolePasswords in common-quarkus).
 func Password(role string) string { return role + "-test-password" }
 
-var bootstrapRoles = []string{
-	"core_migrator", "core_app", "core_platform", "game_migrator", "game_app", "athlete_migrator", "athlete_app",
-	"finance_migrator", "finance_app",
+// BootstrapRoles are the service roles of infra/db/init/01_roles_schemas.sql, read from its one list (the rows between
+// "-- roles: begin" and "-- roles: end", INF-03), so the harness keeps no copy of the names.
+func BootstrapRoles() ([]string, error) {
+	sql, err := os.ReadFile(filepath.Join(RepoRoot(), "infra", "db", "init", "01_roles_schemas.sql"))
+	if err != nil {
+		return nil, err
+	}
+	return rolesOf(string(sql))
+}
+
+var (
+	roleList = regexp.MustCompile(`(?s)-- roles: begin\n(.*?)-- roles: end\n`)
+	roleRow  = regexp.MustCompile(`(?m)^\s*\('([a-z_]+)'`)
+)
+
+func rolesOf(sql string) ([]string, error) {
+	list := roleList.FindStringSubmatch(sql)
+	if list == nil {
+		return nil, fmt.Errorf("no '-- roles: begin' / '-- roles: end' list in 01_roles_schemas.sql")
+	}
+	var roles []string
+	for _, row := range roleRow.FindAllStringSubmatch(list[1], -1) {
+		roles = append(roles, row[1])
+	}
+	return roles, nil
 }
 
 // Server is a running postgres:17 with database `hoops` bootstrapped and migrated.
@@ -106,8 +129,12 @@ type Server struct {
 // StartServer starts the container, bootstraps it with infra/db/init and migrates `hoops` as finance_migrator.
 func StartServer(ctx context.Context) (*Server, error) {
 	initDir := filepath.Join(RepoRoot(), "infra", "db", "init")
+	roles, err := BootstrapRoles()
+	if err != nil {
+		return nil, err
+	}
 	env := map[string]string{}
-	for _, role := range bootstrapRoles {
+	for _, role := range roles {
 		env[strings.ToUpper(role)+"_PASSWORD"] = Password(role)
 	}
 	superuser := randomHex(16)

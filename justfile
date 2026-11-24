@@ -127,10 +127,10 @@ down:
 pdf-up:
     podman compose --env-file .env -f infra/compose/compose.yaml --profile pdf up -d --build --wait pdf-service
 
-# finance-service in compose on :8085 (profile `finance`, needs `just up`): its roles on an existing database, then the
+# finance-service in compose on :8085 (profile `finance`, needs `just up`): the roles on an existing database, then the
 # image build (Go inside the container, about a minute the first time) and the start
 finance-up:
-    infra/compose/finance-db.sh
+    infra/compose/db-roles.sh
     podman compose --env-file .env -f infra/compose/compose.yaml --profile finance up -d --build --wait finance-service
 
 # Observability in compose (WP120, profile `observability`, needs nothing else): the OpenTelemetry collector on

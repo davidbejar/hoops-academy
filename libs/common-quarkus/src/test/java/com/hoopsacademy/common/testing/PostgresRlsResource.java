@@ -39,8 +39,13 @@ public class PostgresRlsResource implements QuarkusTestResourceLifecycleManager 
     @Override
     public void init(Map<String, String> initArgs) {
         service = initArgs.getOrDefault(SERVICE_ARG, DEFAULT_SERVICE);
+        initDir = initDirOf(initArgs);
+    }
+
+    /** {@code initDir} of the init args, else system property {@code hoops.db.init-dir}, else found above the working directory. */
+    static Path initDirOf(Map<String, String> initArgs) {
         String explicitDir = initArgs.getOrDefault(INIT_DIR_ARG, System.getProperty(INIT_DIR_PROPERTY));
-        initDir = explicitDir != null ? Path.of(explicitDir) : locateInitDir(Path.of("").toAbsolutePath());
+        return explicitDir != null ? Path.of(explicitDir) : locateInitDir(Path.of("").toAbsolutePath());
     }
 
     @Override

@@ -14,44 +14,12 @@
 --   * app.current_tenant() RAISES when the transaction-local setting is missing (loud failure).
 -- ============================================================================
 
--- ---------- roles -----------------------------------------------------------
-do $$
-declare r text;
-begin
-  foreach r in array array[
-    'core_migrator','core_app','core_platform',
-    'game_migrator','game_app',
-    'athlete_migrator','athlete_app',
-    'finance_migrator','finance_app'] loop
-    if not exists (select 1 from pg_roles where rolname = r) then
-      execute format('create role %I login nosuperuser nocreatedb nocreaterole noinherit nobypassrls', r);
-    else
-      execute format('alter role %I login nosuperuser nocreatedb nocreaterole nobypassrls', r);
-    end if;
-  end loop;
-end $$;
-
--- Reasonable connection limits for app roles (overridable per environment).
-alter role core_app    connection limit 50;
-alter role game_app    connection limit 50;
-alter role athlete_app connection limit 50;
-alter role finance_app connection limit 50;
-alter role core_platform connection limit 10;
-
 -- ---------- lock down public -----------------------------------------------
 revoke create on schema public from public;
 revoke all on database hoops from public;
-grant connect on database hoops to core_migrator, core_app, core_platform,
-                                 game_migrator, game_app,
-                                 athlete_migrator, athlete_app,
-                                 finance_migrator, finance_app;
 
 -- ---------- shared helper schema -------------------------------------------
 create schema if not exists app;
-grant usage on schema app to core_migrator, core_app, core_platform,
-                            game_migrator, game_app,
-                            athlete_migrator, athlete_app,
-                            finance_migrator, finance_app;
 
 -- Returns the tenant bound to the current transaction (set via
 --   select set_config('app.tenant_id', '<uuid>', true);
@@ -80,8 +48,45 @@ begin
 end $$;
 
 grant execute on function app.current_tenant() to public;
-grant execute on function app.enable_tenant_rls(regclass) to core_migrator, game_migrator, athlete_migrator,
-                                                            finance_migrator;
+
+-- ---------- roles -----------------------------------------------------------
+-- The one list of the service roles (INF-03). Everything about a role below comes from its row; 02_passwords.sh sets
+-- <ROLE>_PASSWORD for every role marked here; infra/db/roles.sh, the Java and Go test harnesses read the rows; the
+-- lists that must stay literal (compose, .env.example, the chart's CNPG roles and Secrets, kind) are checked against
+-- them (scripts/tests/test_db_roles.py). A new service adds its rows here and its schema row below.
+-- Columns: role, the schemas it sees first (search_path, then app, public), connection limit (-1: none), migrator (owns
+-- its schemas, runs the migrations, may call app.enable_tenant_rls).
+do $$
+declare r record;
+begin
+  for r in select * from (values
+-- roles: begin
+      ('core_migrator',    'core, billing', -1, true),
+      ('core_app',         'core, billing', 50, false),
+      ('core_platform',    'core, billing', 10, false),
+      ('game_migrator',    'game',          -1, true),
+      ('game_app',         'game',          50, false),
+      ('athlete_migrator', 'athlete',       -1, true),
+      ('athlete_app',      'athlete',       50, false),
+      ('finance_migrator', 'finance',       -1, true),   -- finance-service (Go, ADR-0051 §2, ADR-0055)
+      ('finance_app',      'finance',       50, false)
+-- roles: end
+    ) as t(name, schemas, connection_limit, migrator) loop
+    if not exists (select 1 from pg_roles where rolname = r.name) then
+      execute format('create role %I login nosuperuser nocreatedb nocreaterole noinherit nobypassrls', r.name);
+    else
+      execute format('alter role %I login nosuperuser nocreatedb nocreaterole nobypassrls', r.name);
+    end if;
+    execute format('comment on role %I is %L', r.name, 'hoops service role');
+    execute format('alter role %I connection limit %s', r.name, r.connection_limit);
+    execute format('grant connect on database hoops to %I', r.name);
+    execute format('grant usage on schema app to %I', r.name);
+    if r.migrator then
+      execute format('grant execute on function app.enable_tenant_rls(regclass) to %I', r.name);
+    end if;
+    execute format('alter role %I set search_path = %s, app, public', r.name, r.schemas);
+  end loop;
+end $$;
 
 -- ---------- service schemas --------------------------------------------------
 -- One block per (schema, migrator, app role). Default privileges make every table/sequence the
@@ -112,14 +117,3 @@ end $$;
 grant usage on schema core, billing to core_platform;
 alter default privileges for role core_migrator in schema billing grant select, insert, update on tables to core_platform;
 alter default privileges for role core_migrator in schema billing grant usage, select on sequences to core_platform;
-
--- Search path hygiene: each role sees its own schema first.
-alter role core_migrator    set search_path = core, billing, app, public;
-alter role core_app         set search_path = core, billing, app, public;
-alter role core_platform    set search_path = core, billing, app, public;
-alter role game_migrator    set search_path = game, app, public;
-alter role game_app         set search_path = game, app, public;
-alter role athlete_migrator set search_path = athlete, app, public;
-alter role athlete_app      set search_path = athlete, app, public;
-alter role finance_migrator set search_path = finance, app, public;
-alter role finance_app      set search_path = finance, app, public;
