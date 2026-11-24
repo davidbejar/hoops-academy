@@ -2,6 +2,21 @@
 # and are reached by nginx through host.containers.internal.
 name: hoops
 
+# Shared blocks (INF-06), merged with `<<:` (YAML merge keys; docker compose and podman-compose both resolve them).
+# The hardening of every container that needs no writable root file system and no capability.
+x-hardened: &hardened
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+# The environment pdf-service and finance-service share: the realm inside the network (ADR-0071; the issuer comes from
+# Keycloak's discovery, http://localhost:8080/auth/realms/academy, KC_HOSTNAME, as in the tokens) and traces and logs to
+# the `observability` profile's collector (HOOPS_OTEL_SDK_DISABLED=false just pdf-up / finance-up, WP120).
+x-service-env: &service-env
+  OIDC_AUTH_SERVER_URL: http://keycloak:8080/auth/realms/academy
+  OTEL_SDK_DISABLED: ${HOOPS_OTEL_SDK_DISABLED:-true}
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+  OTEL_RESOURCE_ATTRIBUTES: deployment.environment.name=compose
+
 services:
   postgres:
     image: docker.io/library/postgres:17
@@ -79,7 +94,8 @@ services:
     restart: unless-stopped
 
   mailhog:
-    image: docker.io/mailhog/mailhog:latest
+    # v1.0.1 is MailHog's last release (2020); the digest is the one `latest` pointed at (2026-11-24)
+    image: docker.io/mailhog/mailhog:v1.0.1@sha256:8d76a3d4ffa32a3661311944007a415332c4bb855657f4f6c57996405c009bea
     container_name: hoops-mailhog
     ports:
       - "127.0.0.1:1025:1025"
@@ -132,8 +148,7 @@ services:
   # pdf-service (Rust, ADR-0051 §3, ADR-0052): profile `pdf`, so `just up` neither builds nor starts it; `just pdf-up`
   # builds the image (deploy/containers/pdf.Containerfile, minutes the first time) and starts it on 127.0.0.1:8084.
   # Internal only (decision 89): nginx has no route to it; core and game on the host call PDF_SERVICE_URL
-  # (http://localhost:8084, .env) with their client-credentials token. It reads Keycloak's keys inside the network; the
-  # issuer comes from Keycloak's discovery (http://localhost:8080/auth/realms/academy, KC_HOSTNAME), as in the tokens.
+  # (http://localhost:8084, .env) with their client-credentials token. It reads Keycloak's keys inside the network.
   pdf-service:
     profiles: [pdf]
     image: localhost/hoops/pdf-service:dev
@@ -142,17 +157,11 @@ services:
       dockerfile: ../../deploy/containers/pdf.Containerfile
     container_name: hoops-pdf-service
     environment:
-      OIDC_AUTH_SERVER_URL: http://keycloak:8080/auth/realms/academy
+      <<: *service-env
       PDF_HTTP_PORT: "8084"
-      # traces and logs to the `observability` profile's collector: HOOPS_OTEL_SDK_DISABLED=false just pdf-up (WP120)
-      OTEL_SDK_DISABLED: ${HOOPS_OTEL_SDK_DISABLED:-true}
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
-      OTEL_RESOURCE_ATTRIBUTES: deployment.environment.name=compose
     ports:
       - "127.0.0.1:8084:8084"
-    read_only: true
-    cap_drop: [ALL]
-    security_opt: [no-new-privileges:true]
+    <<: *hardened
     mem_limit: 128m
     depends_on:
       keycloak:
@@ -172,25 +181,19 @@ services:
       dockerfile: ../../deploy/containers/finance.Containerfile
     container_name: hoops-finance-service
     environment:
+      <<: *service-env
       FINANCE_HTTP_PORT: "8085"
       FINANCE_DB_URL: postgres://postgres:5432/hoops
       FINANCE_MIGRATOR_PASSWORD: ${FINANCE_MIGRATOR_PASSWORD:?set in .env}
       FINANCE_APP_PASSWORD: ${FINANCE_APP_PASSWORD:?set in .env}
-      OIDC_AUTH_SERVER_URL: http://keycloak:8080/auth/realms/academy
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       HOOPS_CORS_ORIGINS: http://localhost:5173,http://localhost:8080
-      # traces and logs to the `observability` profile's collector: HOOPS_OTEL_SDK_DISABLED=false just finance-up (WP120)
-      OTEL_SDK_DISABLED: ${HOOPS_OTEL_SDK_DISABLED:-true}
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
-      OTEL_RESOURCE_ATTRIBUTES: deployment.environment.name=compose
     ports:
       # loopback by default. nginx reaches the service through the host (host.containers.internal:8085): on Linux
       # a port published on 127.0.0.1 is not reachable that way, so the e2e workflow sets HOOPS_FINANCE_BIND=0.0.0.0
       # on its throw-away runner (run 43814612481: 502 on /api/finance). On macOS the default works.
       - "${HOOPS_FINANCE_BIND:-127.0.0.1}:8085:8085"
-    read_only: true
-    cap_drop: [ALL]
-    security_opt: [no-new-privileges:true]
+    <<: *hardened
     mem_limit: 128m
     depends_on:
       postgres:
@@ -222,9 +225,7 @@ services:
     # the services' /q/metrics on the host ports (as nginx reaches them); Docker (CI) maps the name to the gateway
     extra_hosts:
       - "host.containers.internal:host-gateway"
-    read_only: true
-    cap_drop: [ALL]
-    security_opt: [no-new-privileges:true]
+    <<: *hardened
     mem_limit: 256m
     # distroless: no shell or curl for a healthcheck command
     restart: unless-stopped
@@ -258,9 +259,7 @@ services:
     volumes:
       - ../../deploy/helm/hoops/files/grafana/dashboards:/otel-lgtm/hoops-dashboards:ro
       - ../../deploy/helm/hoops/files/grafana/provisioning/dashboards:/otel-lgtm/grafana/conf/provisioning/dashboards:ro
-    read_only: true
-    cap_drop: [ALL]
-    security_opt: [no-new-privileges:true]
+    <<: *hardened
     mem_limit: 1536m
     healthcheck:
       test: ["CMD", "/otel-lgtm/docker/healthcheck.sh"]

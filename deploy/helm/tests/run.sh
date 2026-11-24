@@ -765,6 +765,10 @@ CF=infra/compose/compose.yaml; CC=infra/compose/otel-collector.yaml
 svc_block() { awk -v s="  $1:" '$0 == s {f=1; print; next} f && /^  [a-z]/ {exit} f && /^[a-z]/ {exit} f {print}' "$CF"; }
 section() { awk -v s="$1:" '$0 == s {f=1; print; next} f && /^[a-z]/ {exit} f {print}'; }
 cl=$(svc_block lgtm); co=$(svc_block otel-collector)
+# the hardening is compose's x-hardened block (INF-06), merged into a service with `<<: *hardened`
+xh=$(awk '/^x-hardened: &hardened$/ {f=1; next} f && /^[^ ]/ {exit} f' "$CF")
+compose_hardened() { echo "$1" | grep -qx '    <<: \*hardened' && echo "$xh" | grep -qx '  read_only: true' \
+  && echo "$xh" | grep -qx '  cap_drop: \[ALL\]' && echo "$xh" | grep -qx '  security_opt: \[no-new-privileges:true\]'; }
 li=$(echo "$l" | sed -n 's/^ *image: "\(.*\)"$/\1/p'); oi=$(echo "$oc" | sed -n 's/^ *image: "\(.*\)"$/\1/p')
 [ -n "$li" ] && echo "$cl" | grep -qx "    image: $li" && [ -n "$oi" ] && echo "$co" | grep -qx "    image: $oi" \
   && echo "$cl" | grep -qx '    profiles: \[observability\]' && echo "$co" | grep -qx '    profiles: \[observability\]' \
@@ -772,14 +776,14 @@ li=$(echo "$l" | sed -n 's/^ *image: "\(.*\)"$/\1/p'); oi=$(echo "$oc" | sed -n 
 ce=$(echo "$cl" | sed -n 's/^      \([A-Z_]*\): \(".*"\)$/\1=\2/p' | sort)
 [ -n "$ce" ] && [ "$ce" = "$le" ] && ok "compose lgtm: the chart's environment (24 h retention, anonymous Viewer, no login, no downloads)" \
   || bad "compose lgtm environment differs from the chart: $(diff <(echo "$ce") <(echo "$le") | tr '\n' ' ')"
-echo "$cl" | grep -qx '    read_only: true' && echo "$cl" | grep -qx '    cap_drop: \[ALL\]' && echo "$cl" | grep -qx '    user: "10001:10001"' \
+compose_hardened "$cl" && echo "$cl" | grep -qx '    user: "10001:10001"' \
   && [ "$(echo "$cl" | grep -c '^      - "')" = 1 ] && echo "$cl" | grep -qx '      - "127.0.0.1:3000:3000"' \
   && echo "$cl" | grep -qx '      - /data:size=512m' && echo "$cl" | grep -qx '      - /tmp' && echo "$cl" | grep -qx '      - /var/tempo' \
   && echo "$cl" | grep -qx '      - ../../deploy/helm/hoops/files/grafana/dashboards:/otel-lgtm/hoops-dashboards:ro' \
   && echo "$cl" | grep -qx '      - ../../deploy/helm/hoops/files/grafana/provisioning/dashboards:/otel-lgtm/grafana/conf/provisioning/dashboards:ro' \
   && ok "compose lgtm: read-only, non-root, no capabilities, tmpfs data (512m, counted in its memory limit), Grafana on 127.0.0.1:3000 only, the chart's dashboard files" \
   || bad "compose lgtm hardening/mounts"
-echo "$co" | grep -qx '    read_only: true' && echo "$co" | grep -qx '    cap_drop: \[ALL\]' \
+compose_hardened "$co" \
   && echo "$co" | grep -qx '      - ./otel-collector.yaml:/etc/otelcol/config.yaml:ro' \
   && [ "$(echo "$co" | grep -c '^      - "127.0.0.1:43')" = 2 ] && ! echo "$co" | grep -q '"0.0.0.0\|- "43' \
   && ok "compose otel-collector: read-only, no capabilities, OTLP on 127.0.0.1:4317/4318 for the services on the host" \
