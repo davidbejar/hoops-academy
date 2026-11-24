@@ -86,7 +86,9 @@ echo "pg-major-move: dump $DUMP ($(wc -c <"$DUMP" | tr -d ' ') bytes, sha256 $(c
 
 # --- the stack on the new major
 just down
-just up
+just up || die "just up failed after just down: the stack is down, the dump $DUMP is made and $OLD_VOLUME is kept.
+  Fix the cause and run just up by hand (a second run of this script refuses: the old container is gone), or take the
+  way back: the compose.yaml of before the move (postgres:$old_major, volume pgdata), then just up."
 now_major=$(($(sql "show server_version_num") / 10000))
 [ "$now_major" = "$new_major" ] || die "after just up $CONTAINER runs PostgreSQL $now_major, expected $new_major"
 podman volume exists "$OLD_VOLUME" || die "volume $OLD_VOLUME is gone (it was not removed by this script)"
