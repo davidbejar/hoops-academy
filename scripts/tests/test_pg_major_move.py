@@ -31,6 +31,7 @@ PODMAN = textwrap.dedent(f"""\
 JUST = textwrap.dedent("""\
     #!/usr/bin/env bash
     echo "just $*" >> "$STUB_LOG"
+    [ "$1" != up ] || [ -z "${STUB_UP_FAILS:-}" ] || exit 3
     [ "$1" != up ] || touch "$STUB_STATE/up"
     """)
 
@@ -130,6 +131,14 @@ class PgMajorMove(unittest.TestCase):
                                          STUB_MOUNTS="throwaway_data:/var/lib/postgresql/data")
         self.assertEqual(code, 0, out)
         self.assertTrue(any("exec" in c and "pg-throwaway" in c and "pg_dumpall" in c for c in calls), calls)
+
+    def test_a_failed_just_up_after_just_down_says_what_to_do_by_hand(self):
+        code, out, calls = self.run_move("--out", str(self.out), "--apply", STUB_UP_FAILS="1")
+        self.assertEqual(code, 1, out)
+        self.assertEqual([c for c in calls if c.startswith("just ")], ["just down", "just up"])
+        self.assertEqual(len(self.dumps()), 1)
+        self.assertIn("just up by hand", out)
+        self.assertIn("way back", out.lower())
 
     # --- refusals: nothing dumped, nothing stopped
     def refused(self, *args, **env):
