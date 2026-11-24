@@ -3,8 +3,8 @@
 Sources: `wp/FOLLOW-UPS.md`, the WP handovers, `security/review-2026-11.md`, `PLAN.md`. Items are grouped by theme, not
 ordered by date; there are no committed dates. IDs F-nn refer to the security review. "Seam" means the extension point
 already exists in v1. The plans of 2026-11-05 (`wp/FOLLOW-UPS.md`, WP26–WP37) and of 2026-11-06/07 (WP38–WP42, third
-round WP43–WP51, fourth round WP52–WP71, fifth round WP72–WP90) of 2026-11-10 (sixth round WP91–WP103), of 2026-11-14 (seventh round WP104–WP110) and of 2026-11-15/16 (eighth round
-WP111–WP125) are done (JDK 25 merged on 2026-11-15); the items they closed are no longer listed here. Hoops Academy is a learning project, not commercial (yet) (ADR-0025): the "if it goes commercial"
+round WP43–WP51, fourth round WP52–WP71, fifth round WP72–WP90) of 2026-11-10 (sixth round WP91–WP103), of 2026-11-14 (seventh round WP104–WP110) of 2026-11-15/16 (eighth round
+WP111–WP125) and of 2026-11-23/24 (ninth round WP126–WP140, from an audit for duplication and inefficiencies) are done (JDK 25 merged on 2026-11-15); the items they closed are no longer listed here. Hoops Academy is a learning project, not commercial (yet) (ADR-0025): the "if it goes commercial"
 items below are deliberately not planned.
 
 ## Product and billing
@@ -19,8 +19,9 @@ items below are deliberately not planned.
   `pdf-service` rendering the team roster and the match sheet, called by core and game (ADR-0052, ADR-0048
   amendments); language and theme on the academy chooser; the audit `team` target named.
 - **Finance, next steps.** The owner's IDR decision (2 minor digits today); retention of finance records (with the
-  purge job); the finance leftovers of `wp/FOLLOW-UPS.md` (the `currencyLocked` wording, the mock's balance answer,
-  paging of the family tab); a payment provider stays out by decision.
+  purge job); the finance leftovers of `wp/FOLLOW-UPS.md` (the `currencyLocked` wording, the web's balance 404 and
+  `EXPORT_TOO_LARGE` against the real service); a payment provider stays out by decision. (The family tab reads every
+  due since WP129, the mock answers the balance's 404 like the service since WP138.)
 - **Tenant purge job.** Withdrawn tenants keep data until `retainUntil` (default 365 days) but nothing deletes it afterwards.
   Needs a platform job, per-schema deletion in FK order, an audit record and a dry-run mode. It is also the only clean-up of
   old audit rows and of decided academy requests (WP90), and should cover finance records once their legal period is
@@ -67,9 +68,13 @@ items below are deliberately not planned.
   replica code lives in common-quarkus. Core's producer is never created with events off (`CORE_OUTBOX_ENABLED`, WP91).
 - **Eighth round:** finance-service consumes the same topics into its own replica (Go, franz-go; no birth date or
   gender); game refuses `replica` without its consumer (WP117) and keeps the academy name from `tenant.changed`.
+- **Landed in the ninth round (WP126, WP130, WP134, WP131):** game parks a record once (unique position) and reads
+  its feed cursor race-free; decoder, consumer loop, meters, bookkeeping stores and retention run are one pipeline in
+  common-quarkus with one retry policy (ADR-0062), the membership rule one class there (ADR-0066); finance prunes
+  `applied_event` after 7 days (ADR-0063).
 - **Still open:** the web can show the old roster for the 1–2 s of replica lag; Redpanda outside kind is unproven;
   `just events-drift` compares neither finance's replica nor game's academy names; finance has no lag metric and no
-  `applied_event` retention yet.
+  `parked_event` retention; the `RosterSource` switch and the test builders of the replicas are still per service.
 
 ## Native images
 Quarkus native builds for the three services (ADR-0003 calls it an optional later step): faster start and lower memory per
@@ -116,7 +121,13 @@ service worker exists since WP14b.)
   extracted from use cases and mappers, the baselines equal the scores, and a Dart tool mutates the web rule code.
   Still outside: athlete's access rules, core's rollover and eligibility engine, the web providers, and the Rust and Go
   services (`cargo-mutants`, `gremlins` candidates). Maintainability: PMD / CPD gate the Java code since WP113.
-- List pagination UI and a category filter on `GET /players` (contract).
+- A category filter on `GET /players` (contract). (Lists are read whole through `fetchAll` or paged with the kit
+  `Pager` since WP129, ADR-0061.)
+- **Web test base:** since WP138 every widget and provider test runs the real repositories against the demo mock,
+  seeded per test, with no repository fake (ADR-0070). Left from it: the mock answers 403 to a parent's or player's
+  read of attendance, computes the age at measurement from a fixed birthday, and `FakeCore` / `FakeAthlete` keep
+  their names as data bundles. The season rollover wizard sends the opened season as source and target, which core
+  refuses: it needs a target-season choice (owner's call).
 - **Demo mock depth (WP47, WP53).** Role-filtered core reads, the demo user on the staff list and persistence across
   reloads are done; members stay ADMIN-only, replay re-stamps timestamps, no suspended-tenant behaviour.
 - **Lint**: `curly_braces_in_flow_control_structures` is disabled since the `dart format` pass (WP49); re-enable it
@@ -162,7 +173,9 @@ leads: `domain/norms.md`.
   2026-11-14 to WP114; since the eighth round also for pdf-service and finance-service) (NVD key valid, images pushed to ghcr.io per
   commit, each with its SBOM since WP85), `codeql` and `semgrep` since WP83; Dependabot opens weekly grouped update PRs
   (Maven, pub, GitHub Actions pinned to SHAs) and `bump-pins` a weekly PR for base images, chart image tags and kind
-  pins (WP89). No release has been cut yet (no git tag): follow `runbooks/release.md`.
+  pins (WP89). Since WP133 superseded pull request runs are cancelled (never a run on `main`), each gate runs once and
+  set-up and image publishing are composite actions (ADR-0065). No release has been cut yet (no git tag): follow
+  `runbooks/release.md`.
 - Scale: the usage snapshot job and the eligibility sweep iterate tenants sequentially (fine for tens of tenants); snapshots
   are never pruned.
 
