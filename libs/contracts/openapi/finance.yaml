@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hoops Academy — finance-service API
-  version: 1.0.0
+  version: 1.1.0
   description: |
     An academy's finance (ADR-0051 §2, ADR-0056): fee plans, the dues they create per player and period, payments
     recorded by hand, expenses, a season balance and CSV exports. No payment provider; nothing is collected online.
@@ -94,6 +94,8 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '413': {$ref: './common.yaml#/components/responses/PayloadTooLarge'}
+        '415': {$ref: './common.yaml#/components/responses/UnsupportedMediaType'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
 
   /api/finance/fee-plans:
@@ -158,6 +160,8 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '413': {$ref: './common.yaml#/components/responses/PayloadTooLarge'}
+        '415': {$ref: './common.yaml#/components/responses/UnsupportedMediaType'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
 
   /api/finance/fee-plans/{feePlanId}:
@@ -204,6 +208,8 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '413': {$ref: './common.yaml#/components/responses/PayloadTooLarge'}
+        '415': {$ref: './common.yaml#/components/responses/UnsupportedMediaType'}
     delete:
       operationId: deleteFeePlan
       tags: [FeePlans]
@@ -289,6 +295,8 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '413': {$ref: './common.yaml#/components/responses/PayloadTooLarge'}
+        '415': {$ref: './common.yaml#/components/responses/UnsupportedMediaType'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
 
   /api/finance/dues:
@@ -408,6 +416,8 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '413': {$ref: './common.yaml#/components/responses/PayloadTooLarge'}
+        '415': {$ref: './common.yaml#/components/responses/UnsupportedMediaType'}
 
   /api/finance/dues/{dueId}:waive:
     parameters:
@@ -436,6 +446,8 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '413': {$ref: './common.yaml#/components/responses/PayloadTooLarge'}
+        '415': {$ref: './common.yaml#/components/responses/UnsupportedMediaType'}
 
   /api/finance/dues/{dueId}:pay:
     parameters:
@@ -465,6 +477,8 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '413': {$ref: './common.yaml#/components/responses/PayloadTooLarge'}
+        '415': {$ref: './common.yaml#/components/responses/UnsupportedMediaType'}
         '422': {$ref: './common.yaml#/components/responses/Unprocessable'}
 
   /api/finance/payments/{paymentId}:void:
@@ -494,6 +508,8 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '413': {$ref: './common.yaml#/components/responses/PayloadTooLarge'}
+        '415': {$ref: './common.yaml#/components/responses/UnsupportedMediaType'}
 
   /api/finance/teams/{teamId}/due-status:
     parameters:
@@ -593,6 +609,8 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '413': {$ref: './common.yaml#/components/responses/PayloadTooLarge'}
+        '415': {$ref: './common.yaml#/components/responses/UnsupportedMediaType'}
 
   /api/finance/expenses:export:
     parameters:
@@ -666,6 +684,8 @@ paths:
         '403': {$ref: './common.yaml#/components/responses/Forbidden'}
         '404': {$ref: './common.yaml#/components/responses/NotFound'}
         '409': {$ref: './common.yaml#/components/responses/Conflict'}
+        '413': {$ref: './common.yaml#/components/responses/PayloadTooLarge'}
+        '415': {$ref: './common.yaml#/components/responses/UnsupportedMediaType'}
     delete:
       operationId: deleteExpense
       tags: [Expenses]
