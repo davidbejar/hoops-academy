@@ -468,7 +468,7 @@ compose, chart, properties and scripts and runs alone.
 | 3 | WP136 | Chart: library chart for the service sub-charts; one source for the kind and cloud install pins | Opus · high | Done (ADR-0068; chart 0.14.0, library chart `hoops-lib` 0.1.0; renders unchanged; snapshots 1.69 → 0.37 MB; one pins file for kind and cloud; kind proof not green on the loaded VM, repeated in WP139) |
 | 4 | WP137 | Common plumbing: Problem exceptions, paging, language, clock, shared properties, poms, test support, vectors | Opus · high | Done (ADR-0069, ADR-0053 and ADR-0014 amendments; `finance.yaml` 1.1.0 (413, 415); 25 shared properties, poms, Problem plumbing, paging, one `PagedQuery`, test support and one copy of the vectors in the library; common 576, core 1259, game 527, athlete 1025 tests) |
 | 4 | WP138 | Web: the tests run against the demo mock; the separate test fakes go | Opus · high | Running (part 1 merged: ADR-0070, seeding API, release check `verify_no_mock`, three features on the mock, fakes 3,565 → 2,197 lines, web 1953 tests; parts 2 and 3 merged: fake sign-in out of the release build, the whole core side on the mock; part 4 merged: finance, matches and the exercise catalogue, fakes 1,473 lines; part 5: athlete health, fitness, training, plans) |
-| 5 | WP139 | One name for the realm URL everywhere; one login helper for the scripts; database roles from one list | Opus · high | Running |
+| 5 | WP139 | One name for the realm URL everywhere; one login helper for the scripts; database roles from one list | Opus · high | Done (ADR-0071; `OIDC_AUTH_SERVER_URL` + `KEYCLOAK_ADMIN_URL`; kind smoke 57 checks; e2e 38 on compose) |
 | 6 | WP140 | Docs pass | Opus · medium | Last alone |
 
 ### Decisions of 2026-11-23, eighth interview (product owner)

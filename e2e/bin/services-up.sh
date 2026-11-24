@@ -35,9 +35,12 @@ if [ "${E2E_WITHOUT_PDF_FINANCE:-}" != 1 ]; then
   infra/compose/db-roles.sh
   # --no-deps: the stack is already up (`just up`); without it compose may recreate Postgres, Redpanda and Keycloak
   # under the running jars and nginx (e2e run 43813211365: login page 502 after such a recreate)
-  flags=(up -d --wait --no-deps); [ "$build" = 1 ] && flags+=(--build)
-  podman compose --env-file .env -f infra/compose/compose.yaml --profile pdf --profile finance "${flags[@]}" \
-    pdf-service finance-service
+  # the build is its own call: `up --no-deps --build` fails with "no such service: keycloak" on docker-compose
+  # v2.15 (the provider `podman compose` picks on a Mac that still has Docker.app's binary), it resolves the build's
+  # dependencies without the services --no-deps left out
+  compose=(podman compose --env-file .env -f infra/compose/compose.yaml --profile pdf --profile finance)
+  [ "$build" = 1 ] && "${compose[@]}" build pdf-service finance-service
+  "${compose[@]}" up -d --wait --no-deps pdf-service finance-service
   services="$services pdf finance"
 fi
 
