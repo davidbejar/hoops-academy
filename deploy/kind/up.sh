@@ -88,11 +88,10 @@ install_cnpg "${K[@]}"
 
 # Single replica on kind: no leader election (WP86). Under VM load the operator lost its lease ("leader election lost",
 # CrashLoopBackOff with a 5-minute backoff) and no database came up; kube-controller-manager and kube-scheduler run without
-# it too (kind-config.yaml, WP87). The apply above resets the flag on a re-run, so this patch rolls the operator once more.
-cnpg_args=$("${K[@]}" -n cnpg-system get deployment cnpg-controller-manager -o json \
-  | jq -c '.spec.template.spec.containers[0].args | map(if . == "--leader-elect" then "--leader-elect=false" else . end)')
-"${K[@]}" -n cnpg-system patch deployment cnpg-controller-manager --type json \
-  -p "[{\"op\":\"replace\",\"path\":\"/spec/template/spec/containers/0/args\",\"value\":$cnpg_args}]"
+# it too (kind-config.yaml, WP87). Probes patient enough for a busy VM (WP146, see cnpg-patch.sh). The apply above resets
+# both on a re-run, so this patch rolls the operator once more.
+cnpg_patch=$("${K[@]}" -n cnpg-system get deployment cnpg-controller-manager -o json | deploy/kind/cnpg-patch.sh)
+"${K[@]}" -n cnpg-system patch deployment cnpg-controller-manager --type json -p "$cnpg_patch"
 
 step "waiting for Envoy Gateway and CNPG (first run pulls images; slow links take minutes)"
 wait_for_platform "${K[@]}"
@@ -116,6 +115,9 @@ if [ "$DEPLOY" = 1 ]; then
   VALUES=(-f deploy/helm/hoops/values-kind.yaml)
   [ ! -f deploy/helm/hoops/values-local.yaml ] || VALUES+=(-f deploy/helm/hoops/values-local.yaml)
   [ "$ESO" = 0 ] || VALUES+=(--set externalSecrets.enabled=true)
+  # helm's apply of the Clusters calls the CNPG webhook: the operator must serve it now, not only when wait_for_platform
+  # ran before the image build (WP146: under build load it had been killed since, and the apply was refused).
+  "${K[@]}" -n cnpg-system wait --for=condition=Available deployment/cnpg-controller-manager --timeout=600s
   "${H[@]}" upgrade --install hoops deploy/helm/hoops -n "$NS" "${VALUES[@]}" \
     --wait --timeout 15m
   # The Job redpanda-bootstrap (a post-install hook) creates the broker users only after --wait, so on a fresh install the
