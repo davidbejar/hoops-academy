@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/admin/data/members_repository.dart';
+import 'package:hoops_app/features/roster/data/guardians_repository.dart';
 
 import '../support/core_fixtures.dart';
 import '../support/core_seed.dart';
@@ -76,5 +77,21 @@ void main() {
         ),
       ),
     );
+  });
+
+  test('a guardian added with such an e-mail is linked without a '
+      'password (createGuardian)', () async {
+    backend.seedPlayers([player('p1', 'Ana Ruiz')]);
+    final link =
+        await ApiGuardiansRepository(
+          backend.coreApi(),
+          MockBackend.testTenantId,
+        ).create(
+          playerId: 'p1',
+          givenName: 'Inés',
+          familyName: 'Ibáñez',
+          email: 'ines@x.org',
+        );
+    expect(link.temporaryPassword, isNull);
   });
 }
