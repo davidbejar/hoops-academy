@@ -6,7 +6,7 @@ import 'package:hoops_app/features/training/application/training_providers.dart'
 import 'package:hoops_app/features/training/domain/exercise_filter.dart';
 
 import '../../support/athlete_seed.dart';
-import '../../support/fake_athlete.dart';
+import '../../support/athlete_fixtures.dart';
 import '../../support/mock_backend.dart';
 
 /// The catalogue's state (WP92): what is asked for, paging and the commands.

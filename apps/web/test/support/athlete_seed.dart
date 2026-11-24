@@ -6,7 +6,13 @@ import 'package:dio/dio.dart' show RequestOptions;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/core/mock/mock_athlete_api.dart';
+import 'package:hoops_app/features/health/application/health_providers.dart';
+import 'package:hoops_app/features/health/data/fitness_repository.dart';
+import 'package:hoops_app/features/health/data/health_repository.dart';
 import 'package:hoops_app/features/training/application/exercise_providers.dart';
+import 'package:hoops_app/features/training/application/training_providers.dart';
+import 'package:hoops_app/features/training/data/plans_repository.dart';
+import 'package:hoops_app/features/training/data/training_repository.dart';
 import 'package:hoops_app/features/training/data/exercises_repository.dart';
 
 import 'core_seed.dart' show injectInto;
@@ -632,5 +638,53 @@ class PlansData extends _AthleteData {
       status: body.status,
       comment: body.comment,
     );
+  }
+}
+
+/// The athlete-service side of a test, seeded into the backend's athlete
+/// mock (ADR-0070): training, plans, the exercise catalogue, health and
+/// fitness; afterwards what the app did with them.
+class FakeAthlete {
+  FakeAthlete({
+    TrainingData? training,
+    PlansData? plans,
+    ExercisesData? exercises,
+    HealthData? health,
+    FitnessData? fitness,
+  }) : training = training ?? TrainingData(),
+       plans = plans ?? PlansData(),
+       exercises = exercises ?? ExercisesData(),
+       health = health ?? HealthData(),
+       fitness = fitness ?? FitnessData();
+
+  final TrainingData training;
+  final PlansData plans;
+  final ExercisesData exercises;
+  final HealthData health;
+  final FitnessData fitness;
+
+  /// Seeds everything into [backend].
+  void seedInto(MockBackend backend) {
+    training.seedInto(backend);
+    plans.seedInto(backend);
+    exercises.seedInto(backend);
+    health.seedInto(backend);
+    fitness.seedInto(backend);
+  }
+
+  /// The app's athlete repositories on [backend], for tests of the providers
+  /// without the app (after [seedInto]).
+  List<Override> apiOverrides(MockBackend backend) {
+    final api = backend.athleteApi();
+    final t = backend.tenantAId;
+    return [
+      ...exercises.overrides,
+      trainingRepositoryProvider.overrideWithValue(
+        ApiTrainingRepository(api, t),
+      ),
+      plansRepositoryProvider.overrideWithValue(ApiPlansRepository(api, t)),
+      healthRepositoryProvider.overrideWithValue(ApiHealthRepository(api, t)),
+      fitnessRepositoryProvider.overrideWithValue(ApiFitnessRepository(api, t)),
+    ];
   }
 }

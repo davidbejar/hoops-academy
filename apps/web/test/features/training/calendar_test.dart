@@ -4,7 +4,7 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/features/training/domain/week.dart';
 
 import '../../support/athlete_scenarios.dart';
-import '../../support/fake_athlete.dart';
+import '../../support/athlete_seed.dart';
 import '../../support/pump_helpers.dart';
 
 void main() {

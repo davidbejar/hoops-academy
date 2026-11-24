@@ -6,7 +6,6 @@ import 'package:hoops_athlete_api/hoops_athlete_api.dart' as ath;
 
 import '../support/athlete_scenarios.dart';
 import '../support/athlete_seed.dart';
-import '../support/fake_athlete.dart';
 import '../support/game_seed.dart' show teamA;
 import '../support/pump_helpers.dart';
 import 'match/presentation/match_screens_test.dart' show coreWithTeam, gameWith;

@@ -7,7 +7,7 @@ import 'package:hoops_app/features/admin/application/admin_providers.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/core_fixtures.dart';
-import '../../support/fake_repos.dart';
+import '../../support/core_seed.dart';
 import '../../support/harness.dart';
 import '../../support/mock_backend.dart';
 import '../../support/pump_helpers.dart';

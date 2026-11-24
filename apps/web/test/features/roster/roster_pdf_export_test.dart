@@ -7,7 +7,6 @@ import '../../support/core_fixtures.dart';
 import '../../support/export_overrides.dart';
 import '../../support/fake_export.dart';
 import '../../support/core_seed.dart';
-import '../../support/fake_repos.dart';
 import '../../support/harness.dart';
 import '../../support/pump_helpers.dart';
 

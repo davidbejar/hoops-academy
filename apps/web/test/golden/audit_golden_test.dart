@@ -4,7 +4,7 @@ import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../support/audit_seed.dart';
-import '../support/fake_repos.dart';
+import '../support/core_seed.dart';
 import '../support/mock_backend.dart';
 import '../support/pump_helpers.dart';
 

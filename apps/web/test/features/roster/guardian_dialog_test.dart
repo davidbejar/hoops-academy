@@ -9,7 +9,7 @@ import 'package:hoops_app/features/admin/data/members_repository.dart';
 import 'package:hoops_app/features/roster/presentation/guardian_dialog.dart';
 
 import '../../support/core_fixtures.dart';
-import '../../support/fake_repos.dart';
+import '../../support/core_seed.dart';
 import '../../support/mock_backend.dart';
 import '../../support/kit_harness.dart';
 import '../../support/pump_helpers.dart';

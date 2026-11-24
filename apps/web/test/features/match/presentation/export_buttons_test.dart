@@ -10,10 +10,9 @@ import 'package:hoops_game_api/hoops_game_api.dart' as gen;
 
 import '../../../support/core_fixtures.dart';
 import '../../../support/athlete_seed.dart';
-import '../../../support/fake_athlete.dart';
+import '../../../support/athlete_fixtures.dart';
 import '../../../support/fake_export.dart';
 import '../../../support/core_seed.dart';
-import '../../../support/fake_repos.dart';
 import '../../../support/game_seed.dart';
 import '../../../support/export_overrides.dart';
 import '../../../support/pump_helpers.dart';

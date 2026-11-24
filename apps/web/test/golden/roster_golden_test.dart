@@ -5,7 +5,6 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../support/core_fixtures.dart';
 import '../support/core_seed.dart';
-import '../support/fake_repos.dart';
 import '../support/pump_helpers.dart';
 
 /// Teams list (light and dark), team detail and player detail of the roster

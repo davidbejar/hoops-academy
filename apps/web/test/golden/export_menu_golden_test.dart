@@ -8,7 +8,6 @@ import '../support/fake_export.dart';
 import '../support/export_overrides.dart';
 import '../support/game_seed.dart';
 import '../support/core_seed.dart';
-import '../support/fake_repos.dart';
 import '../support/pump_helpers.dart';
 
 /// The export menu (WP97) is the kit's action sheet behind the download icon

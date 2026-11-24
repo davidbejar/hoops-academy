@@ -8,9 +8,8 @@ import 'package:hoops_app/features/training/application/training_providers.dart'
 import '../support/athlete_scenarios.dart';
 import '../support/core_fixtures.dart';
 import '../support/core_seed.dart';
-import '../support/fake_repos.dart';
 import '../support/athlete_seed.dart';
-import '../support/fake_athlete.dart';
+import '../support/athlete_fixtures.dart';
 import '../support/pump_helpers.dart';
 import '../support/kit_harness.dart';
 

@@ -26,8 +26,7 @@ import 'package:hoops_app/features/tenant/data/tenant_repository.dart';
 import 'package:hoops_app/features/tenant/domain/tenant_profile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'fake_athlete.dart';
-import 'fake_repos.dart';
+import 'athlete_seed.dart';
 import 'core_seed.dart';
 import 'game_seed.dart';
 import 'mock_backend.dart';

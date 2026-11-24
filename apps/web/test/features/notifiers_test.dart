@@ -19,7 +19,6 @@ import 'package:hoops_app/features/roster/data/teams_repository.dart';
 
 import '../support/core_fixtures.dart';
 import '../support/core_seed.dart';
-import '../support/fake_repos.dart';
 import '../support/mock_backend.dart';
 
 /// The providers over [core]: the migrated repositories are the app's own on a

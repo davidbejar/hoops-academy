@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
-import 'fake_athlete.dart';
-import 'fake_repos.dart';
+import 'athlete_seed.dart';
+import 'core_seed.dart';
 import 'fixtures.dart';
 import 'game_seed.dart';
 import 'harness.dart';

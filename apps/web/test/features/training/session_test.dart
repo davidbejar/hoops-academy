@@ -4,7 +4,8 @@ import 'package:hoops_app/core/api/athlete_api.dart' as ath;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
-import '../../support/fake_athlete.dart';
+import '../../support/athlete_fixtures.dart';
+import '../../support/athlete_seed.dart';
 import '../../support/pump_helpers.dart';
 
 /// The week, and on the day of s1 (team t1: p1, p2, p3) a planned absence of

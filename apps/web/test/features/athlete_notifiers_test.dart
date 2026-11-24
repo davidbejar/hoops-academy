@@ -19,10 +19,9 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 
 import '../support/athlete_scenarios.dart';
 import '../support/athlete_seed.dart';
-import '../support/fake_athlete.dart';
+import '../support/athlete_fixtures.dart';
 import '../support/mock_backend.dart';
 import '../support/platform_seed.dart';
-import '../support/fake_repos.dart';
 import '../support/core_seed.dart';
 import '../support/fixtures.dart';
 

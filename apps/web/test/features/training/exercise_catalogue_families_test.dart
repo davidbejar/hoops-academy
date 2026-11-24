@@ -4,7 +4,6 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
 import '../../support/athlete_seed.dart';
-import '../../support/fake_athlete.dart';
 import '../../support/pump_helpers.dart';
 
 /// Decision 82 (WP108): PARENT and PLAYER browse the exercise catalogue from

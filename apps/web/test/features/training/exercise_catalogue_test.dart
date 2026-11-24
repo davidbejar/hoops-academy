@@ -6,7 +6,7 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
 import '../../support/athlete_seed.dart';
-import '../../support/fake_athlete.dart';
+import '../../support/athlete_fixtures.dart';
 import '../../support/pump_helpers.dart';
 
 /// WP92 (decision 72, ADR-0047): the exercise catalogue is a tab of the plan

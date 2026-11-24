@@ -7,7 +7,7 @@ import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/athlete_scenarios.dart';
-import '../../support/fake_repos.dart';
+import '../../support/core_seed.dart';
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
 import '../../support/mock_backend.dart';

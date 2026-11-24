@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 
-import '../../support/fake_repos.dart';
+import '../../support/core_seed.dart';
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
 import '../../support/mock_backend.dart';

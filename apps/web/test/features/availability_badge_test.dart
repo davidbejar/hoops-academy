@@ -5,10 +5,9 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../support/core_fixtures.dart';
 import '../support/athlete_seed.dart';
-import '../support/fake_athlete.dart';
+import '../support/athlete_fixtures.dart';
 import '../support/game_seed.dart' show teamA;
 import '../support/core_seed.dart';
-import '../support/fake_repos.dart';
 import '../support/pump_helpers.dart';
 import 'match/presentation/match_screens_test.dart'
     show coreWithTeam, gameWith, sched;

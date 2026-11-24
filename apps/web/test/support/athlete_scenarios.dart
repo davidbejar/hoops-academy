@@ -3,9 +3,8 @@ import 'package:hoops_app/features/training/domain/week.dart';
 
 import 'core_fixtures.dart';
 import 'athlete_seed.dart';
-import 'fake_athlete.dart';
+import 'athlete_fixtures.dart';
 import 'core_seed.dart';
-import 'fake_repos.dart';
 
 /// Monday of the current week (what the calendar opens on).
 DateTime get monday => startOfWeek(DateTime.now());

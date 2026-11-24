@@ -10,7 +10,7 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 import '../../support/export_overrides.dart';
 import '../../support/fake_export.dart';
 import '../../support/platform_seed.dart';
-import '../../support/fake_repos.dart';
+import '../../support/core_seed.dart';
 import '../../support/harness.dart';
 import '../../support/mock_backend.dart';
 import '../../support/pump_helpers.dart';

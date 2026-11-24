@@ -12,7 +12,7 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 import 'package:hoops_app/l10n/gen/app_localizations.dart';
 
 import '../../support/audit_seed.dart';
-import '../../support/fake_repos.dart';
+import '../../support/core_seed.dart';
 import '../../support/fixtures.dart';
 import '../../support/harness.dart';
 import '../../support/mock_backend.dart';

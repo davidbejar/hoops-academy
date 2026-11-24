@@ -12,7 +12,7 @@ import '../../support/harness.dart';
 import '../../support/mock_backend.dart';
 import '../../support/platform_seed.dart';
 import '../../support/pump_helpers.dart';
-import '../../support/fake_repos.dart' show FakeCore;
+import '../../support/core_seed.dart' show FakeCore;
 
 /// The Users area of the application admin (WP99): every login with its
 /// memberships per academy, search with debounce, paging.
