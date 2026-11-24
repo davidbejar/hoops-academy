@@ -15,8 +15,8 @@ import (
 	"time"
 	_ "time/tzdata" // the academies' IANA zones, whatever the image holds (the dues' dates depend on them)
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
 
 	"hoopsacademy.local/finance/db"
 	"hoopsacademy.local/finance/internal/adapters/in/events"
@@ -57,9 +57,9 @@ func run() error {
 		return fmt.Errorf("migrate: %w", err)
 	}
 	log.Info("schema finance migrated", slog.Int("applied", applied))
-	pool, err := pgxpool.New(ctx, cfg.Database.AppURL())
+	pool, err := persistence.NewPool(ctx, cfg.Database.AppURL(), telemetry.NewQueryTracer(otel.GetTracerProvider()))
 	if err != nil {
-		return fmt.Errorf("database pool: %w", err)
+		return err
 	}
 	defer pool.Close()
 
