@@ -9,6 +9,7 @@ import hashlib
 import http.server
 import json
 import pathlib
+import re
 import subprocess
 import threading
 import unittest
@@ -135,6 +136,14 @@ class OidcLogin(unittest.TestCase):
 
 
 class OneCopy(unittest.TestCase):
+    def test_every_sign_in_function_a_script_calls_is_defined(self):
+        # WP139's first cut dropped smoke.sh's user_token while two later steps still called it (kind proof, 2026-11-24)
+        for rel in ("deploy/kind/smoke.sh", "infra/compose/events-backfill.sh", "infra/keycloak/seed-academy.sh"):
+            text = (ROOT / rel).read_text()
+            for name in ("user_token", "login_once", "token"):
+                if re.search(rf"\$\((?:[^)]*&& )?{name} ", text):
+                    self.assertTrue(re.search(rf"(?m)^\s*{name}\(\) \{{", text), f"{rel} calls {name} without defining it")
+
     def test_no_script_scrapes_the_login_form_itself(self):
         out = subprocess.run(["git", "grep", "-l", "kc-form-login", "--", "*.sh"], cwd=ROOT, capture_output=True,
                              text=True).stdout.split()
