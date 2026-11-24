@@ -150,9 +150,9 @@ editor), `assignments[/:id]` (staff progress); `/players/:id/health` (injuries, 
 `/players/tests` (test types), `/players/norms` (norm admin); `/me` (PLAYER) and `/my-players` (PARENT,
 child switcher) share `features/profile/presentation/player_hub.dart`; `/platform[/:tenantId]` (super_admin
 console, also reachable from Profile when the user has memberships). Charts (`fl_chart`) follow the dataviz
-tokens in `core/ui/chart_tokens.dart`. Test doubles: `test/support/fake_athlete.dart` (`FakeAthlete`),
-`fake_platform.dart` (`FakePlatform`), both plugged into `Harness`/`pumpAs`. The demo mock (`HOOPS_MOCK_API`) does
-not serve `/api/athlete/*` or `/platform/*` yet (those screens show the error state in demo mode).
+tokens in `core/ui/chart_tokens.dart`. Tests run these screens against the seeded demo mock (see "Tests"):
+`test/support/athlete_seed.dart` (`HealthData`, `FitnessData`, `TrainingData`, `PlansData`, `ExercisesData`) and
+`platform_seed.dart`, plugged into `Harness`/`pumpAs`.
 
 ### Live match & offline queue (WP13)
 Routes (Matches module, all roles): `/matches` (list by team, status chips, "N unsynced" banner, new match for
@@ -183,8 +183,8 @@ drift / sqlite3. Storage choice (`data/local/connection/web_connection.dart`): `
 cross-origin isolated (it is not: no COOP/COEP, ADR-0004), otherwise IndexedDB in the page (`unsafeIndexedDb`, no
 shared worker), else in-memory. Tests use the native in-memory executor (`NativeDatabase.memory()`).
 
-Projection vectors: `tool/sync_vectors.sh` copies `libs/contracts/vectors/*.json` to `test/fixtures/vectors/`;
-`test/features/match/domain/projector_vectors_test.dart` fails if the copies differ. After changing the Drift schema
+Projection vectors: `test/features/match/domain/projector_vectors_test.dart` reads the one copy in
+`libs/contracts/vectors/*.json` (no copy in the app since WP137, ADR-0069). After changing the Drift schema
 run `dart run build_runner build` (generates `match_database.g.dart`, committed).
 
 Demo: `flutter run -d chrome --web-port 5173 --dart-define=HOOPS_MOCK_API=true --dart-define=HOOPS_MOCK_ROLES=COACH`
@@ -245,6 +245,13 @@ flutter analyze
 flutter test                                   # unit + widget + l10n parity + goldens
 flutter test --update-goldens test/golden      # after an intentional UI change; review the PNGs
 ```
+Widget and provider tests run the app's real repositories and generated clients against the demo mock, started
+empty and seeded per test (ADR-0070): `test/support/mock_backend.dart` (`MockBackend`: failure injection with `fail`,
+`hang`, `networkDown`, `heal`; the request log), and one seed file per area (`core_seed.dart`, `athlete_seed.dart`,
+`game_seed.dart`, `finance_seed.dart`, `audit_seed.dart`, `platform_seed.dart`). There are no repository fakes; only
+`fake_game_server.dart` stays, the sync worker's contract fake. A difference between the mock and a contract is
+decided against `libs/contracts/openapi`, with a red test on the mock first.
+
 Goldens use the test font (blocks instead of glyphs) so they are stable across machines; they check layout. They are
 recorded on macOS; Linux renders them a few % differently, so CI runs with `GOLDEN_DIFF_TOLERANCE=0.06`
 (`test/flutter_test_config.dart`). Locally the comparison is exact.
