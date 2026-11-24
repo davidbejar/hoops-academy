@@ -1,6 +1,7 @@
 # ADR-0070: The web widget tests run against the demo mock, seeded per test
 
-- Status: Accepted (in progress: audit, academy requests and platform migrated; see WP138)
+- Status: Accepted (in progress: the core side, finance, matches and the exercise catalogue migrated; training, plans,
+  health and fitness still on their fakes; see WP138)
 - Date: 2026-11-24
 - Records: decision 108 of 2026-11-23 (audit finding WEB-02)
 - Amends: ADR-0030 (its last consequence: the test fakes no longer mirror the feed rule, they go)
@@ -57,3 +58,9 @@ app's real repositories, generated clients and error mapping, so a widget test n
   everything else reaches the empty mock).
 - *Amendment (WP138 part 2):* `MockAuthService` is chosen only in a demo build (`mockBuild`, a compile-time
   constant), so a release no longer holds it; `verify_no_mock.dart` checks its token too.
+- *Amendment (WP138 part 4):* the finance, game and athlete mocks gained seeding hooks (`seedPlan`, `seedDues`,
+  `seedExpense`, `seedCurrency`; `seedMatch`, `seedRoster`, `seedEvent`; the exercise catalogue), which the demo's own
+  finance seed now uses too, so a test seeds an empty academy explicitly. The match screens use the app's real
+  `ApiEventsRemote` on the mock, so the box score, the feed and the season statistics come from the same stored
+  events; the Drift store and the sync timers stay in the test, and `FakeGameServer` stays as the sync worker's
+  contract fake (it is not an imitation of the screens' backend).

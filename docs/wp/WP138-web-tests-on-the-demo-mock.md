@@ -199,6 +199,72 @@ Not yours: generated clients; goldens change only if the seeded data must differ
   - **Finance** (`FakeFinanceRepository`, 11 files): it already wraps the real repository over the mock, but over the
     demo seed; moving it means explicit finance seeds (plans, dues, payments, expenses) in the empty academy.
 
+### Part 4 (2026-11-24)
+- **Built**
+  - **Finance.** `FinanceData` (`test/support/finance_seed.dart`) seeds the empty test academy explicitly through new
+    hooks of `MockFinanceApi` (`seedCurrency`, `seedPlan`, `seedDues`, `seedExpense`, `dues`), which the demo's own
+    seed now uses too; `standardFinance` spells out what the tests rely on (EUR, three plans, Mini A's dues for
+    September to November 2026, eight expenses), and `financeCore` gains the eight players the dues belong to. Tests
+    read what the app sent (`dueQuery`, `expenseQuery`, `sent<T>`, `lastId`, `languageOf`) and what the mock answered
+    (`answered<T>`); 501s, 409s, 422s, 403s and hangs are injected in front of it. Provider tests use the app's
+    `ApiFinanceRepository` on a seeded backend (`financeBackend`, `FinanceData.overrides`). `FakeFinanceRepository`
+    goes.
+  - **Matches.** `GameData` (`test/support/game_seed.dart`) seeds matches, rosters and other scorers' events through
+    new hooks of `MockGameApi` (`seedMatch`, `seedRoster`, `seedEvent`, `match`, `eventsOf`). The app's
+    `ApiMatchesRepository` and `ApiEventsRemote` talk to the mock (in the `Harness`; `GameData.apiOverrides` for the
+    controller test), so the box score, the feed and the season statistics come from the same stored events. The
+    device's Drift store and the sync timers stay in the test; offline is a dropped connection on the events paths.
+    `FakeMatchesRepository`, `FakeGame` and `genBoxScore` go; `FakeGameServer` stays as the sync worker's contract
+    fake (`sync_worker_test`, the vectors test).
+  - **Athlete, first sub-feature: the exercise catalogue.** `ExercisesData` (`test/support/athlete_seed.dart`) seeds the
+    athlete mock's catalogue (now exposed for tests) and reads back the queries (with their language), created,
+    changed and archived exercises; `FakeExercisesRepository` goes; the training and plan fakes copy quick-adds from
+    the same catalogue. `injectInto` (`core_seed.dart`) is public for it. ADR-0070 amended.
+- **Mock and fake differed (decided against the contract):**
+  12. the season balance without a currency: the mock answered 409 `CURRENCY_NOT_SET`, which `finance.yaml` does not
+      list; finance-service answers 404. Mock fixed, red test first (`mock_finance_reads_test`); this closes the mock
+      part of the FOLLOW-UPS finance leftovers (how the balance screen shows that 404 against the real service is
+      still to check there);
+  13. a parent's live-match feed: the fake gave every caller the whole feed unless told otherwise; ADR-0030 and the
+      mock give a parent only team-level events and the linked player's. The fake was wrong: the controller test's
+      coach event is now one of the linked player's;
+  14. the match list's order: the fake kept insertion order, the mock answers by `scheduledAt` descending, which the
+      list and its offline cache assume (`game.yaml` does not state an order). The fake was wrong.
+- **Expectations that follow the mock where a fake made data up:** a match's score follows its stored events (no score
+  set by hand); the season statistics are computed from seeded events (`statsGame`: two matches, one started) instead
+  of a fixture whose totals and averages disagreed; the match sheet's file name and a created exercise's id are read
+  from the mock's answers; a rejection for the team's coach comes from a match cancelled meanwhile
+  (`MATCH_CANCELLED`), since neither the mock nor the service refuses its staff `NOT_AUTHORIZED`; "a player without
+  dues" is Mini B's player (no plan charges Mini B) instead of one of Club Norte; provider tests read a 501 with
+  `AppError.of`, like the screens.
+- **Goldens re-recorded:** `finance_coach_*` (4) and `finance_family_*` (4): the team screen now lists its roster and
+  the hub its player, because the core seed holds the players the dues belong to; `match/match_list_*` (3): the
+  `scheduledAt` order; `match/season_stats_*` (2): figures from the seeded events. Every other finance, match and
+  exercise golden passes as recorded.
+- **Verified** (fresh, 2026-11-24): `flutter analyze` no issues; `just web-format-check` clean; `just web-test`
+  **1953 passed, 0 failed** after each of the five commits. A fresh run of `21af40a0` (on a copy of the tree)
+  gives 1952 passed, not the 1953 part 3 reported, so: +1 test (the balance's 404), none removed;
+  every migrated file keeps its test declarations (checked file by file against `21af40a0`).
+  - Fake lines: 2,197 → **1,473** (`fake_athlete` 1,529 → 1,388; `fake_repos` 85: the `FakeCore` data bundle and
+    `Faulty`). Deleted: `fake_finance.dart` 257, `fake_game.dart` 326, `FakeExercisesRepository` 141. Added:
+    `finance_seed.dart` 266, `game_seed.dart` 270, `athlete_seed.dart` 158.
+- **Not done: the rest of athlete** (1,388 fake lines), stopped for my context budget at a clean commit, not at a fake
+  that cannot go. In this order:
+  - **Health** (`FakeHealthRepository`, about 136 lines; `health_test`, `athlete_notifiers_test`, `profile_test`,
+    `availability_badge_test`, `training_health_golden_test`): expose the athlete mock's injuries and measurements and
+    add a `HealthData` like `ExercisesData` (`createdInjury`, `lastInjuryUpdate`, `createdMeasurement`,
+    `updatedMeasurement` from the requests). The mock checks who may read or write a player (team staff, guardian,
+    the player), so `athleteCore()` must hold the tests' players in a team the coach is staff of.
+  - **Fitness** (`FakeFitnessRepository`, about 200 lines): test types, norms and results; the tests give each result
+    a `band` and a `pending` flag, the mock computes them from the norms, so the seeds need norms that put each result
+    in the band the test expects.
+  - **Training and plans** (`FakeTrainingRepository` about 320 lines: sessions, schedules, attendance, absences;
+    `FakePlansRepository` about 340: plans, assignments, completions, quick-add copies; about 12 test files, built in
+    `athlete_scenarios.dart`): the athlete mock needs the seeding accessors for those collections.
+  - Then `fake_repos.dart`: `Faulty` goes with the last athlete fake; `FakeCore` is a data bundle, not a fake, and can
+    move to `core_seed.dart`.
+  - The rollover wizard is unchanged (part 2's finding stands).
+
 | ID | Done / Skipped | What changed or why not |
 |---|---|---|
-| WEB-02 | Done (part) | Tests on the seeded demo mock (ADR-0070). Part 1: audit, academy-request and platform fakes deleted. Part 2: academy, seasons, categories, approvals, cases; `MockAuthService` out of the release build. Part 3: members, guardians, teams and players: the whole core side runs on the mock. 11 mock/contract differences fixed. Left: athlete, game and finance fakes (2,112 lines; see part 3) |
+| WEB-02 | Done (part) | Tests on the seeded demo mock (ADR-0070). Part 1: audit, academy-request and platform fakes deleted. Part 2: academy, seasons, categories, approvals, cases; `MockAuthService` out of the release build. Part 3: members, guardians, teams and players: the whole core side runs on the mock. Part 4: finance, matches (real events remote on the mock) and the exercise catalogue. 14 mock/contract differences decided. Left: athlete health, fitness, training and plans fakes (1,473 fake lines with `fake_repos.dart`; see part 4) |
