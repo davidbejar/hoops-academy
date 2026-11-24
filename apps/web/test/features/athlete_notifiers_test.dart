@@ -335,23 +335,17 @@ void main() {
       'adding a test result returns the stored result with its expected band',
       () async {
         final jump = testType('ty', 'VJ', 'Salto', 'cm');
-        final fitness = FakeFitnessRepository(
+        final fitness = FitnessData(
           types: [jump],
           norms: [
-            norm(
-              'n',
-              'ty',
-              band: ath.NormBand.EXCELLENT,
-              min: 40,
-              max: 80,
-              pending: true,
-            ),
+            norm('n', 'ty', band: ath.NormBand.EXCELLENT, min: 40, max: 80),
           ],
         );
         final c = _container(
           FakeAthlete(fitness: fitness),
           const Capabilities(roles: {TenantRole.admin}),
         );
+        c.listen(testResultsProvider('p1'), (_, _) {}); // auto-dispose
         final r = await c
             .read(testResultsProvider('p1').notifier)
             .add(
@@ -369,8 +363,12 @@ void main() {
     );
 
     test('norm filter drives the repository scope', () async {
-      final fitness = FakeFitnessRepository(
-        norms: [norm('g', 'ty'), norm('t', 'ty', global: false)],
+      final fitness = FitnessData(
+        // The academy's row (ages 13 to 14) replaces no global row.
+        norms: [
+          norm('g', 'ty'),
+          norm('t', 'ty', global: false, minAge: 13, maxAge: 14),
+        ],
       );
       final c = _container(
         FakeAthlete(fitness: fitness),

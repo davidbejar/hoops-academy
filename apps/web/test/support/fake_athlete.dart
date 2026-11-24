@@ -294,6 +294,7 @@ ath.PhysicalTestType testType(
     ..global = global,
 );
 
+/// A norm row; without a [source] its reference is pending.
 ath.PhysicalTestNorm norm(
   String id,
   String typeId, {
@@ -301,7 +302,6 @@ ath.PhysicalTestNorm norm(
   double? min,
   double? max,
   bool global = true,
-  bool pending = false,
   int minAge = 10,
   int maxAge = 12,
   ath.Gender gender = ath.Gender.MALE,
@@ -318,18 +318,18 @@ ath.PhysicalTestNorm norm(
     ..maxValue = max
     ..source_ = source
     ..global = global
-    ..referencePending = pending,
+    ..referencePending = source == null,
 );
 
+/// A stored result; the backend computes its age, band and reference flag
+/// from the seeded norms and the player's birth date and gender.
 ath.PhysicalTestResult testResult(
   String id,
   String playerId,
   ath.PhysicalTestType type,
   double value,
-  ath.Date on, {
-  ath.NormBand? band,
-  bool pending = false,
-}) => ath.PhysicalTestResult(
+  ath.Date on,
+) => ath.PhysicalTestResult(
   (b) => b
     ..id = id
     ..playerId = playerId
@@ -339,11 +339,8 @@ ath.PhysicalTestResult testResult(
     ..measuredOn = on
     ..value = value
     ..ageAtMeasurement = 11
-    ..expectedBand = band
-    ..bandStatus = band == null
-        ? ath.BandStatus.NO_NORM
-        : ath.BandStatus.MATCHED
-    ..referencePending = pending
+    ..bandStatus = ath.BandStatus.NO_NORM
+    ..referencePending = false
     ..recordedBy = _who.toBuilder()
     ..recordedAt = DateTime.utc(2026, 10, 1),
 );
@@ -1012,222 +1009,21 @@ class FakePlansRepository with Faulty implements PlansRepository {
   });
 }
 
-class FakeFitnessRepository with Faulty implements FitnessRepository {
-  FakeFitnessRepository({
-    List<ath.PhysicalTestType>? types,
-    List<ath.PhysicalTestNorm>? norms,
-    List<ath.PhysicalTestResult>? results,
-  }) : typeList = types ?? [],
-       normList = norms ?? [],
-       resultList = results ?? [];
-
-  final List<ath.PhysicalTestType> typeList;
-  final List<ath.PhysicalTestNorm> normList;
-  final List<ath.PhysicalTestResult> resultList;
-  final List<String> normScopes = [];
-  ath.PhysicalTestNormInput? savedNorm;
-  ath.PhysicalTestTypeInput? createdType;
-  ath.UpdatePhysicalTestResultRequest? updatedResult;
-  ath.UpdatePhysicalTestTypeRequest? updatedType;
-  Object? deleteTypeError;
-
-  @override
-  Future<List<ath.PhysicalTestType>> types() =>
-      run('types', () => [...typeList]);
-
-  @override
-  Future<ath.PhysicalTestType> createType(ath.PhysicalTestTypeInput input) =>
-      run('createType', () {
-        createdType = input;
-        final t = testType(
-          'type-${typeList.length}',
-          input.code,
-          input.name,
-          input.unit,
-          global: false,
-          higher: input.higherIsBetter,
-        );
-        typeList.add(t);
-        return t;
-      });
-
-  @override
-  Future<ath.PhysicalTestType> updateType(
-    String id,
-    ath.UpdatePhysicalTestTypeRequest request,
-  ) => run('updateType', () {
-    updatedType = request;
-    final i = typeList.indexWhere((t) => t.id == id);
-    typeList[i] = typeList[i].rebuild(
-      (b) => b
-        ..code = request.code ?? b.code
-        ..name = request.name ?? b.name
-        ..unit = request.unit ?? b.unit
-        ..higherIsBetter = request.higherIsBetter ?? b.higherIsBetter
-        ..description = patched(
-          request.clear,
-          ath.UpdatePhysicalTestTypeRequestClearEnum.description,
-          request.description,
-          b.description,
-        ),
-    );
-    return typeList[i];
-  });
-
-  /// Like the server: a type that results use is a 409 `TEST_TYPE_HAS_RESULTS` (set [deleteTypeError] to override).
-  @override
-  Future<void> deleteType(String id) => run('deleteType', () {
-    if (deleteTypeError != null) throw deleteTypeError!;
-    typeList.removeWhere((t) => t.id == id);
-  });
-
-  @override
-  Future<List<ath.PhysicalTestResult>> results({
-    String? playerId,
-    String? teamId,
-    String? testTypeId,
-  }) => run(
-    'results',
-    () => [
-      for (final r in resultList)
-        if ((playerId == null || r.playerId == playerId) &&
-            (testTypeId == null || r.testTypeId == testTypeId))
-          r,
-    ],
-  );
-
-  @override
-  Future<ath.PhysicalTestResult> createResult(
-    ath.PhysicalTestResultInput input,
-  ) => run('createResult', () {
-    final type = typeList.firstWhere((t) => t.id == input.testTypeId);
-    ath.PhysicalTestNorm? hit;
-    for (final n in normList) {
-      if (n.testTypeId == type.id &&
-          (n.minValue ?? double.negativeInfinity) <= input.value &&
-          input.value < (n.maxValue ?? double.infinity)) {
-        hit = n;
-      }
-    }
-    final r = testResult(
-      'res-${resultList.length}',
-      input.playerId,
-      type,
-      input.value,
-      input.measuredOn,
-      band: hit?.band,
-      pending: hit?.referencePending ?? false,
-    );
-    resultList.add(r);
-    return r;
-  });
-
-  @override
-  Future<ath.PhysicalTestResult> updateResult(
-    String id,
-    ath.UpdatePhysicalTestResultRequest request,
-  ) => run('updateResult', () {
-    updatedResult = request;
-    final i = resultList.indexWhere((r) => r.id == id);
-    resultList[i] = resultList[i].rebuild(
-      (b) => b
-        ..measuredOn = request.measuredOn ?? b.measuredOn
-        ..value = request.value ?? b.value
-        ..notes = patched(
-          request.clear,
-          ath.UpdatePhysicalTestResultRequestClearEnum.notes,
-          request.notes,
-          b.notes,
-        ),
-    );
-    return resultList[i];
-  });
-
-  @override
-  Future<void> deleteResult(String id) =>
-      run('deleteResult', () => resultList.removeWhere((r) => r.id == id));
-
-  @override
-  Future<List<ath.PhysicalTestNorm>> norms({
-    String? testTypeId,
-    ath.Gender? gender,
-    String scope = 'EFFECTIVE',
-  }) => run('norms', () {
-    normScopes.add(scope);
-    return [
-      for (final n in normList)
-        if ((testTypeId == null || n.testTypeId == testTypeId) &&
-            (scope == 'EFFECTIVE' ||
-                (scope == 'GLOBAL' && n.global) ||
-                (scope == 'TENANT' && !n.global)))
-          n,
-    ];
-  });
-
-  @override
-  Future<ath.PhysicalTestNorm> createNorm(ath.PhysicalTestNormInput input) =>
-      run('createNorm', () {
-        savedNorm = input;
-        final n = norm(
-          'norm-${normList.length}',
-          input.testTypeId,
-          band: input.band,
-          min: input.minValue,
-          max: input.maxValue,
-          global: false,
-          minAge: input.minAge,
-          maxAge: input.maxAge,
-          gender: input.gender,
-          source: input.source_,
-          pending: input.source_ == null,
-        );
-        normList.add(n);
-        return n;
-      });
-
-  @override
-  Future<ath.PhysicalTestNorm> replaceNorm(
-    String id,
-    ath.PhysicalTestNormInput input,
-  ) => run('replaceNorm', () {
-    savedNorm = input;
-    final i = normList.indexWhere((n) => n.id == id);
-    normList[i] = norm(
-      id,
-      input.testTypeId,
-      band: input.band,
-      min: input.minValue,
-      max: input.maxValue,
-      global: false,
-      minAge: input.minAge,
-      maxAge: input.maxAge,
-      gender: input.gender,
-      source: input.source_,
-      pending: input.source_ == null,
-    );
-    return normList[i];
-  });
-
-  @override
-  Future<void> deleteNorm(String id) =>
-      run('deleteNorm', () => normList.removeWhere((n) => n.id == id));
-}
-
 /// The athlete-service side of a test: the fakes not moved yet, and the data
-/// the backend's athlete mock serves (ADR-0070): the exercise catalogue and
-/// health.
+/// the backend's athlete mock serves (ADR-0070): the exercise catalogue,
+/// health and fitness.
 class FakeAthlete {
   FakeAthlete({
     FakeTrainingRepository? training,
     FakePlansRepository? plans,
     ExercisesData? exercises,
     HealthData? health,
-    FakeFitnessRepository? fitness,
+    FitnessData? fitness,
   }) : training = training ?? FakeTrainingRepository(),
        plans = plans ?? FakePlansRepository(),
        exercises = exercises ?? ExercisesData(),
        health = health ?? HealthData(),
-       fitness = fitness ?? FakeFitnessRepository() {
+       fitness = fitness ?? FitnessData() {
     this.training
       ..plans = this.plans
       ..exercises = this.exercises;
@@ -1238,18 +1034,19 @@ class FakeAthlete {
   final FakePlansRepository plans;
   final ExercisesData exercises;
   final HealthData health;
-  final FakeFitnessRepository fitness;
+  final FitnessData fitness;
 
-  /// Seeds what the backend serves: the exercise catalogue and health.
+  /// Seeds what the backend serves: the exercise catalogue, health and
+  /// fitness.
   void seedInto(MockBackend backend) {
     exercises.seedInto(backend);
     health.seedInto(backend);
+    fitness.seedInto(backend);
   }
 
   List<Override> get overrides => [
     trainingRepositoryProvider.overrideWithValue(training),
     plansRepositoryProvider.overrideWithValue(plans),
-    fitnessRepositoryProvider.overrideWithValue(fitness),
   ];
 
   /// The app's repositories of what [backend] serves, for tests of the
@@ -1258,6 +1055,9 @@ class FakeAthlete {
     ...exercises.overrides,
     healthRepositoryProvider.overrideWithValue(
       ApiHealthRepository(backend.athleteApi(), backend.tenantAId),
+    ),
+    fitnessRepositoryProvider.overrideWithValue(
+      ApiFitnessRepository(backend.athleteApi(), backend.tenantAId),
     ),
   ];
 }

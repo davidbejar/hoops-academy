@@ -7,13 +7,12 @@ import 'package:hoops_app/features/me/domain/current_user.dart';
 import '../../support/athlete_scenarios.dart';
 import '../../support/athlete_seed.dart';
 import '../../support/fake_athlete.dart';
-import '../../support/problems.dart';
 import '../../support/pump_helpers.dart';
 
 final _jump = testType('ty-jump', 'VJ', 'Salto vertical', 'cm');
 final _sprint = testType('ty-sprint', 'S20', 'Sprint 20 m', 's', higher: false);
 
-FakeAthlete _athlete() => FakeAthlete(
+FakeAthlete _athlete({List<ath.PhysicalTestNorm>? norms}) => FakeAthlete(
   health: HealthData(
     injuries: [
       injury('inj-1', 'p1', part: 'Rodilla', expected: ath.Date(2026, 11, 30)),
@@ -32,54 +31,68 @@ FakeAthlete _athlete() => FakeAthlete(
       measurement('m3', 'p1', ath.Date(2026, 10, 10), height: 148, weight: 40),
     ],
   ),
-  fitness: FakeFitnessRepository(
+  fitness: FitnessData(
     types: [
       _jump,
       _sprint,
       testType('ty-custom', 'CUS', 'Test club', 'pts', global: false),
     ],
-    norms: [
-      norm('n1', 'ty-jump', band: ath.NormBand.BELOW_AVERAGE, min: 20, max: 30),
-      norm(
-        'n2',
-        'ty-jump',
-        band: ath.NormBand.AVERAGE,
-        min: 30,
-        max: 40,
-        pending: true,
-      ),
-      norm(
-        'n3',
-        'ty-jump',
-        band: ath.NormBand.EXCELLENT,
-        min: 40,
-        max: 60,
-        global: false,
-        source: 'Club 2026',
-      ),
-    ],
+    norms: norms ?? _gradingNorms(),
     results: [
-      testResult(
-        'r1',
-        'p1',
-        _jump,
-        28,
-        ath.Date(2026, 3, 1),
-        band: ath.NormBand.BELOW_AVERAGE,
-      ),
-      testResult(
-        'r2',
-        'p1',
-        _jump,
-        34,
-        ath.Date(2026, 7, 1),
-        band: ath.NormBand.AVERAGE,
-        pending: true,
-      ),
-      testResult('r3', 'p1', _jump, 36, ath.Date(2026, 10, 1)),
+      // p1 (born 2015) is 10 on 1 March and 11 afterwards: the norms grade r1
+      // and r2; r3 is below every band.
+      testResult('r1', 'p1', _jump, 28, ath.Date(2026, 3, 1)),
+      testResult('r2', 'p1', _jump, 34, ath.Date(2026, 7, 1)),
+      testResult('r3', 'p1', _jump, 18, ath.Date(2026, 10, 1)),
     ],
   ),
 );
+
+/// The two global jump norms of boys aged 10 to 12 (the second without a
+/// source: reference pending).
+List<ath.PhysicalTestNorm> _globalNorms() => [
+  norm(
+    'n1',
+    'ty-jump',
+    band: ath.NormBand.BELOW_AVERAGE,
+    min: 20,
+    max: 30,
+    source: 'Referencia 2024',
+  ),
+  norm('n2', 'ty-jump', band: ath.NormBand.AVERAGE, min: 30, max: 40),
+];
+
+/// What the results are graded with: the global norms and an excellent band
+/// above them.
+List<ath.PhysicalTestNorm> _gradingNorms() => [
+  ..._globalNorms(),
+  norm(
+    'n-top',
+    'ty-jump',
+    band: ath.NormBand.EXCELLENT,
+    min: 40,
+    max: 60,
+    source: 'Referencia 2024',
+  ),
+];
+
+/// The norms screen's layers: the global norms and the academy's own row for
+/// boys aged 15 to 16, which overlaps no global row in age and so replaces
+/// none (athlete.yaml).
+List<ath.PhysicalTestNorm> _layeredNorms() => [
+  ..._globalNorms(),
+  norm(
+    'n3',
+    'ty-jump',
+    band: ath.NormBand.EXCELLENT,
+    min: 40,
+    max: 60,
+    global: false,
+    minAge: 15,
+    maxAge: 16,
+    source: 'Club 2026',
+  ),
+];
 
 final _reach = testType(
   'ty-reach',
@@ -90,7 +103,7 @@ final _reach = testType(
 
 /// A player with one sit-and-reach and one jump result (the hint belongs to the first only).
 FakeAthlete _athleteWithReach() => FakeAthlete(
-  fitness: FakeFitnessRepository(
+  fitness: FitnessData(
     types: [_jump, _reach],
     results: [
       testResult('r-reach', 'p1', _reach, 22, ath.Date(2026, 10, 1)),
@@ -782,8 +795,17 @@ void main() {
     testWidgets('a type with results is not deleted and the reason is shown', (
       tester,
     ) async {
-      final a = _athlete()
-        ..fitness.deleteTypeError = problem(409, 'TEST_TYPE_HAS_RESULTS');
+      // A result of the club's own test: the server refuses to delete it.
+      final a = _athlete();
+      a.fitness.resultList.add(
+        testResult(
+          'r-cus',
+          'p1',
+          a.fitness.typeList[2],
+          7,
+          ath.Date(2026, 10, 1),
+        ),
+      );
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
@@ -827,7 +849,7 @@ void main() {
           tester,
           roles: {TenantRole.admin},
           core: athleteCore(),
-          athlete: _athlete(),
+          athlete: _athlete(norms: _layeredNorms()),
           location: '/players/norms',
           size: const Size(360, 1400),
         );
@@ -844,7 +866,7 @@ void main() {
     testWidgets('scope filter asks the repository for GLOBAL / TENANT', (
       tester,
     ) async {
-      final a = _athlete();
+      final a = _athlete(norms: _layeredNorms());
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
@@ -867,7 +889,7 @@ void main() {
     testWidgets('ADMIN creates a tenant override; age range is validated', (
       tester,
     ) async {
-      final a = _athlete();
+      final a = _athlete(norms: _layeredNorms());
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
@@ -898,7 +920,7 @@ void main() {
     });
 
     testWidgets('delete a tenant norm after confirming', (tester) async {
-      final a = _athlete();
+      final a = _athlete(norms: _layeredNorms());
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
@@ -920,7 +942,7 @@ void main() {
         roles: {TenantRole.coach},
         staffTeamIds: {'t1'},
         core: athleteCore(),
-        athlete: _athlete(),
+        athlete: _athlete(norms: _layeredNorms()),
         location: '/players/norms',
         size: const Size(360, 1400),
       );
@@ -939,7 +961,7 @@ void main() {
         roles: {TenantRole.admin},
         core: athleteCore(),
         athlete: FakeAthlete(
-          fitness: FakeFitnessRepository()..failWith = StateError('x'),
+          fitness: FitnessData()..failWith = StateError('x'),
         ),
         location: '/players/norms',
       );
@@ -954,7 +976,7 @@ void main() {
         roles: {TenantRole.parent},
         linkedPlayerIds: {'p1'},
         core: athleteCore(),
-        athlete: _athlete(),
+        athlete: _athlete(norms: _layeredNorms()),
         location: '/players/norms',
       );
       expect(h.container.read(routerProvider).state.uri.path, '/matches');

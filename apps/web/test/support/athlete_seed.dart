@@ -216,3 +216,80 @@ class HealthData extends _AthleteData {
   ath.UpdateBodyMeasurementRequest? get updatedMeasurement =>
       _lastSent(_measurement, 'PATCH');
 }
+
+/// The physical tests of a test (ADR-0070): types, norms and results seeded
+/// into the backend's athlete mock, which computes each result's age, band and
+/// reference flag from the norms (seed norms that put a result in the band
+/// the test expects); then what it holds and what the app sent.
+class FitnessData extends _AthleteData {
+  FitnessData({
+    List<ath.PhysicalTestType> types = const [],
+    List<ath.PhysicalTestNorm> norms = const [],
+    List<ath.PhysicalTestResult> results = const [],
+  }) : _types = [...types],
+       _norms = [...norms],
+       _results = [...results],
+       super(RegExp('^/api/athlete/physical-test-(types|norms|results)'));
+
+  final List<ath.PhysicalTestType> _types;
+  final List<ath.PhysicalTestNorm> _norms;
+  final List<ath.PhysicalTestResult> _results;
+
+  static const _typeList = '/api/athlete/physical-test-types';
+  static final _type = RegExp(r'^/api/athlete/physical-test-types/[^/]+$');
+  static final _normPaths = RegExp('^/api/athlete/physical-test-norms');
+  static const _normList = '/api/athlete/physical-test-norms';
+  static final _result = RegExp(r'^/api/athlete/physical-test-results/[^/]+$');
+
+  @override
+  void _seedRows(MockAthleteApi mock) {
+    mock.testTypes.addAll(_types.map(athleteJson<ath.PhysicalTestType>));
+    mock.norms.addAll(_norms.map(athleteJson<ath.PhysicalTestNorm>));
+    mock.results.addAll(_results.map(athleteJson<ath.PhysicalTestResult>));
+  }
+
+  /// The test types: before seeding the seed (to change), afterwards the
+  /// mock's.
+  List<ath.PhysicalTestType> get typeList =>
+      _rows(_types, () => _mock.testTypes);
+
+  /// The norms: before seeding the seed, afterwards the mock's.
+  List<ath.PhysicalTestNorm> get normList => _rows(_norms, () => _mock.norms);
+
+  /// The results: before seeding the seed (to change), afterwards the mock's
+  /// as it answers them.
+  List<ath.PhysicalTestResult> get resultList => _rows(
+    _results,
+    () => [for (final r in _mock.results) _mock.resultView(r)],
+  );
+
+  /// The `scope` of every read of the norms, in order.
+  List<String> get normScopes => [
+    for (final r in _b.requestsTo(_normList))
+      '${r.queryParameters['scope'] ?? 'EFFECTIVE'}',
+  ];
+
+  /// The last norm the app created or replaced (null: none).
+  ath.PhysicalTestNormInput? get savedNorm {
+    final sent = [
+      for (final r in _b.requestsTo(_normPaths, method: null))
+        if (r.method == 'POST' || r.method == 'PUT') r,
+    ];
+    return sent.isEmpty
+        ? null
+        : athleteModel<ath.PhysicalTestNormInput>(
+            MockBackend.bodyOf(sent.last),
+          );
+  }
+
+  /// The last test type the app created (null: none).
+  ath.PhysicalTestTypeInput? get createdType => _lastSent(_typeList, 'POST');
+
+  /// The last change of a test type the app sent (null: none).
+  ath.UpdatePhysicalTestTypeRequest? get updatedType =>
+      _lastSent(_type, 'PATCH');
+
+  /// The last correction of a result the app sent (null: none).
+  ath.UpdatePhysicalTestResultRequest? get updatedResult =>
+      _lastSent(_result, 'PATCH');
+}

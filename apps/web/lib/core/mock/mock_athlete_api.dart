@@ -1858,6 +1858,10 @@ class MockAthleteApi {
     ];
   }
 
+  /// A stored result as the service answers it (age, band and flags computed), for the widget tests.
+  @visibleForTesting
+  Map<String, Object?> resultView(Map<String, Object?> r) => _resultView(r);
+
   Map<String, Object?> _resultView(Map<String, Object?> r) {
     final type = _byId(_types, '${r['testTypeId']}');
     final facts = core.playerFacts('${r['playerId']}');
