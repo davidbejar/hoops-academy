@@ -7,8 +7,6 @@ import 'package:built_collection/built_collection.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
 import 'package:hoops_app/core/export/server_file.dart';
 import 'package:hoops_app/features/admin/data/members_repository.dart';
-import 'package:hoops_app/features/roster/data/approvals_repository.dart';
-import 'package:hoops_app/features/roster/data/cases_repository.dart';
 import 'package:hoops_app/features/roster/data/players_repository.dart';
 import 'package:hoops_app/features/roster/data/teams_repository.dart';
 
@@ -537,100 +535,6 @@ class FakePlayersRepository with Faulty implements PlayersRepository {
   ) => run('eligibleTeams', () => eligible[playerId] ?? const []);
 }
 
-class FakeApprovalsRepository with Faulty implements ApprovalsRepository {
-  FakeApprovalsRepository(this.requests);
-  final List<api.ApprovalRequest> requests;
-  String? lastNote;
-
-  /// Temporary password per request id that the server creates a login for on approval.
-  final Map<String, String> temporaryPasswords = {};
-
-  void _set(String id, api.ApprovalStatus s, String? note) {
-    final i = requests.indexWhere((r) => r.id == id);
-    requests[i] = requests[i].rebuild(
-      (b) => b
-        ..status = s
-        ..decisionNote = note,
-    );
-  }
-
-  @override
-  Future<List<api.ApprovalRequest>> list({api.ApprovalStatus? status}) => run(
-    'list',
-    () => [
-      for (final r in requests)
-        if (status == null || r.status == status) r,
-    ],
-  );
-  @override
-  Future<api.ApprovalRequestWithPassword> approve(String id, {String? note}) =>
-      run('approve', () {
-        lastNote = note;
-        _set(id, api.ApprovalStatus.APPROVED, note);
-        final r = requests.firstWhere((r) => r.id == id);
-        return api.ApprovalRequestWithPassword(
-          (b) => b
-            ..id = r.id
-            ..action = r.action
-            ..status = r.status
-            ..player.replace(r.player)
-            ..payload.replace(r.payload)
-            ..requestedBy.replace(r.requestedBy)
-            ..requestedAt = r.requestedAt
-            ..decisionNote = r.decisionNote
-            ..temporaryPassword = temporaryPasswords[id],
-        );
-      });
-  @override
-  Future<api.ApprovalRequest> reject(String id, {required String note}) =>
-      run('reject', () {
-        lastNote = note;
-        _set(id, api.ApprovalStatus.REJECTED, note);
-        return requests.firstWhere((r) => r.id == id);
-      });
-  @override
-  Future<api.ApprovalRequest> cancel(String id) => run('cancel', () {
-    _set(id, api.ApprovalStatus.CANCELLED, null);
-    return requests.firstWhere((r) => r.id == id);
-  });
-}
-
-class FakeCasesRepository with Faulty implements CasesRepository {
-  FakeCasesRepository(this.cases);
-  final List<api.EligibilityCase> cases;
-  String? resolvedId;
-  api.EligibilityCaseResolution? resolution;
-  String? target;
-
-  @override
-  Future<List<api.EligibilityCase>> list({api.EligibilityCaseStatus? status}) =>
-      run(
-        'list',
-        () => [
-          for (final c in cases)
-            if (status == null || c.status == status) c,
-        ],
-      );
-  @override
-  Future<api.EligibilityCase> resolve(
-    String id, {
-    required api.EligibilityCaseResolution resolution,
-    String? targetTeamId,
-    String? note,
-  }) => run('resolve', () {
-    resolvedId = id;
-    this.resolution = resolution;
-    target = targetTeamId;
-    final i = cases.indexWhere((c) => c.id == id);
-    cases[i] = cases[i].rebuild(
-      (b) => b
-        ..status = api.EligibilityCaseStatus.RESOLVED
-        ..resolution = resolution,
-    );
-    return cases[i];
-  });
-}
-
 /// The academy's core data of a test: seeded into the backend (ADR-0070) for
 /// what is migrated, in-memory fakes for the rest.
 class FakeCore {
@@ -642,17 +546,15 @@ class FakeCore {
     List<api.AgeCategory>? categories,
     FakeTeamsRepository? teams,
     FakePlayersRepository? players,
-    FakeApprovalsRepository? approvals,
-    FakeCasesRepository? cases,
+    this.approvals = const [],
+    this.cases = const [],
   }) : profile = profile ?? profileFixture(),
        settings = settings ?? settingsFixture(),
        members = members ?? FakeMembersRepository([]),
        seasons = seasons ?? [season(seasonId, '2026/27', current: true)],
        categories = categories ?? [u12, u14],
        teams = teams ?? FakeTeamsRepository(teams: []),
-       players = players ?? FakePlayersRepository([]),
-       approvals = approvals ?? FakeApprovalsRepository([]),
-       cases = cases ?? FakeCasesRepository([]);
+       players = players ?? FakePlayersRepository([]);
 
   /// The academy's profile and settings (`/api/core/tenant`).
   final api.TenantProfile profile;
@@ -664,17 +566,23 @@ class FakeCore {
   final List<api.AgeCategory> categories;
   final FakeTeamsRepository teams;
   final FakePlayersRepository players;
-  final FakeApprovalsRepository approvals;
-  final FakeCasesRepository cases;
 
-  /// Seeds the migrated data into [backend]; the teams of the fakes too, so
-  /// what the mock lets the user do (staff of a team) matches.
+  /// Approval requests and eligibility cases (`/approval-requests`, `/eligibility-cases`).
+  final List<api.ApprovalRequest> approvals;
+  final List<api.EligibilityCase> cases;
+
+  /// Seeds the migrated data into [backend]; the teams and players of the
+  /// fakes too, so what the mock lets the user do (staff of a team) and the
+  /// decisions on cases (a reassignment) work on the same roster.
   void seed(MockBackend backend) {
     backend
       ..seedProfile(profile)
       ..seedSettings(settings)
       ..seedSeasons(seasons)
       ..seedCategories(categories)
-      ..seedTeams(teams.teams);
+      ..seedApprovals(approvals)
+      ..seedCases(cases)
+      ..seedTeams(teams.teams)
+      ..seedPlayers(players.players);
   }
 }

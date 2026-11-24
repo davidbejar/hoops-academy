@@ -227,8 +227,6 @@ class Harness {
           membersRepositoryProvider.overrideWithValue(core!.members),
           teamsRepositoryProvider.overrideWithValue(core!.teams),
           playersRepositoryProvider.overrideWithValue(core!.players),
-          approvalsRepositoryProvider.overrideWithValue(core!.approvals),
-          casesRepositoryProvider.overrideWithValue(core!.cases),
         ],
         ...game.overrides,
         ...athlete.overrides,

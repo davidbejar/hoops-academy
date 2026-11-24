@@ -128,8 +128,10 @@ void main() {
           findsOneWidget,
         );
 
+        // The case the rollover opened is waiting there.
         await tapKey(tester, 'rollover-go-cases');
-        expect(find.text('No hay casos abiertos'), findsOneWidget);
+        expect(find.text('Equipo invalidado: Mini A'), findsOneWidget);
+        expect(find.text('Ana Ruiz'), findsOneWidget);
       },
     );
 

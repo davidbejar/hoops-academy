@@ -1,15 +1,17 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hoops_app/core/api/api.dart' as api;
-import 'package:hoops_app/core/errors/app_error.dart';
 import 'package:hoops_app/features/me/domain/current_user.dart';
 
 import '../../support/core_fixtures.dart';
 import '../../support/fake_repos.dart';
 import '../../support/pump_helpers.dart';
 
+const _approvals = '/api/core/approval-requests';
+const _cases = '/api/core/eligibility-cases';
+
 FakeCore coreWithApprovals() => FakeCore(
-  approvals: FakeApprovalsRepository([
+  approvals: [
     approval('a1', note: 'Visto en el torneo'),
     approval(
       'a2',
@@ -23,7 +25,7 @@ FakeCore coreWithApprovals() => FakeCore(
       action: api.ApprovalAction.WITHDRAW_PLAYER,
       playerName: 'Bye Bye',
     ),
-  ]),
+  ],
 );
 
 void main() {
@@ -32,25 +34,24 @@ void main() {
 
   group('approvals inbox', () {
     testWidgets('loading', (tester) async {
-      final core = coreWithApprovals()..approvals.hang = true;
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
-        core: core,
+        core: coreWithApprovals(),
         location: path,
         settle: false,
+        prepare: (b) => b.hang(_approvals),
       );
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets('error with retry', (tester) async {
-      final core = coreWithApprovals()
-        ..approvals.failWith = const AppError(kind: AppErrorKind.server);
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
-        core: core,
+        core: coreWithApprovals(),
         location: path,
+        prepare: (b) => b.fail(_approvals),
       );
       expect(find.byKey(const Key('retry-button')), findsOneWidget);
     });
@@ -84,18 +85,17 @@ void main() {
     });
 
     testWidgets('admin approves with an optional note', (tester) async {
-      final core = coreWithApprovals();
-      await pumpAs(
+      final h = await pumpAs(
         tester,
         roles: {TenantRole.admin},
-        core: core,
+        core: coreWithApprovals(),
         location: path,
       );
       await tapKey(tester, 'approve-a1');
       await tester.enterText(find.byKey(const Key('note-field')), 'ok');
       await tapKey(tester, 'dialog-confirm');
-      expect(core.approvals.requests.first.status, api.ApprovalStatus.APPROVED);
-      expect(core.approvals.lastNote, 'ok');
+      expect(h.backend.core.approvals.first['status'], 'APPROVED');
+      expect(h.backend.lastBody('$_approvals/a1/approve')['note'], 'ok');
       expect(find.text('Solicitud aprobada'), findsOneWidget);
       expect(
         find.byKey(const Key('approve-a1')),
@@ -106,20 +106,21 @@ void main() {
     testWidgets(
       'approving a request that creates a login shows its temporary password once',
       (tester) async {
-        final core = coreWithApprovals();
-        core.approvals.temporaryPasswords['a1'] = 'test-temp-password-2';
-        await pumpAs(
+        // Luca's request asked for a login with an e-mail nobody uses yet.
+        final h = await pumpAs(
           tester,
           roles: {TenantRole.admin},
-          core: core,
+          core: coreWithApprovals(),
           location: path,
+          prepare: (b) => b.core.requestedLogins['p-a1'] = 'luca@x.org',
         );
         await tapKey(tester, 'approve-a1');
         await tapKey(tester, 'dialog-confirm');
-        expect(
-          core.approvals.requests.first.status,
-          api.ApprovalStatus.APPROVED,
-        );
+        expect(h.backend.core.approvals.first['status'], 'APPROVED');
+        final password =
+            (h.backend.lastAnswer('$_approvals/a1/approve', method: 'POST')!
+                    as Map)['temporaryPassword']
+                as String;
         expect(find.byKey(const Key('temp-password-dialog')), findsOneWidget);
         expect(
           tester
@@ -127,12 +128,12 @@ void main() {
                 find.byKey(const Key('temp-password-value')),
               )
               .data,
-          'test-temp-password-2',
+          password,
         );
         expect(find.textContaining('Luca Mora'), findsWidgets);
         await tapKey(tester, 'temp-password-done');
         expect(find.byKey(const Key('temp-password-dialog')), findsNothing);
-        expect(find.text('test-temp-password-2'), findsNothing);
+        expect(find.text(password), findsNothing);
       },
     );
 
@@ -154,31 +155,32 @@ void main() {
     );
 
     testWidgets('rejecting needs a note', (tester) async {
-      final core = coreWithApprovals();
-      await pumpAs(
+      final h = await pumpAs(
         tester,
         roles: {TenantRole.admin},
-        core: core,
+        core: coreWithApprovals(),
         location: path,
       );
       await tapKey(tester, 'reject-a1');
       await tapKey(tester, 'dialog-confirm');
       expect(find.text('Campo obligatorio'), findsOneWidget);
-      expect(core.approvals.calls, isNot(contains('reject')));
+      expect(
+        h.backend.requestsTo('$_approvals/a1/reject', method: 'POST'),
+        isEmpty,
+      );
       await tester.enterText(find.byKey(const Key('note-field')), 'duplicado');
       await tapKey(tester, 'dialog-confirm');
-      expect(core.approvals.requests.first.status, api.ApprovalStatus.REJECTED);
-      expect(core.approvals.lastNote, 'duplicado');
+      expect(h.backend.core.approvals.first['status'], 'REJECTED');
+      expect(h.backend.lastBody('$_approvals/a1/reject')['note'], 'duplicado');
     });
 
     testWidgets(
       'coach: "my requests", no approve/reject, cancel only on own pending',
       (tester) async {
-        final core = coreWithApprovals();
-        await pumpAs(
+        final h = await pumpAs(
           tester,
           roles: {TenantRole.coach},
-          core: core,
+          core: coreWithApprovals(),
           location: path,
         );
         expect(find.text('Mis solicitudes'), findsOneWidget);
@@ -195,10 +197,7 @@ void main() {
 
         await tapKey(tester, 'cancel-a1');
         await tapKey(tester, 'dialog-confirm');
-        expect(
-          core.approvals.requests.first.status,
-          api.ApprovalStatus.CANCELLED,
-        );
+        expect(h.backend.core.approvals.first['status'], 'CANCELLED');
         expect(find.text('Solicitud cancelada'), findsOneWidget);
       },
     );
@@ -206,17 +205,14 @@ void main() {
     testWidgets(
       'a conflict while approving shows a localized error and keeps the item',
       (tester) async {
-        final core = coreWithApprovals();
-        await pumpAs(
+        final h = await pumpAs(
           tester,
           roles: {TenantRole.admin},
-          core: core,
+          core: coreWithApprovals(),
           location: path,
         );
-        core.approvals.failWith = const AppError(
-          kind: AppErrorKind.conflict,
-          status: 409,
-        );
+        // Another admin decided it meanwhile: the mock answers 409.
+        h.backend.core.approvals.first['status'] = 'REJECTED';
         await tapKey(tester, 'approve-a1');
         await tapKey(tester, 'dialog-confirm');
         expect(find.textContaining('Los datos han cambiado'), findsOneWidget);
@@ -227,10 +223,16 @@ void main() {
 
   group('eligibility cases dashboard', () {
     FakeCore coreWithCases() => FakeCore(
-      cases: FakeCasesRepository([
+      cases: [
         eligibilityCase('c1', 'p1', 'Ana Ruiz', 't1', 'Mini A'),
         eligibilityCase('c2', 'p2', 'Leo Gil', 't2', 'Infantil B'),
-      ]),
+      ],
+      teams: FakeTeamsRepository(
+        teams: [
+          team('t1', 'Mini A'),
+          team('t2', 'Infantil B', cat: u14),
+        ],
+      ),
       players: FakePlayersRepository(
         [player('p1', 'Ana Ruiz'), player('p2', 'Leo Gil')],
         eligible: {
@@ -267,25 +269,24 @@ void main() {
     );
 
     testWidgets('loading / error / empty', (tester) async {
-      final loading = coreWithCases()..cases.hang = true;
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
-        core: loading,
+        core: coreWithCases(),
         location: '/teams/cases',
         settle: false,
+        prepare: (b) => b.hang(_cases),
       );
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets('error', (tester) async {
-      final core = coreWithCases()
-        ..cases.failWith = const AppError(kind: AppErrorKind.network);
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
-        core: core,
+        core: coreWithCases(),
         location: '/teams/cases',
+        prepare: (b) => b.networkDown(_cases),
       );
       expect(find.byKey(const Key('retry-button')), findsOneWidget);
     });
@@ -303,11 +304,10 @@ void main() {
     testWidgets(
       'admin: reason, player, invalidated team; reassign offers only eligible teams then resolves',
       (tester) async {
-        final core = coreWithCases();
-        await pumpAs(
+        final h = await pumpAs(
           tester,
           roles: {TenantRole.admin},
-          core: core,
+          core: coreWithCases(),
           location: '/teams/cases',
         );
         expect(find.text('Ana Ruiz'), findsOneWidget);
@@ -330,9 +330,9 @@ void main() {
         ); // ineligible
 
         await tapKey(tester, 'reassign-to-t2');
-        expect(core.cases.resolvedId, 'c1');
-        expect(core.cases.resolution, api.EligibilityCaseResolution.REASSIGNED);
-        expect(core.cases.target, 't2');
+        final sent = h.backend.lastBody('$_cases/c1/resolve');
+        expect(sent['resolution'], 'REASSIGNED');
+        expect(sent['targetTeamId'], 't2');
         expect(find.text('Caso resuelto'), findsOneWidget);
         expect(find.byKey(const Key('case-c1')), findsNothing);
       },
@@ -341,31 +341,32 @@ void main() {
     testWidgets(
       'remove from team and dismiss resolve with the matching resolution',
       (tester) async {
-        final core = coreWithCases();
-        await pumpAs(
+        final h = await pumpAs(
           tester,
           roles: {TenantRole.admin},
-          core: core,
+          core: coreWithCases(),
           location: '/teams/cases',
         );
         await tapKey(tester, 'remove-c1');
         expect(
-          core.cases.resolution,
-          api.EligibilityCaseResolution.REMOVED_FROM_TEAM,
+          h.backend.lastBody('$_cases/c1/resolve')['resolution'],
+          'REMOVED_FROM_TEAM',
         );
         await tapKey(tester, 'dismiss-c2');
-        expect(core.cases.resolution, api.EligibilityCaseResolution.DISMISSED);
+        expect(
+          h.backend.lastBody('$_cases/c2/resolve')['resolution'],
+          'DISMISSED',
+        );
       },
     );
 
     testWidgets('coach resolves only cases of own teams; assistant none', (
       tester,
     ) async {
-      final core = coreWithCases();
       await pumpAs(
         tester,
         roles: {TenantRole.coach},
-        core: core,
+        core: coreWithCases(),
         location: '/teams/cases',
         staffTeamIds: {'t1'},
       );
@@ -386,11 +387,10 @@ void main() {
     });
 
     testWidgets('no eligible team: the dialog says so', (tester) async {
-      final core = coreWithCases();
       await pumpAs(
         tester,
         roles: {TenantRole.admin},
-        core: core,
+        core: coreWithCases(),
         location: '/teams/cases',
       );
       await tapKey(tester, 'reassign-c2'); // p2 has no eligible teams

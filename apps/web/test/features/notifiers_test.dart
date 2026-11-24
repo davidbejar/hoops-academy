@@ -10,6 +10,8 @@ import 'package:hoops_app/features/admin/data/academy_repository.dart';
 import 'package:hoops_app/features/admin/data/age_categories_repository.dart';
 import 'package:hoops_app/features/admin/data/seasons_repository.dart';
 import 'package:hoops_app/features/roster/application/roster_providers.dart';
+import 'package:hoops_app/features/roster/data/approvals_repository.dart';
+import 'package:hoops_app/features/roster/data/cases_repository.dart';
 
 import '../support/core_fixtures.dart';
 import '../support/core_seed.dart';
@@ -37,8 +39,12 @@ ProviderContainer containerFor(FakeCore core, {MockBackend? backend}) {
       ),
       teamsRepositoryProvider.overrideWithValue(core.teams),
       playersRepositoryProvider.overrideWithValue(core.players),
-      approvalsRepositoryProvider.overrideWithValue(core.approvals),
-      casesRepositoryProvider.overrideWithValue(core.cases),
+      approvalsRepositoryProvider.overrideWithValue(
+        ApiApprovalsRepository(b.coreApi(), tenant),
+      ),
+      casesRepositoryProvider.overrideWithValue(
+        ApiCasesRepository(b.coreApi(), tenant),
+      ),
     ],
   );
   addTearDown(c.dispose);
@@ -251,11 +257,7 @@ void main() {
     'approvals: approve, reject and cancel update the request status',
     () async {
       final core = FakeCore(
-        approvals: FakeApprovalsRepository([
-          approval('a1'),
-          approval('a2'),
-          approval('a3'),
-        ]),
+        approvals: [approval('a1'), approval('a2'), approval('a3')],
       );
       final c = containerFor(core);
       await c.read(approvalsProvider.future);
@@ -272,15 +274,21 @@ void main() {
   );
 
   test('cases: only OPEN are listed; reassign sends the target team', () async {
+    final backend = MockBackend()
+      ..seedTeams([team('t1', 'Mini A'), team('t2', 'Mini B')])
+      ..seedPlayers([player('p1', 'Ana')]);
     final core = FakeCore(
-      cases: FakeCasesRepository([
-        eligibilityCase('c1', 'p1', 'Ana', 't1', 'Mini A'),
-      ]),
+      cases: [eligibilityCase('c1', 'p1', 'Ana', 't1', 'Mini A')],
     );
-    final c = containerFor(core);
+    final c = containerFor(core, backend: backend);
     final open = await c.read(casesProvider.future);
     await c.read(casesProvider.notifier).reassign(open.single, 't2');
-    expect(core.cases.target, 't2');
+    expect(
+      backend.lastBody(
+        '/api/core/eligibility-cases/c1/resolve',
+      )['targetTeamId'],
+      't2',
+    );
     expect(c.read(casesProvider).requireValue, isEmpty);
   });
 

@@ -1096,7 +1096,8 @@ class MockCoreApi {
       'guardians' ||
       'audit-events' ||
       'audit-events:export' => false,
-      'approval-requests' => a.staff && !write,
+      // a coach reads the own requests and cancels them (the requester)
+      'approval-requests' => a.staff && (!write || sub == 'cancel'),
       'eligibility-cases' => a.coachRole,
       'teams' =>
         !write || (sub == 'players' && id != null && a.canManageTeam(id)),
