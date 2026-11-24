@@ -26,6 +26,8 @@ public class LocalTokenIssuer implements QuarkusTestResourceLifecycleManager {
         keys = rsa();
         return Map.of(
                 "quarkus.oidc.tenant-enabled", "true",
+                // no realm: the library's default (compose's Keycloak, ADR-0071) would be discovered instead of this key
+                "quarkus.oidc.auth-server-url", "",
                 "quarkus.oidc.public-key", Base64.getEncoder().encodeToString(keys.getPublic().getEncoded()),
                 "quarkus.oidc.token.audience", AUDIENCE,
                 "quarkus.oidc.token.issuer", ISSUER);
