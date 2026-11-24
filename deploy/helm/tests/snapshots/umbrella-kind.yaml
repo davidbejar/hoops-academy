@@ -2884,17 +2884,17 @@ spec:
             httpGet: {path: /q/health/started, port: http}
             periodSeconds: 5
             failureThreshold: 60
-            timeoutSeconds: 3
+            timeoutSeconds: 5
           livenessProbe:
             httpGet: {path: /q/health/live, port: http}
             periodSeconds: 10
-            failureThreshold: 3
-            timeoutSeconds: 3
+            failureThreshold: 6
+            timeoutSeconds: 5
           readinessProbe:
             httpGet: {path: /q/health/ready, port: http}
             periodSeconds: 5
             failureThreshold: 3
-            timeoutSeconds: 3
+            timeoutSeconds: 5
           resources:
             limits:
               memory: 448Mi
@@ -3011,17 +3011,17 @@ spec:
             httpGet: {path: /q/health/started, port: http}
             periodSeconds: 5
             failureThreshold: 60
-            timeoutSeconds: 3
+            timeoutSeconds: 5
           livenessProbe:
             httpGet: {path: /q/health/live, port: http}
             periodSeconds: 10
-            failureThreshold: 3
-            timeoutSeconds: 3
+            failureThreshold: 6
+            timeoutSeconds: 5
           readinessProbe:
             httpGet: {path: /q/health/ready, port: http}
             periodSeconds: 5
             failureThreshold: 3
-            timeoutSeconds: 3
+            timeoutSeconds: 5
           resources:
             limits:
               memory: 448Mi
@@ -3111,19 +3111,19 @@ spec:
               valueFrom: {secretKeyRef: {name: hoops-redpanda-finance-service, key: password}}
           startupProbe:
             httpGet: {path: /q/health/started, port: http}
-            periodSeconds: 2
+            periodSeconds: 5
             failureThreshold: 60
-            timeoutSeconds: 2
+            timeoutSeconds: 5
           livenessProbe:
             httpGet: {path: /q/health/live, port: http}
             periodSeconds: 10
-            failureThreshold: 3
-            timeoutSeconds: 2
+            failureThreshold: 6
+            timeoutSeconds: 5
           readinessProbe:
             httpGet: {path: /q/health/ready, port: http}
             periodSeconds: 5
             failureThreshold: 3
-            timeoutSeconds: 2
+            timeoutSeconds: 5
           resources:
             limits:
               memory: 192Mi
@@ -3222,17 +3222,17 @@ spec:
             httpGet: {path: /q/health/started, port: http}
             periodSeconds: 5
             failureThreshold: 60
-            timeoutSeconds: 3
+            timeoutSeconds: 5
           livenessProbe:
             httpGet: {path: /q/health/live, port: http}
             periodSeconds: 10
-            failureThreshold: 3
-            timeoutSeconds: 3
+            failureThreshold: 6
+            timeoutSeconds: 5
           readinessProbe:
             httpGet: {path: /q/health/ready, port: http}
             periodSeconds: 5
             failureThreshold: 3
-            timeoutSeconds: 3
+            timeoutSeconds: 5
           resources:
             limits:
               memory: 448Mi
@@ -3273,6 +3273,7 @@ metadata:
 spec:
   replicas: 1
   revisionHistoryLimit: 3
+  progressDeadlineSeconds: 900
   strategy: {type: Recreate}
   selector:
     matchLabels:
@@ -3353,15 +3354,18 @@ spec:
             initialDelaySeconds: 20
             periodSeconds: 10
             failureThreshold: 60
+            timeoutSeconds: 5
           readinessProbe:
             httpGet: {path: /auth/health/ready, port: management}
             initialDelaySeconds: 60
             periodSeconds: 10
             failureThreshold: 6
+            timeoutSeconds: 5
           livenessProbe:
             httpGet: {path: /auth/health/live, port: management}
             periodSeconds: 15
             failureThreshold: 6
+            timeoutSeconds: 5
           resources:
             limits:
               memory: 1Gi
@@ -3460,19 +3464,19 @@ spec:
                 name: pdf-service-env
           startupProbe:
             httpGet: {path: /q/health/started, port: http}
-            periodSeconds: 2
-            failureThreshold: 30
-            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 60
+            timeoutSeconds: 5
           livenessProbe:
             httpGet: {path: /q/health/live, port: http}
             periodSeconds: 10
-            failureThreshold: 3
-            timeoutSeconds: 2
+            failureThreshold: 6
+            timeoutSeconds: 5
           readinessProbe:
             httpGet: {path: /q/health/ready, port: http}
             periodSeconds: 5
             failureThreshold: 3
-            timeoutSeconds: 2
+            timeoutSeconds: 5
           resources:
             limits:
               memory: 128Mi

@@ -13,6 +13,9 @@ metadata:
 spec:
   replicas: 1
   revisionHistoryLimit: 3
+  {{- with .Values.progressDeadlineSeconds }}
+  progressDeadlineSeconds: {{ . }}
+  {{- end }}
   strategy: {type: Recreate}
   selector:
     matchLabels:
@@ -79,15 +82,24 @@ spec:
             initialDelaySeconds: 20
             periodSeconds: 10
             failureThreshold: 60
+            {{- with .Values.probeTimeoutSeconds }}
+            timeoutSeconds: {{ . }}
+            {{- end }}
           readinessProbe:
             httpGet: {path: /auth/health/ready, port: management}
             initialDelaySeconds: {{ .Values.readiness.initialDelaySeconds }}
             periodSeconds: 10
             failureThreshold: 6
+            {{- with .Values.probeTimeoutSeconds }}
+            timeoutSeconds: {{ . }}
+            {{- end }}
           livenessProbe:
             httpGet: {path: /auth/health/live, port: management}
             periodSeconds: 15
             failureThreshold: 6
+            {{- with .Values.probeTimeoutSeconds }}
+            timeoutSeconds: {{ . }}
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           securityContext:

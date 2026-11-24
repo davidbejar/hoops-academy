@@ -48,6 +48,10 @@ adminDenyPaths: [/auth/admin, /auth/realms/master]
 denyBackend: {service: web, port: 8080}   # Service name + port number (Gateway API backendRef)
 readiness:
   initialDelaySeconds: 60
+# Unset = the Kubernetes defaults (1 s per probe answer, 600 s progress deadline). values-kind.yaml sets both for a busy
+# 2-CPU Podman VM (WP146): there a slow answer is load, not a dead Keycloak.
+probeTimeoutSeconds: null
+progressDeadlineSeconds: null
 resources:
   requests: {cpu: 250m, memory: 512Mi}
   limits: {memory: 1Gi}

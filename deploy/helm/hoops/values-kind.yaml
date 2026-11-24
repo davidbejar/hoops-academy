@@ -37,23 +37,37 @@ observability:
 # Counter store of the global rate limits; deploy/kind/up.sh points Envoy Gateway at ratelimit-redis.hoops:6379.
 rateLimit:
   redis: {enabled: true}
+# Probes for a busy 2-CPU Podman VM (WP146; deploy/helm/tests/run.sh checks them): with a Maven build beside the install
+# the VM ran at a load of 30-120, probes with 1-3 s timeouts killed Keycloak and the services while they were still
+# starting, and every restart cost minutes. Here each answer may take 5 s, a liveness kill needs a minute of failures and
+# a start may take 5 minutes; Keycloak's Deployment is not declared failed before up.sh's helm timeout (15 m) runs out.
 keycloak:
   publicUrl: http://localhost:8090
   resources:
     requests: {cpu: 100m, memory: 512Mi}
     limits: {memory: 1Gi}
+  probeTimeoutSeconds: 5
+  progressDeadlineSeconds: 900
 core:
   resources: {requests: {cpu: 50m, memory: 192Mi}, limits: {memory: 448Mi}}
+  probes: &busyVmProbes
+    startup:   {periodSeconds: 5, failureThreshold: 60, timeoutSeconds: 5}
+    liveness:  {periodSeconds: 10, failureThreshold: 6, timeoutSeconds: 5}
+    readiness: {timeoutSeconds: 5}
 game:
   resources: {requests: {cpu: 50m, memory: 192Mi}, limits: {memory: 448Mi}}
+  probes: *busyVmProbes
 athlete:
   resources: {requests: {cpu: 50m, memory: 192Mi}, limits: {memory: 448Mi}}
+  probes: *busyVmProbes
 # pdf-service (ADR-0052): internal renderer, reached by core and game only
 pdf:
   enabled: true
+  probes: *busyVmProbes
 # finance-service (ADR-0055): /api/finance through the gateway, roster consumer on the broker
 finance:
   enabled: true
+  probes: *busyVmProbes
 databases:
   hoopsDb:
     storage: {size: 2Gi}
