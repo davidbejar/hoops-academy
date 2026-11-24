@@ -3,10 +3,12 @@
 - every local composite action exists, and a job runs actions/checkout before it uses one (the action files are in the
   checkout);
 - the heavy workflows cancel a superseded pull request run, and never a run on main, a schedule or a dispatch (CI-03);
-- `dependency-check` does not run the static gates a second time (CI-02), `trivy-fs` does not package the reactor (CI-01).
+- `dependency-check` does not run the static gates a second time (CI-02), `trivy-fs` does not package the reactor (CI-01);
+- every tracked shell test (`*.test.sh`) is a step of the `scripts` job of ci.yml (WP146).
 Run: python3 -I -m unittest discover -s scripts/tests"""
 import pathlib
 import re
+import subprocess
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -112,6 +114,24 @@ class GatesRunOnce(unittest.TestCase):
 
     def test_the_charts_job_of_images_is_gone(self):
         self.assertNotIn("deploy/helm/tests/run.sh", (GITHUB / "workflows/images.yml").read_text())
+
+
+def shell_tests():
+    """The tracked *.test.sh files (git ls-files: a new test file counts once it is added)."""
+    out = subprocess.run(["git", "ls-files", "*.test.sh"], cwd=ROOT, capture_output=True, text=True, check=True)
+    return out.stdout.split()
+
+
+class ShellTestsRunInCi(unittest.TestCase):
+    """WP146: a shell test that runs in no workflow rots unseen (env-jdk and tenancy-gate failed on Linux unnoticed)."""
+
+    def test_every_shell_test_is_a_step_of_the_scripts_job(self):
+        block = job_block(GITHUB / "workflows/ci.yml", "scripts")
+        tests = shell_tests()
+        self.assertTrue(tests)
+        for test in tests:
+            with self.subTest(test=test):
+                self.assertRegex(block, rf"(?m)^\s+run: {re.escape(test)}\s*$")
 
 
 if __name__ == "__main__":
