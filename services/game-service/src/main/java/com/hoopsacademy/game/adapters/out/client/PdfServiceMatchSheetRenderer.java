@@ -1,22 +1,19 @@
 package com.hoopsacademy.game.adapters.out.client;
 
+import com.hoopsacademy.common.client.PdfServiceClients;
 import com.hoopsacademy.common.client.ServiceTokenClientFilter;
 import com.hoopsacademy.common.problem.UpstreamUnavailableException;
 import com.hoopsacademy.game.application.sheet.MatchSheet;
 import com.hoopsacademy.game.application.sheet.MatchSheetRenderer;
 import com.hoopsacademy.game.application.sheet.PdfFile;
-import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.Response;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -36,18 +33,13 @@ public class PdfServiceMatchSheetRenderer implements MatchSheetRenderer {
     static final String FALLBACK_FILE_NAME = "hoops-match-sheet.pdf";
 
     private static final Pattern FILE_NAME = Pattern.compile("filename=\"([a-z0-9][a-z0-9-]{0,200}\\.pdf)\"");
-    private static final byte[] PDF_MAGIC = "%PDF-".getBytes(StandardCharsets.US_ASCII);
 
     private final Optional<PdfServiceClient> client;
 
     PdfServiceMatchSheetRenderer(@ConfigProperty(name = "hoops.pdf.url") Optional<URI> url,
             @ConfigProperty(name = "hoops.pdf.connect-timeout") Duration connectTimeout,
             @ConfigProperty(name = "hoops.pdf.read-timeout") Duration readTimeout, ServiceTokenClientFilter token) {
-        this.client = url.map(base -> QuarkusRestClientBuilder.newBuilder().baseUri(base)
-                .connectTimeout(connectTimeout.toMillis(), TimeUnit.MILLISECONDS)
-                .readTimeout(readTimeout.toMillis(), TimeUnit.MILLISECONDS)
-                .register(token)
-                .build(PdfServiceClient.class));
+        this.client = PdfServiceClients.build(url, connectTimeout, readTimeout, token, PdfServiceClient.class);
     }
 
     @Override
@@ -66,16 +58,11 @@ public class PdfServiceMatchSheetRenderer implements MatchSheetRenderer {
 
     private static PdfFile file(Response answer) {
         byte[] content = answer.readEntity(byte[].class);
-        if (answer.getStatus() != Response.Status.OK.getStatusCode() || !isPdf(content)) {
+        if (answer.getStatus() != Response.Status.OK.getStatusCode() || !PdfServiceClients.isPdf(content)) {
             throw new UpstreamUnavailableException(
                     "pdf-service answered status " + answer.getStatus() + " without a PDF", null);
         }
         return new PdfFile(content, fileName(answer.getHeaderString(HttpHeaders.CONTENT_DISPOSITION)));
-    }
-
-    private static boolean isPdf(byte[] content) {
-        return content != null && content.length >= PDF_MAGIC.length
-                && Arrays.equals(content, 0, PDF_MAGIC.length, PDF_MAGIC, 0, PDF_MAGIC.length);
     }
 
     private static String fileName(String contentDisposition) {

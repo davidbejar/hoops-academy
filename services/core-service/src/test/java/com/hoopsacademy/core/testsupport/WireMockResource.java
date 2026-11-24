@@ -27,7 +27,7 @@ public class WireMockResource implements QuarkusTestResourceLifecycleManager {
                 "quarkus.oidc-client.auth-server-url", base + "/auth/realms/academy",
                 "quarkus.rest-client.game-usage.url", base + "/game",
                 "quarkus.rest-client.athlete-usage.url", base + "/athlete",
-                "hoops.pdf-service.url", base + "/pdf");
+                "hoops.pdf.url", base + "/pdf");
     }
 
     @Override
