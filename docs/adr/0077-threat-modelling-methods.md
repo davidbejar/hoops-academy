@@ -14,10 +14,11 @@ The project has two threat models: a STRIDE model per trust boundary (`threat-mo
 pdf-service, finance-service, Redpanda and the telemetry backend existed) and a LINDDUN privacy model per trust boundary
 (`privacy-threat-model.md`, WP112, ten boundaries, two of them written while their services were still planned). The
 security review (`review-2026-11.md`) rated its findings with its own rubric; neither model rated its residual risks.
-The code is written by AI agents in an agent-driven build system that no model covered. The owner asked whether
-MAESTRO could improve this (decision 119), and which of the other well-known methods (PASTA, VAST, Trike, OCTAVE) the
-project should use. Decision 120: a combination, each method for the question it answers best, not one method for
-everything.
+The code is written by AI agents in an agent-driven build system that no model covered. Before the eleventh round the
+owner asked whether MAESTRO could improve this, and which of the other well-known methods (PASTA, VAST, Trike, OCTAVE)
+the project should use. Decision 119 brings the STRIDE model up to date; decision 120: a combination, each method for
+the question it answers best, not one method for everything; decision 121: MAESTRO for the build system only;
+decision 122: wave 2 fixes the High and Medium findings.
 
 ## Decision
 1. **STRIDE per trust boundary for the product** (`docs/security/threat-model.md`). One table per boundary (Spoofing,
