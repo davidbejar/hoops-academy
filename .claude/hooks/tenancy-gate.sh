@@ -397,21 +397,38 @@ classify_simple() {
   [ "$found_p" -eq 0 ] || add_target push "$g_dir"
 }
 
-# classify_command <text> <depth>: splits the text into simple commands on ; & | ( ) newline, $( ) and backticks,
-# drops comments, follows cd into subshells and back out. Unreadable text (an unbalanced quote) wants both gates in
-# the directory known so far and gets the ask rules loosely.
+# classify_command <text> <depth>: splits the text into simple commands on ; & | ( ) newline, drops comments, follows
+# cd into subshells and back out. An unquoted $( ) or backtick substitution is read as commands of its own and leaves a
+# run-time word in the command around it (git -C $(pwd) commit: the checkout cannot be told). A substitution inside
+# double quotes is matched loosely, in the directory known so far. Unreadable text (an unbalanced quote) wants both
+# gates in that directory and gets the ask rules loosely.
 classify_command() {
   local text=$1 depth=$2 ch next cur="" raw="" lit="" q="" len=${#1} i=0 word_start=1 loose=0
-  local -a dirs=()
+  local -a f_type=() f_dir=() f_cur=() f_raw=() f_lit=() f_loose=()
   flush() {
     local before=$targets added
     classify_simple "$cur" "$raw" "$lit" "$depth"
     if [ "$loose" -eq 1 ]; then # a git command inside a substitution in quotes, unless it is this command itself
       added=${targets#"$before"}
-      case "$added" in commit$'\t'* | *$'\n'commit$'\t'*) ;; *) loose_git commit "$raw" && add_target commit "?" ;; esac
-      case "$added" in push$'\t'* | *$'\n'push$'\t'*) ;; *) loose_git push "$raw" && add_target push "?" ;; esac
+      case "$added" in commit$'\t'* | *$'\n'commit$'\t'*) ;; *) loose_git commit "$raw" && add_target commit "$dir" ;; esac
+      case "$added" in push$'\t'* | *$'\n'push$'\t'*) ;; *) loose_git push "$raw" && add_target push "$dir" ;; esac
     fi
     cur="" raw="" lit="" loose=0 word_start=1
+  }
+  open_frame() { # open_frame <( | $ | `>: a subshell ends the command before it; a substitution keeps it to resume
+    [ "$1" != "(" ] || flush
+    f_type+=("$1") f_dir+=("$dir") f_cur+=("$cur") f_raw+=("$raw") f_lit+=("$lit") f_loose+=("$loose")
+    cur="" raw="" lit="" loose=0 word_start=1
+  }
+  close_frame() { # the cd inside stays inside; a substitution leaves one run-time word in the command around it
+    local k=$((${#f_type[@]} - 1))
+    flush
+    [ "$k" -ge 0 ] || return 0
+    dir=${f_dir[k]}
+    if [ "${f_type[k]}" != "(" ]; then
+      cur="${f_cur[k]}D" raw="${f_raw[k]}D" lit="${f_lit[k]}$DYN" loose=${f_loose[k]} word_start=0
+    fi
+    unset "f_type[$k]" "f_dir[$k]" "f_cur[$k]" "f_raw[$k]" "f_lit[$k]" "f_loose[$k]"
   }
   enc() { case "$1" in ' ') lit+=$SP ;; $'\t') lit+=$TB ;; $'\n') lit+=$NL ;; *) lit+=$1 ;; esac; }
   while [ "$i" -lt "$len" ]; do
@@ -447,11 +464,11 @@ classify_command() {
              continue
            fi
            cur+=$ch; raw+=$ch; lit+=$ch ;;
-      '(') flush; dirs+=("$dir") ;;
-      ')') flush
-           if [ "${#dirs[@]}" -gt 0 ]; then dir=${dirs[${#dirs[@]} - 1]}; unset 'dirs[${#dirs[@]}-1]'; fi ;;
-      ';' | '&' | '|' | $'\n' | '`') flush ;;
-      '$') if [ "$next" = '(' ]; then flush; dirs+=("$dir"); i=$((i + 1))
+      '(') open_frame "(" ;;
+      ')') close_frame ;;
+      '`') if [ "${#f_type[@]}" -gt 0 ] && [ "${f_type[${#f_type[@]} - 1]}" = '`' ]; then close_frame; else open_frame '`'; fi ;;
+      ';' | '&' | '|' | $'\n') flush ;;
+      '$') if [ "$next" = '(' ]; then open_frame '$'; i=$((i + 1))
            else cur+=$ch; raw+=$ch; lit+="$DYN$ch"; word_start=0; fi ;;
       ' ' | $'\t') cur+=" "; raw+=" "; lit+=" "; word_start=1 ;;
       *) cur+=$ch; raw+=$ch; lit+=$ch; word_start=0 ;;
