@@ -126,6 +126,8 @@ State lives in `docs/wp/FOLLOW-UPS.md` and `docs/HANDOVER.md`; this skill is onl
 - [ ] HANDOVER: State (merge order with commits, contract and chart versions, test totals), Pending, Working
       conventions (environment facts only), Next candidates.
 - [ ] README status, `docs/conformance.md`, `docs/roadmap.md`, `docs/architecture.md`, `docs/adr/README.md` links.
+- [ ] The three threat models (`docs/security/threat-model.md`, `privacy-threat-model.md`, `agentic-threat-model.md`)
+      checked against the round's changes (ADR-0077).
 - [ ] CI state on `main` observed with `gh run list -b main` (run ids in HANDOVER).
 - [ ] Push; update the orchestrator's memory note (progress, what the repo cannot derive).
 - [ ] `kill` the `caffeinate` started in Mechanics 0.

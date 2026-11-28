@@ -79,4 +79,5 @@ just scan                    # gitleaks + dependency-check
 
 ## Definition of Done (every work package)
 `just test` green (coverage ≥ 80 % lines, ≥ 90 % in `domain`), RLS suites green for new tables, OpenAPI
-updated + validated, ADR added if a decision was made, handover section written, no TODO without an issue.
+updated + validated, ADR added if a decision was made, a change of a trust boundary, service, data store or agent
+guardrail reflected in the threat model that covers it (ADR-0077), handover section written, no TODO without an issue.
