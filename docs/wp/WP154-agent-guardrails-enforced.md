@@ -158,7 +158,9 @@ Decisions 125 to 127 of 2026-11-29 (FOLLOW-UPS). ADR-0078 is reserved for you.
     the command `cd <this worktree> && git commit -m '…'`, ran the real isolation check here (core 6 tests, 83 s; Go 4
     tests, 5 s) and wrote this line (tabs shown as `→`), the only one in the main checkout's `.git/claude-gate.log`:
     `2026-11-28T17:52:39Z → wp154-proof → /Users/davidbejar/code/hoops-wt/wp154-agent-guardrails-enforced → commit →
-    passed → wp154-agent-guardrails-enforced@70e83595 90 s`. The tests write to throwaway repositories only. The
+    passed → wp154-agent-guardrails-enforced@70e83595 90 s`; again with the final hook (at 2ea72213, under the load of
+    the other packages' builds): `… → commit → passed → wp154-agent-guardrails-enforced@2ea72213 221 s`. The tests
+    write to throwaway repositories only. The
     registered hook stays the main checkout's copy until this branch is merged, so this session's own commits were
     gated by the old hook (which once timed out over a long Bash heredoc with an apostrophe: it ran both gates, the
     unbalanced-quote case).
