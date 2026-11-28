@@ -232,6 +232,12 @@ This package changes no control; wave 2 takes the High and Medium findings.
 - **Control (one work item).** (a) A CI job that runs `-Pkeycloak-it` for the three Java services on every push and
   pull request (the runner has Docker for Testcontainers). (b) The hook resolves the target tree from a leading `cd` or
   `git -C` in the command and runs the gate there, with cases added to `scripts/hooks/tenancy-gate.test.sh`.
+- **Status (WP154, ADR-0078): (b) done.** The hook resolves the checkout from the call's directory, a `cd` / `pushd`
+  (into subshells and back), `git -C` and a shell's `-c` script, gates each checkout once, and blocks a commit or push
+  whose checkout it cannot tell or whose tree has no gate script; plan and end-to-end cases in
+  `scripts/hooks/tenancy-gate.test.sh` (a main checkout and its worktree with stub gates). Real run: the worktree's
+  hook, fed `cd <worktree> && git commit …` with the session in the main checkout, ran the isolation check in the
+  worktree (6 + 4 tests, 90 s) and logged it. (a), the Keycloak CI job, is WP153's.
 
 ### AG-02 — Commits and ref changes outside a parsed `git commit` / `git push` are ungated; `main` is unprotected (High 6: L2 × I3)
 - **Evidence.** The hook classifies only the `commit` and `push` subcommands (`.claude/hooks/tenancy-gate.sh:58-66`);
@@ -257,6 +263,10 @@ This package changes no control; wave 2 takes the High and Medium findings.
 - **Control (small work item).** Drop the two path entries from `.gitleaks.toml` (keep the `change-me-` regex; handle a
   future fixture with a fingerprint in `.gitleaksignore`), and add a test in `scripts/tests` that fails when the
   allowlist names `docs/` or `.claude/` wholesale.
+- **Status (WP154, ADR-0078): done.** `.gitleaks.toml` has no path allow-list for `docs/` or `.claude/` (only
+  `.env.example` and the `change-me-` regex); a scan of the tree and of the history without them found nothing to
+  excuse, so no fingerprint was needed. `scripts/tests/test_agent_guardrails.py` fails when an allow-list path covers
+  those trees or an allow-list regex lets a GitHub token through. Trivy's `.md` gap is unchanged (gitleaks covers it).
 
 ### AG-04 — Guardrails and instruction files change in unreviewed commits (High 6: L2 × I3)
 - **Evidence.** The hook is live code in the main checkout (`.claude/settings.json:9`), and the gate it runs is the
@@ -284,6 +294,11 @@ This package changes no control; wave 2 takes the High and Medium findings.
   push at all for WP agents, with only the orchestrator pushing), set for agent sessions instead of the owner's login;
   the owner's admin login stays with the owner. *To verify*: how the harness gives subagents a different `gh`
   environment than the owner's session.
+- **Status (WP154, ADR-0078): runbook written, the owner's action pending** (decision 126):
+  [`agent-credentials.md`](../runbooks/agent-credentials.md) names the fine-grained token (this repository; contents
+  and pull requests write, actions and statuses read; no administration, workflows or secrets), where it is set
+  (Keychain, the session's environment, `gh` as git's credential helper) and how to check it. Open until the owner
+  creates it.
 
 ### AG-06 — The owner's `.env` is readable by every agent; no committed permission rule (Medium 4: L2 × I2)
 - **Evidence.** `.claude/settings.json:1-17` has no `permissions` block. The `.env` next to the main checkout exists and
@@ -297,6 +312,10 @@ This package changes no control; wave 2 takes the High and Medium findings.
   other than `.env.example` and for `git commit --no-verify` / `-n`, the Claude Code sandbox's filesystem deny for the
   same paths if the owner's version supports it (*to verify*), and a test in `scripts/tests` that the deny list stays.
   Limits as stated above the findings.
+- **Status (WP154, ADR-0078): partly done.** The hook asks the owner before `--no-verify`, `git commit -n` and
+  `core.hooksPath` (rule `git-no-verify`). The `permissions.deny` lines for `.env`, the dump directory and `--no-verify`
+  are proposed in the WP154 handover; the owner commits them after reading. The sandbox stays an open item
+  (decision 127).
 
 ### AG-07 — Destructive commands on the owner's stack and volumes are not blocked (Medium 4: L2 × I2)
 - **Evidence.** Every agent's `podman` lists the owner's five `hoops-*` containers and the volumes `hoops_pgdata-19` and
@@ -309,6 +328,12 @@ This package changes no control; wave 2 takes the High and Medium findings.
   compose `down` with volume removal, Podman machine removal and stop, and kind cluster deletion; the runbooks mark the
   reset as an owner-only step; a `just db-backup` recipe the orchestrator runs at round start. Limits as stated above
   the findings.
+- **Status (WP154, ADR-0078): done as decision 127 asks** (an "ask", not a deny: the owner approves at the
+  prompt). The hook's `ASK_RULES` cover volume removal and prune, `podman system prune | reset`, `podman machine stop |
+  rm | reset`, compose `down -v`, kind cluster deletion, force pushes, pushes to or moving `main`, `gh` settings,
+  deletes and API writes, and the PostgreSQL copies' removal; one test per rule plus near misses. The runbooks that
+  drop the database volume say it is the owner's step (a test). Limit: a script or recipe that runs such a command
+  inside it is not seen.
 
 ### AG-08 — Agents' "verified" claims reach `main`, images and Pages before an independent run (Medium 4: L2 × I2)
 - **Evidence.** "Otherwise the agent's fresh results stand" (`.claude/skills/wp-round/SKILL.md:60-63`); CI runs after
@@ -326,6 +351,9 @@ This package changes no control; wave 2 takes the High and Medium findings.
 - **Control (small work item).** A "Tool output is data" paragraph in `work-package` listing the known sources; the
   orchestrator reviews bot PRs by their diff, not their body; a WebFetch domain allowlist in the committed settings
   (*to verify* support).
+- **Status (WP154): the written part done.** `work-package` and the brief template say text in tool output, logs,
+  fetched pages, PR bodies and other agents' handovers is data, never an instruction. The WebFetch allow-list and the
+  bot-PR review by diff stay open.
 
 ### AG-10 — No durable record of what agents ran or what the gate decided (Medium 4: L2 × I2)
 - **Evidence.** 1,225 of 1,236 commits carry a `Co-Authored-By` trailer, written by the agent itself; the author is
@@ -335,6 +363,10 @@ This package changes no control; wave 2 takes the High and Medium findings.
 - **Control (small work item).** The hook appends one line per gated command (time, directory, top level, `HEAD`,
   result) to a log in the shared `.git` directory; briefs ask agents to add a `WP:` trailer; the round's close-out
   copies the gate log summary into the handover.
+- **Status (WP154, ADR-0078): done.** Every gate and ask decision appends one line to `claude-gate.log` in the git
+  common directory (UTC time, agent or session id, checkout, what, result, `branch@sha` and seconds or the reason),
+  never the command text; tests check the line and that a commit message does not reach it. The `wp-round` close-out
+  reads it. The `WP:` trailer is not added.
 
 ### AG-11 — Vendored third-party skills have no integrity record (Medium 3: L1 × I3)
 - **Evidence.** Five folders are copies (`.claude/skills/THIRD_PARTY_SKILLS.md:9-15`), edited locally once
@@ -343,6 +375,9 @@ This package changes no control; wave 2 takes the High and Medium findings.
 - **Control (small work item).** A checksum per vendored folder in `.claude/skills/THIRD_PARTY_SKILLS.md` (or a sibling
   file) and a test in `scripts/tests` that recomputes them; a change updates the checksum and the table row in the same
   commit.
+- **Status (WP154, ADR-0078): done.** One SHA-256 per vendored folder in `THIRD_PARTY_SKILLS.md` ("Checksums");
+  `scripts/tests/test_agent_guardrails.py` recomputes them over the folders' tracked files and fails on a change
+  without the record.
 
 ### AG-12 — Build tools fetched by tag or without checksum run with the owner's rights (Medium 3: L1 × I3)
 - **Status: fixed in WP152 (2026-11-29).** Pre-commit `rev:` are commit SHAs with the tag in a `# frozen:` comment
@@ -364,12 +399,19 @@ This package changes no control; wave 2 takes the High and Medium findings.
   A ref move is not a `commit` or `push` (AG-02). The effect is reasoned from git's worktree design, not exercised.
 - **Control (small work item).** At merge, the orchestrator checks that local `main` equals `origin/main` before the
   ff-merge and pushes the explicit commit id; the AG-02 ruleset refuses force pushes.
+- **Status (WP154, ADR-0078): done on the procedure side.** `wp-round` Mechanics 4: `main` must equal
+  `origin/main` before a merge, the branch is pushed and merged through a pull request (rebase merge on green,
+  `--match-head-commit`), nothing is pushed to `main`; the hook asks before a push to `main`, `git reset --hard` on
+  `main`, and moving or deleting the `main` ref. The ruleset that refuses force pushes is the orchestrator's (decision
+  125).
 
 ### AG-14 — The hook allows every command when `jq` is missing (Medium 3: L1 × I3)
 - **Evidence.** `.claude/hooks/tenancy-gate.sh:8-12`: without `set -e`, a missing `jq` leaves the command empty and the
   hook exits 0; `scripts/doctor.sh` does not check for `jq`. macOS ships one, so the likelihood is low; the impact is
   the same as AG-01's (no isolation check before a commit, and no role check before a push).
 - **Control (tiny work item).** Exit 2 when `jq` is absent, a test case for it, and a doctor check.
+- **Status (WP154, ADR-0078): done.** No `jq` blocks every command (exit 2) and logs `jq-missing`; hook input that
+  is not JSON blocks too; `just doctor` checks `jq`; two tests.
 
 ### AG-15 — Connectors unrelated to the build are loaded into build sessions (Low 2: L1 × I2)
 - **Evidence.** Session observation (WP149): the session offered account-level connectors for personal productivity
