@@ -24,7 +24,7 @@ rebuild it when that file changes.
 | `docs/.nav.yml` | Order and titles of the top-level sections; folders are listed whole |
 | `docs/wp/.nav.yml` | Natural order of the work packages (WP2 before WP10) |
 | `docs/index.md` | Landing page |
-| `config/docs/requirements.txt` | Pinned Zensical and its dependencies |
+| `config/docs/requirements.txt` | Zensical and its dependencies, each version pinned and every file of it held by SHA-256 (`pip install --require-hashes`; `scripts/docs_requirements.py` writes the hashes) |
 | `.github/workflows/pages.yml` | Builds and publishes on a push to `main` that touches the site |
 | `ci.yml`, job `docs-site` | The same strict build on every pull request, without publishing |
 

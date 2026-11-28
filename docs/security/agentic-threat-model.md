@@ -122,7 +122,7 @@ Each row: the threat, today's control and its evidence, and the finding it feeds
 | An agent reads or leaks the owner's `.env` (LLM02 Sensitive Information Disclosure) | `.gitignore` keeps it out of git; worktrees get no copy; "do not read" is written | `.gitignore:2-4`; `.claude/skills/wp-round/SKILL.md:100-103`; the file exists next to the main checkout, readable by the owner's user | AG-06 |
 | Destructive commands on the owner's stack and volumes (ASI02 Tool Misuse) | `just down` keeps volumes; "do not stop the stack, remove no volume" is written; but two runbooks give a reset that drops the database volume | `justfile:123-124`; `docs/runbooks/e2e.md:117`; `docs/runbooks/backup-restore.md:47`; `docs/adr/0073-postgresql-19.md:60-62` | AG-07 |
 | One agent moves another's branch or `main` through the shared `.git` (lateral movement) | none: worktrees share refs by design; the orchestrator ff-merges and pushes `main` | `git rev-parse --git-common-dir` → the main checkout's `.git`; `.claude/skills/wp-round/SKILL.md:51-53,64-65` | AG-13 |
-| A poisoned dependency or tool runs in an agent's shell with the owner's rights (ASI04 Agentic Supply Chain) | Actions pinned by SHA and tested; Dependabot cooldown; dependency scanners in CI. Not pinned by digest: the pre-commit hook repos (by tag), the docs toolchain (versions without hashes), the Maven distribution (no checksum) | `scripts/tests/test_workflows.py:49`; `.pre-commit-config.yaml:3,7`; `config/docs/requirements.txt:5-15`; `.mvn/wrapper/maven-wrapper.properties:1-3` | AG-12 |
+| A poisoned dependency or tool runs in an agent's shell with the owner's rights (ASI04 Agentic Supply Chain) | Actions pinned by SHA and tested; Dependabot cooldown; dependency scanners in CI; since WP152 the pre-commit hook repos by commit SHA, the docs toolchain by hash (`pip --require-hashes`), the Maven distribution by SHA-256 | `scripts/tests/test_workflows.py:49`; `.pre-commit-config.yaml`; `config/docs/requirements.txt`; `.mvn/wrapper/maven-wrapper.properties`; `scripts/tests/test_supply_chain_pins.py` | AG-12 (fixed, WP152) |
 | A bad commit on `main` becomes a pushed image and a public page before `ci` is green | images are Trivy-scanned before the push, but `images` does not wait for `ci`; `main` has no required checks | `.github/workflows/images.yml:15-18,59`; `.github/actions/image-publish/action.yml:36-43,63-64`; `gh api` (unprotected) | AG-02, AG-08 |
 
 ### Layer 3 — Agent Frameworks
@@ -345,6 +345,12 @@ This package changes no control; wave 2 takes the High and Medium findings.
   commit.
 
 ### AG-12 — Build tools fetched by tag or without checksum run with the owner's rights (Medium 3: L1 × I3)
+- **Status: fixed in WP152 (2026-11-29).** Pre-commit `rev:` are commit SHAs with the tag in a `# frozen:` comment
+  (`.pre-commit-config.yaml`; the gitleaks tag object `2ca41cc1` is not the commit `6eaad039` that is pinned),
+  `config/docs/requirements.txt` holds every file of every version by SHA-256 and `just docs-venv` installs with
+  `--require-hashes`, the wrapper has `distributionSha256Sum` (a wrong sum was refused, a right one accepted, with a
+  scratch `MAVEN_USER_HOME`); `scripts/tests/test_supply_chain_pins.py` keeps each pinned and `scripts/bump_pins.py`
+  moves the hook SHAs. The docs hashes are refreshed by `scripts/docs_requirements.py` or by Dependabot.
 - **Evidence.** Pre-commit repos are pinned by tag (`.pre-commit-config.yaml:3,7`) and run at every agent commit; the
   docs toolchain is pinned by version without hashes (`config/docs/requirements.txt:5-15`) and is installed by
   `just docs-build` in an agent's shell; the Maven wrapper has no distribution checksum

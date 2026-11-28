@@ -57,3 +57,22 @@ blocklist, and Tilt listed Secret and route names by hand (four of core's routes
 - Not decided here: moving the `infra/` sources into the charts (DEP-04, kept), shared values for the per-service env
   (DEP-07, WP139), the Flutter-in-container layer order (DEP-06: `flutter pub get` generates the l10n code, so it
   needs the sources first).
+
+## Amendment (WP152, 2026-11-29): a pin is a digest or a checksum, and `bump_pins.py` moves it
+The pin policy of this repository, which this ADR extended to the operators, now reads: nothing that builds an image,
+runs in CI or runs in an agent's shell is named by a tag, a channel or a branch alone.
+- Every registry image of the build and deploy files carries `@sha256:` of its multi-arch index, and each is a
+  `scripts/bump_pins.py` entry (the Maven builder, nginx-unprivileged, the cirruslabs Flutter image, Trivy, Keycloak,
+  the CNPG database image, Redis, Mailpit, next to those that had one). A tag that is not yet published for amd64 and
+  arm64 is skipped by the bump (`multiarch`): Maven 3.10.2 was amd64 only on the day. The images that stay by tag are
+  listed with a reason in `scripts/tests/test_supply_chain_pins.py` (`BY_TAG`); a new reference without a digest fails
+  that test.
+- What is not an image carries a checksum that moves with the version: the Maven wrapper (`distributionSha256Sum`;
+  Maven runs with `-C`, so a checksum mismatch fails the build), the Flutter SDK (installed from its release archive
+  and checked against its SHA-256, like Go), the CloudNativePG manifest (fetched from the release, checked against the
+  digest GitHub records for the asset before `kubectl apply`), the Semgrep registry rulesets (the hash of their bytes),
+  the pre-commit hook repos (the commit a tag names), the docs site's Python dependencies (`pip --require-hashes`).
+- `flutter pub get` always runs with `--enforce-lockfile`.
+- Left as they were, and said so in TM-04: `apk upgrade` and the nginx.org package of `web.Containerfile` (signed
+  packages fetched at build time; the Trivy gate is the check), the Envoy Gateway and ESO charts (version only).
+Consequence: a Semgrep ruleset that changes upstream stops the `semgrep` workflow until the weekly bump PR is merged.
