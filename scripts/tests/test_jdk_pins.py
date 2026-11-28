@@ -21,7 +21,7 @@ def release():
 class JdkPinsAgree(unittest.TestCase):
     def test_service_images_use_the_release(self):
         text = (ROOT / "deploy/containers/service.Containerfile").read_text()
-        self.assertEqual(re.findall(r"ARG MAVEN_IMAGE=\S+:3-eclipse-temurin-(\d+)\n", text), [release()])
+        self.assertEqual(re.findall(r"ARG MAVEN_IMAGE=\S+:\d+\.\d+\.\d+-eclipse-temurin-(\d+)@sha256:", text), [release()])
         self.assertEqual(re.findall(r"ARG RUNTIME_IMAGE=gcr\.io/distroless/java(\d+)-debian\d+:nonroot@", text),
                          [release()])
 
