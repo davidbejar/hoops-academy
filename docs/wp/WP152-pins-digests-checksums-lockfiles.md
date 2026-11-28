@@ -90,24 +90,34 @@ Docs: ADR-0068 amendment (the pin policy), `docs/runbooks/release.md` section 6,
 - `python3 -I -m unittest discover -s scripts/tests`: 174 tests, 1 skipped (the online multi-arch check), green. The red
   tests are commit `cd6534d6` (31 failures and 13 errors before the change). The tests for `--strip-rule-prefix`, the
   semgrep fetch script and the rewrite of the new pins were written with their code, not before it.
-- `BUMP_PINS_ONLINE=1` multi-arch test and `scripts/bump-pins.sh --check` against the live registries: every new
-  digest is an index with amd64 and arm64; `--check` lists only unrelated bumps (Semgrep 1.187.0, LGTM 0.41.2,
+- `BUMP_PINS_ONLINE=1 python3 -I -m unittest discover -s scripts/tests -p test_pins_multiarch.py` (5 tests, 68 s, not
+  skipped; `SCANNED` now covers `.github/actions`, `deploy/lib` and `deploy/helm/hoops`) and `scripts/bump-pins.sh
+  --check` against the live registries: every pinned digest is an index with amd64 and arm64; `--check` lists only unrelated bumps (Semgrep 1.187.0, LGTM 0.41.2,
   distroless digest, Maven 3.10.2, Flutter 3.50.1, gitleaks v8.30.1). `--apply --root <copy>` rewrote each new pin in each file.
 - `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0`, fresh, with `-C` on: BUILD SUCCESS, 15:15 min, 3794 tests
   (38, 346, 585, 530, 1028, 1267 per module), 0 failures, 0 errors, 32 skipped. A first run failed once in
   `InvalidTokenEventsTest` (Testcontainers Postgres start timeout under load 15); the module passed on the rerun.
-- Checksum policy online: `libs/contracts package` with a scratch `-Dmaven.repo.local` and `-C`: BUILD SUCCESS (53 s).
+- Checksum policy online, cold cache, `-C` from `.mvn/maven.config`: `libs/contracts package` (53 s) and the whole reactor's
+  `dependency:go-offline` into an empty scratch `-Dmaven.repo.local` (BUILD SUCCESS, 3:31 min, 422 MB, what the
+  `trivy-fs` job runs), then `-Psbom,security-scan dependency:resolve-plugins` into the same repository: no error.
   Mismatch proof on a file:// repository: without `-C` a wrong `.sha1` only warns and the build succeeds, with the
   repository's `.mvn/maven.config` it fails ("Checksum validation failed"). Wrapper: a scratch `MAVEN_USER_HOME` accepts
   the sum and refuses a wrong one ("Failed to validate Maven distribution SHA-256").
 - `flutter pub get --enforce-lockfile` (Flutter 3.50.0) leaves `pubspec.lock` unchanged. `just web-test`: 1958 tests, all passed (4 min 48 s).
 - `deploy/helm/tests/run.sh --update` then `run.sh`: ALL CHART TESTS PASSED; the snapshots change only in the image lines
   (Keycloak, Redis, Mailpit, CNPG image) of the four umbrella renders.
-- Semgrep: the pinned image scanned the repository with the fetched rulesets: 27 findings, gate "accepted in baseline:
-  26 of 26", exit 0, no STALE entry (the rule ids still match `accepted.json`).
+- Semgrep, on the final tree with the pinned image: the pinned-hash rulesets and the old live `--config p/...` command
+  both ran 441 rules on 2474 files and found the same 27 results (same rule ids after stripping the prefix, same paths);
+  the gate says "accepted in baseline: 26 of 26", no STALE entry. The four hashes matched the registry again on
+  2026-11-29 at the end of the work (no drift yet).
+- `infra/tofu/check.sh` (reads `platform.sh`, `sbom.sh`'s Trivy pin): TOFU CHECK PASSED; the five `*.test.sh` files of the
+  `scripts` job pass; `scripts/sbom.sh generate` on the web test image with the digest-pinned Trivy: valid CycloneDX.
+- `install_cnpg` applies a local file: `cloud_kubectl` (`deploy/cloud/lib.sh`) is a local `kubectl --kubeconfig`, as in
+  kind, so a path works in both; its test uses stub `curl` and `kubectl` (match applies, mismatch never reaches kubectl).
 - Docs: `just docs-build` in a fresh `.venv-docs` with `--require-hashes`: no issues; a wrong hash is refused.
 - `actionlint`, `shellcheck` on the new shell: clean. Images built with `scripts/build-images.sh`: `athlete-service`
-  (from the pinned Maven builder, `-C` in the container, runs as 65532) and `web` (pinned nginx base, nginx 1.30.7; the
+  (from the pinned Maven builder; the Maven stage read `.mvn/maven.config` on a warm `hoops-m2` cache mount, so that
+  proves the file is used in the image, not a cold download; runs as 65532) and `web` (pinned nginx base, nginx 1.30.7; the
   pinned Trivy gate of `image-publish` on it: exit 0, no fixable HIGH or CRITICAL).
 
 ### Could not be pinned, and why
@@ -124,6 +134,14 @@ Docs: ADR-0068 amendment (the pin policy), `docs/runbooks/release.md` section 6,
 - Maven `-C` does not re-verify artifacts already in a local repository.
 
 ### Open points and what only GitHub can prove
+- **Not run by a pull request:** `images.yml` runs on a push to `main` that touches its paths (and `workflow_dispatch`),
+  `mutation.yml` monthly and on dispatch. So these are proven only after the merge, or by dispatching `images.yml` on the
+  branch (it pushes only on `main`): the Trivy pin in `image-publish` (used by `images.yml` only), `flutter pub get
+  --enforce-lockfile` in `images.yml` and `mutation.yml`, the Maven image build with the pinned builder on amd64.
+  `ci`, `e2e`, `codeql`, `semgrep` do run on the PR and cover `setup-flutter`, the Trivy fs pin, the Semgrep fetch.
+- **For WP153 (workflow rule):** `semgrep.yml` gained one step (`scripts/semgrep-rules.sh`) and its scan and gate commands
+  changed (`--config semgrep-registry/`, `--strip-rule-prefix`): more than pin lines, needed because the pin is a fetch.
+  `setup-flutter` (a composite action) no longer uses `subosito/flutter-action` (Dependabot entry for it, if any, is moot).
 - `setup-flutter` downloads the 1.5 GB archive per job (no SDK cache): job time and the extract step on a runner, and
   `flutter pub get --enforce-lockfile` with Flutter 3.50.0 on Linux (it ran green on macOS only).
 - `scripts/semgrep-rules.sh` on a runner: the registry must serve the same bytes there as here. Until the weekly
