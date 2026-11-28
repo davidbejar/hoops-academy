@@ -79,7 +79,6 @@ few attack chains, not the full seven stages.
 - **Findings**: High 0, Medium 7, Low 7. Every rating is L1 (stated in the document: no deployment is exposed, and
   the build vectors need an upstream compromise or the owner's credentials).
 
-
   | ID | Rating | Status | Finding | Proposed fix |
   |---|---|---|---|---|
   | TM-01 | Medium (L1×I3) | new | Serving pods hold their schema's migrator password (owner: can turn RLS off, delete audit rows) | Migrations in a Job / init container; serving pods get `*_app` only; chart test |
