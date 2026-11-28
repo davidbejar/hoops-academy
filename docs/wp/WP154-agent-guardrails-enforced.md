@@ -86,7 +86,10 @@ Decisions 125 to 127 of 2026-11-29 (FOLLOW-UPS). ADR-0078 is reserved for you.
     `cwd`, moved by `cd` / `pushd` (into subshells and back out), `git -C` (relative paths compose) and a shell's `-c`
     script or `eval`; each checkout once. A checkout it cannot tell (a variable, `cd -`, `--git-dir` / `--work-tree`,
     `"$GIT"`, a substitution in quotes) and a tree without the gate script are blocked with the plain form as the fix.
-    The usual `git commit -m "$(cat <<'EOF' …)"` keeps its strict target.
+    The usual `git commit -m "$(cat <<'EOF' …)"` keeps its strict target; a git word in a quoted substitution (a
+    message or PR body that mentions `git push`) adds a gate in the checkout known so far, never a block. An unquoted
+    `$( )` or backtick inside a command is read as commands of its own and leaves a run-time word, so
+    `git -C $(pwd) commit` and `cd $(…) && git commit` are blocked (before, the first skipped the gate entirely).
   - **AG-14**: no `jq`, or input that is not JSON, blocks (exit 2); `just doctor` checks `jq`.
   - **AG-07 (decision 127)**: one `ASK_RULES` table in the hook header; the hook prints the PreToolUse JSON
     `permissionDecision: "ask"` with the rule ids as the reason, after the gates (a failed gate still blocks). The
@@ -146,8 +149,8 @@ Decisions 125 to 127 of 2026-11-29 (FOLLOW-UPS). ADR-0078 is reserved for you.
   - **Docs**: ADR-0078 and its index line; status lines in the findings AG-01, AG-03, AG-05, AG-06, AG-07, AG-09,
     AG-10, AG-11, AG-13, AG-14; P-14's three mentions in the privacy model.
 - **Verified** (2026-11-29, in this worktree):
-  - `scripts/hooks/tenancy-gate.test.sh`: **219/219** (macOS `/bin/bash` 3.2; shellcheck clean on the hook and the
-    test). `python3 -I -m unittest discover -s scripts/tests`: **155 tests OK** (1 skipped as before), among them the
+  - `scripts/hooks/tenancy-gate.test.sh`: **229/229** (macOS `/bin/bash` 3.2 only; Linux and GNU tools, the pty test
+    included, are first proven by the pull request's CI; shellcheck clean on the hook and the test). `python3 -I -m unittest discover -s scripts/tests`: **155 tests OK** (1 skipped as before), among them the
     7 of `test_agent_guardrails.py` and the 23 of `test_pg_major_move.py` (8 new for the clean-up). `just test-hooks`
     green. Every `*.test.sh` is a step of the `scripts` job and its first step discovers the new Python tests, so
     `ci.yml` needed no change (`test_workflows.py` green).
@@ -206,16 +209,21 @@ Decisions 125 to 127 of 2026-11-29 (FOLLOW-UPS). ADR-0078 is reserved for you.
   - editing `.claude/hooks/tenancy-gate.sh` in the main checkout (the live copy) or the gate scripts of the checkout
     being committed, which decide the result (AG-04);
   - typing the clean-up words through a pseudo-terminal (`script`, `expect`); the hook still asks for `--remove`;
+  - a command run inside the Podman VM (`podman machine ssh "<script>"`) or a container: the script is one quoted
+    word, not read;
   - the owner approving an ask without reading it (prompt fatigue), and every agent still holding the owner's admin
     `gh` login until the token of the runbook exists (AG-05).
 - **Open points / follow-ups** (for FOLLOW-UPS through the docs pass):
   - The owner: commit the AG-06 lines above after reading them; create the agent token
     (`docs/runbooks/agent-credentials.md`); evaluate the Claude Code OS sandbox (decision 127).
+  - `docs/HANDOVER.md` ("The commit hook gates the main checkout, not the worktree") and the matching open item in
+    `docs/wp/FOLLOW-UPS.md` describe the old behaviour: the docs pass updates them once this is merged.
   - `infra/compose/README.md:43` gives the same volume reset (`podman volume rm hoops_pgdata-19`) without saying it is
     the owner's step: outside this package's files; one line for the docs pass.
   - The gate log has no rotation (one line per gated or asked command, in `.git`, never committed).
   - Heredoc text that looks like a destructive command (writing a page through `cat <<EOF`) asks once; a heredoc with
-    an apostrophe still runs both gates (the unbalanced-quote case, unchanged).
+    an apostrophe still runs both gates (the unbalanced-quote case, unchanged), and a commit message or PR body that
+    mentions `git push` still adds the role check (as before): minutes, not a block.
   - The hook runs the target checkout's own gate script; running the main checkout's copy instead is an option once
     AG-04's guarded-paths check exists (ADR-0078, Alternatives).
   - Not done here: the `WP:` commit trailer (AG-10), the WebFetch allow-list and bot-PR review by diff (AG-09), the

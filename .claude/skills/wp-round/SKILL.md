@@ -64,8 +64,10 @@ State lives in `docs/wp/FOLLOW-UPS.md` and `docs/HANDOVER.md`; this skill is onl
       branch was cut: `./mvnw -B -ntp -T 1C clean verify -Dquarkus.http.test-port=0` plus
       `cd apps/web && flutter test`. When the WP moved build properties or chart inputs, also run
       `deploy/helm/tests/run.sh` (see Traps).
-   4. `git push origin <wp-slug>` (the branch only), then `gh pr create --base main --head <wp-slug>` with the WP
-      title and the handover's Built and Verified lines as the body.
+   4. `git -C ~/code/hoops-wt/<wp-slug> push origin <wp-slug>` (the branch only; with `-C` the hook's role check runs
+      on the branch's tree), then `gh pr create --base main --head <wp-slug>` with the WP title and the handover's
+      Built and Verified lines as the body. A push after a second rebase needs `--force-with-lease`: the hook asks the
+      owner (`git-force-push`).
    5. Watch the pull request's checks with the Monitor tool (`gh pr checks <n> --watch`). Red: read the failed step
       (see Traps), fix in the worktree, push the branch again. The merge waits for green; the agent's numbers do not
       replace the run (AG-08).
@@ -73,7 +75,8 @@ State lives in `docs/wp/FOLLOW-UPS.md` and `docs/HANDOVER.md`; this skill is onl
       `git fetch origin && git merge --ff-only origin/main` and check again that `main` equals `origin/main`. Note the
       green run id in the plan table.
    7. `git worktree remove --force ~/code/hoops-wt/<wp-slug>`, `git branch -D <wp-slug>` (a rebase merge writes new
-      commits, so `-d` refuses), `git push origin --delete <wp-slug>`.
+      commits, so `-d` refuses), `git push origin --delete <wp-slug>` (a push: the role check runs once more; the
+      repository setting that deletes head branches on merge makes this step unnecessary).
    8. Update the Status cell in the FOLLOW-UPS plan table; start the next WP of the wave or the next wave.
 
 ## Traps
