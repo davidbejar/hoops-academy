@@ -311,6 +311,10 @@ test database of the finance image check, the Lighthouse images of a local run; 
 package of `web.Containerfile`, which fetch signed packages at build time (the Trivy gate fails the image on a fixable
 HIGH or CRITICAL; drop both once the base image has caught up). ESO and the Envoy Gateway chart are pinned by version only.
 
+A Flutter bump (the `setup-flutter` pin) or a Dependabot pub PR resolved with another SDK can fail `flutter pub get
+--enforce-lockfile` in CI: the lock file must be re-resolved with the SDK the pin names (`cd apps/web && flutter pub get`,
+commit `pubspec.lock`), in the same PR.
+
 An agent's weekly PR for a Semgrep ruleset hash is a review item: new registry rules can add findings. Until it is merged
 the `semgrep` workflow stops with "changed upstream" (`scripts/semgrep-rules.sh`); that is the pin working.
 
