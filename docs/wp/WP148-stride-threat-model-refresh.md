@@ -56,7 +56,7 @@ few attack chains, not the full seven stages.
   handover.
 
 ## Handover
-- **Built** (cc897b4a, `docs/security/threat-model.md` only):
+- **Built** (cc897b4a and the follow-up commit, `docs/security/threat-model.md` only):
   - New header: scope at cc4fb3e2, method, and the rating scale (L×I: 6/9 High, 3/4 Medium, 1/2 Low). Likelihood is
     for today's exposure: no cloud applied, compose and kind on 127.0.0.1, the repository public.
   - Assets, actors and the data-flow diagram cover five services, Redpanda, the collector with LGTM / Jaeger, the
@@ -76,27 +76,29 @@ few attack chains, not the full seven stages.
   - Findings TM-01..TM-14, a "to verify" list, and a Verification section.
   - The two files of the other packages are named as code text, not links: `agentic-threat-model.md` (WP149) and
     ADR-0077 (WP150). A link to a missing file fails the strict build; tried and confirmed, then reverted.
-- **Findings** (Medium and above go to wave 2):
+- **Findings**: High 0, Medium 7, Low 7. Every rating is L1 (stated in the document: no deployment is exposed, and
+  the build vectors need an upstream compromise or the owner's credentials).
 
-  | ID | Rating | Finding | Proposed fix |
-  |---|---|---|---|
-  | TM-01 | Medium (L1×I3) | Serving pods hold their schema's migrator password (owner: can turn RLS off, delete audit rows) | Migrations in a Job / init container; serving pods get `*_app` only; chart test |
-  | TM-02 | Medium (L1×I3) | core, game, athlete (and Keycloak) have no egress NetworkPolicy | `hoops-lib.networkPolicy` with egress lists; chart tests |
-  | TM-03 | Medium (L1×I3) | `main` unprotected (no protection, no ruleset); `images.yml` pushes without the security gates | Ruleset with required checks; images after a green `ci` |
-  | TM-04 | Medium (L1×I3) | Floating build images, tools, platform installs (Maven builder, nginx + `apk upgrade`, Flutter stable, Trivy, Keycloak, CNPG manifest from a branch) | Digest / checksum pins in `bump-pins.sh` |
-  | TM-05 | Medium (L1×I3) | Maven wrapper without checksum, no Maven checksum policy, `pub get` without `--enforce-lockfile`, Semgrep rules unpinned | Checksums, strict policy, enforce the lock file, pin rules |
-  | TM-06 | Medium (L1×I3) | The HTTP listener serves every route with TLS on; no redirect, no HSTS; cloud opens :80 | Redirect route; app routes on `https` only |
-  | TM-07 | Medium (L1×I3) | No second factor required, the super admin included (decision 39) | Required OTP for `super_admin` (ADR-0038 amendment) |
-  | TM-08 | Medium (L1×I3) | Images not signed or attested; the chart deploys by tag | cosign + attestation; deploy by digest |
-  | TM-09 | Low (L1×I2) | Postgres open to every pod of the namespace; no `sslmode` | Narrow the NetworkPolicy; `verify-full` |
-  | TM-10 | Low (L1×I2) | Logs skip id stripping; Grafana anonymous with viewers-can-edit | Decide the log attributes (P-07); turn edit off |
-  | TM-11 | Low (L1×I2) | gitleaks allow-lists all `docs/**/*.md` and skills | Fingerprint / regex allow-list instead |
-  | TM-12 | Low (L1×I1) | pdf-service has no render timeout or queue bound; core holds a DB transaction during the call | Render timeout, bounded wait; call outside the transaction |
-  | TM-13 | Low (L1×I1) | No `SECURITY.md`, CODEOWNERS or signed commits in a public repository | `SECURITY.md` with private reporting |
-  | TM-14 | Low (L1×I1), to verify | A client `X-Forwarded-For` may reach Keycloak's event IP | Check on kind; set the client IP at the Gateway |
+
+  | ID | Rating | Status | Finding | Proposed fix |
+  |---|---|---|---|---|
+  | TM-01 | Medium (L1×I3) | new | Serving pods hold their schema's migrator password (owner: can turn RLS off, delete audit rows) | Migrations in a Job / init container; serving pods get `*_app` only; chart test |
+  | TM-02 | Medium (L1×I3) | new | core, game, athlete and Keycloak have no egress NetworkPolicy | `hoops-lib.networkPolicy` with egress lists; chart tests |
+  | TM-03 | Medium (L1×I3) | new | `main` unprotected (no protection, no ruleset); `images.yml` pushes without the security gates | Ruleset with required checks; images after a green `ci` |
+  | TM-04 | Medium (L1×I3) | partly tracked (FOLLOW-UPS cloud slice) | Floating build images, tools, platform installs (Maven builder, nginx + `apk upgrade`, Flutter stable, Trivy, Keycloak, CNPG manifest from a branch) | Digest / checksum pins in `bump-pins.sh` |
+  | TM-05 | Medium (L1×I3) | new (Semgrep part: FOLLOW-UPS "SAST drift") | Maven wrapper without checksum, no Maven checksum policy, `pub get` without `--enforce-lockfile`, Semgrep rules unpinned | Checksums, strict policy, enforce the lock file, pin rules |
+  | TM-06 | Low (L1×I2) | tracked (FOLLOW-UPS cloud slice, `cloud.md:143`) | The HTTP listener serves every route with TLS on; no redirect, no HSTS; cloud opens :80 (logins over HTTP fail) | Redirect route; app routes on `https` only |
+  | TM-07 | Medium (L1×I3) | accepted (decision 39); owner to revisit, not a wave-2 fix by itself | No second factor required, the super admin included (decision 39) | Required OTP for `super_admin` (ADR-0038 amendment) |
+  | TM-08 | Medium (L1×I3) | tracked, open (ADR-0043) | Images not signed or attested; the chart deploys by tag | cosign + attestation; deploy by digest |
+  | TM-09 | Low (L1×I2) | new | Postgres open to every pod of the namespace; no `sslmode` | Narrow the NetworkPolicy; `verify-full` |
+  | TM-10 | Low (L1×I2) | new (joins P-07) | Logs skip id stripping; Grafana anonymous with viewers-can-edit | Decide the log attributes (P-07); turn edit off |
+  | TM-11 | Low (L1×I2) | new | gitleaks allow-lists all `docs/**/*.md` and skills | Fingerprint / regex allow-list instead |
+  | TM-12 | Low (L1×I1) | new | pdf-service has no render timeout or queue bound; core holds a DB transaction during the call | Render timeout, bounded wait; call outside the transaction |
+  | TM-13 | Low (L1×I1) | new | No `SECURITY.md`, CODEOWNERS or signed commits in a public repository | `SECURITY.md` with private reporting |
+  | TM-14 | Low (L1×I1), to verify | new | A client `X-Forwarded-For` may reach Keycloak's event IP | Check on kind; set the client IP at the Gateway |
 
 - **Verified:**
-  - `just docs-build`: "No issues found" on the committed file.
+  - `just docs-build`: "No issues found" on the final file.
   - gitleaks: no leaks.
   - Ten rows spot-checked against the tree (and the eleventh against GitHub):
     1. §1 S audience: core `application.properties:41`.
@@ -110,7 +112,10 @@ few attack chains, not the full seven stages.
     9. §7 T: `CoreEventDecoder:84-107`.
     10. §8 I: `observability.yaml:111-119,401-405`.
     11. §11 S: `gh api .../branches/main/protection` → "Branch not protected", `.../rulesets` → `[]`.
-  - Three read-only subagents gathered evidence for §7–§11. Every `file:line` in a finding was then reopened by hand.
+  - Three read-only subagents gathered evidence for §7–§11. Every `file:line` in a finding was reopened by hand.
+  - Every backticked name in the document was then swept mechanically (`git ls-files`, `git grep`, class + method).
+    The only non-matches are GitHub API output, names proposed in fixes, and globs.
+  - FOLLOW-UPS and the ADRs were searched for each Medium; the Status column shows the result.
   - `just test` was not run: no code, configuration or test changed.
 - **Decisions/ADRs:** none. The method is ADR-0077 (WP150). TM-07 asks to revisit decision 39.
 - **Open points / could not verify:**
