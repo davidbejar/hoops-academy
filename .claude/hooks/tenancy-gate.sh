@@ -13,7 +13,7 @@
 # Without jq the hook cannot read the command, so it blocks every command (exit 2).
 #
 # ASK_RULES (one case per rule in scripts/hooks/tenancy-gate.test.sh; the test reads this table):
-#   podman-volume-rm  podman volume rm | remove | prune
+#   podman-volume-rm  podman volume rm | remove | prune (podman and docker, the podman-docker shim, in every podman rule)
 #   podman-system-prune  podman system prune | reset
 #   podman-machine  podman machine stop | rm | remove | reset
 #   compose-down-volumes  podman compose … down -v | --volumes, podman-compose down -v, just down -v
@@ -21,7 +21,7 @@
 #   git-force-push  git push --force | -f | --force-with-lease | --mirror | --prune | +<refspec>
 #   git-push-main  git push to or deleting main (a refspec onto main, --all, a plain push or HEAD while on main)
 #   git-reset-hard-main  git reset --hard while on main (or in a checkout that cannot be told)
-#   git-no-verify  git commit | push --no-verify | -n, git -c core.hooksPath=… (skips the pre-commit hooks and gitleaks)
+#   git-no-verify  git commit | push --no-verify | -n, git -c core.hooksPath=…, git config core.hooksPath … (skips the git hooks)
 #   git-main-ref  git branch -d | -D | -f | -m | -M … main, git checkout -B main, git switch -C main, git update-ref … main
 #   gh-repo-settings  gh repo edit | rename | archive | unarchive | deploy-key, gh secret | variable set, gh workflow enable | disable
 #   gh-delete  gh <anything> delete | delete-asset | remove | rm
@@ -205,6 +205,12 @@ ask_git() { # ask_git <literal words>
     done
   fi
   case "$sub" in
+    config)
+      lower=$(tr '[:upper:]' '[:lower:]' <<<"${r[*]}")
+      case " $lower " in
+        *" core.hookspath "*) case " $lower " in *" --get"* | *" get "* | *" --list "* | *" -l "* | *" --unset"* | *" unset "*) ;;
+                                *) add_ask git-no-verify ;; esac ;;
+      esac ;;
     push) ask_push "${r[@]}" ;;
     reset) if has_word --hard "${r[@]}" && on_main; then add_ask git-reset-hard-main; fi ;;
     branch)
@@ -259,6 +265,8 @@ ask_rules() { # ask_rules <literal words of one simple command>: adds the destru
     w=${a[i]}
     case "${w##*/}" in
       podman | podman-compose | kind | git | gh | just | pg-major-move.sh) prog=${w##*/}; break ;;
+      docker) prog=podman; break ;;
+      docker-compose) prog=podman-compose; break ;;
       down.sh) case "$w" in *kind/down.sh) prog=kind-down; break ;; esac ;;
     esac
     i=$((i + 1))
