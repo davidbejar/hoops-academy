@@ -187,6 +187,11 @@ expect_ask git-main-ref 'git branch -M wp-x main'
 expect_ask git-main-ref 'git checkout -B main'
 expect_ask git-main-ref 'git switch -C main origin/main'
 expect_ask git-main-ref 'git update-ref refs/heads/main 0123abc'
+expect_ask git-no-verify 'git commit --no-verify -m x'
+expect_ask git-no-verify 'git commit -nm x'
+expect_ask git-no-verify 'git -C /w commit -a -n -m x'
+expect_ask git-no-verify 'git push --no-verify origin wp-x'
+expect_ask git-no-verify 'git -c core.hooksPath=/dev/null commit -m x'
 expect_ask gh-repo-settings 'gh repo edit --visibility private'
 expect_ask gh-repo-settings 'gh repo rename other'
 expect_ask gh-repo-settings 'gh secret set X --body y'
@@ -214,7 +219,7 @@ total=$((total + 1))
 for cmd in 'podman volume ls' 'podman volume inspect hoops_pgdata' 'podman machine start' 'podman machine ssh "date +%s"' \
   'podman compose -f c.yaml down' 'podman compose up -d --wait' 'podman rm -f throwaway' 'podman system df' 'just down' \
   'just up' 'kind get clusters' 'kind create cluster --name x' 'git push origin wp-x' 'git push -u origin wp-x' \
-  'git push origin --delete wp-x' 'git push origin HEAD' 'git reset --hard origin/wp-x' 'git branch -d wp-x' \
+  'git push origin --delete wp-x' 'git push origin HEAD' 'git commit -m "no --no-verify here"' 'git commit --amend -m x' 'git reset --hard origin/wp-x' 'git branch -d wp-x' \
   'git branch -D wp-x' 'git branch feature main' 'git checkout -b feature main' 'git worktree remove --force ../wt' \
   'git stash push' 'gh pr create --base main --head wp-x' 'gh pr merge 12 --rebase --match-head-commit abc' \
   'gh run watch 5 --exit-status' 'gh api repos/o/r/branches/main' 'gh api -X GET repos/o/r/pulls -f state=open' \
