@@ -271,16 +271,24 @@ Dependabot covers Maven, pub and GitHub Actions. Everything else that is pinned 
 | Pin | File | Resolved from |
 |---|---|---|
 | distroless java25-debian13:nonroot digest | `deploy/containers/service.Containerfile` | registry (skopeo, floating tag) |
-| nginx-unprivileged tag (even minors) | `deploy/containers/web.Containerfile` | registry |
-| redis, mailpit | `deploy/helm/hoops/values.yaml` | registry |
+| Maven builder image tag + digest (newest tag published for amd64 and arm64) | `deploy/containers/service.Containerfile` | registry (WP152) |
+| nginx-unprivileged tag (even minors) + digest | `deploy/containers/web.Containerfile` | registry |
+| cirruslabs/flutter tag + digest (its last tag is 3.44.0: the stage builds nothing today) | `deploy/containers/web.Containerfile` | registry |
+| redis, mailpit tag + digest | `deploy/helm/hoops/values.yaml` | registry |
+| Keycloak tag + digest; chart `appVersion` and the realm tests' image name follow it | `infra/compose/compose.yaml`, the `keycloak` sub-chart (`values.yaml`, `Chart.yaml`), `TestRealm.java` | registry |
+| CNPG database image digest (for the tag of the PostgreSQL pin below) | the `databases` sub-chart's `values.yaml` | registry |
+| Maven version + `distributionSha256Sum` of the wrapper | `.mvn/wrapper/maven-wrapper.properties` | Maven Central (the zip is checked against Central's SHA-512) |
+| Flutter version + SHA-256 of its linux archive | `.github/actions/setup-flutter/action.yml` | `releases_linux.json` of the stable channel |
+| SHA-256 of each Semgrep registry ruleset | `.semgrep/registry-rules.txt` | semgrep.dev |
+| pre-commit hook repos: commit SHA + tag | `.pre-commit-config.yaml` | `git ls-remote` (the peeled tag) |
 | PostgreSQL minor (one pin, a flavour per registry; WP142, WP144) | `infra/compose/compose.yaml`, the `databases` sub-chart's `values.yaml`, `PostgresRlsResource` (common-quarkus test-jar), finance's `pgtest.go`, `images.yml` | Docker Hub `library/postgres`; a minor is applied only when Docker Hub (`-trixie`) and CloudNativePG (`-minimal-trixie`) both publish it, a new major only with `--major` and the runbook [a new PostgreSQL major](postgresql-major.md) (ADR-0073) |
 | redpanda tag + digest (one pin) | `values.yaml`, `infra/compose/compose.yaml`, finance-service's `consumer_test.go` | registry |
 | redpanda tag of the Dev Services | common-quarkus `microprofile-config.properties` | registry |
-| Trivy tag | `ci.yml`, `.github/actions/image-publish/action.yml`, `scripts/sbom.sh`, `infra/tofu/check.sh` | Docker Hub |
+| Trivy tag + digest | `ci.yml`, `.github/actions/image-publish/action.yml`, `scripts/sbom.sh`, `infra/tofu/check.sh` | Docker Hub |
 | cyclonedx-cli, ORAS tag + digest | `scripts/sbom.sh` | registry |
 | Semgrep tag + digest | `semgrep.yml` | Docker Hub |
 | ZAP `stable` digest | `ci.yml`, `scripts/zap-api-scan.sh` | ghcr.io |
-| Envoy Gateway, CloudNativePG | `deploy/lib/platform.sh` (sourced by `deploy/kind/up.sh`, `deploy/cloud/install.sh`) | GitHub releases |
+| Envoy Gateway; CloudNativePG version + SHA-256 of its release manifest (`CNPG_MANIFEST_SHA256`, checked by `install_cnpg` before `kubectl apply`) | `deploy/lib/platform.sh` (sourced by `deploy/kind/up.sh`, `deploy/cloud/install.sh`) | GitHub releases (the manifest's digest is the one GitHub records for the asset) |
 | External Secrets | `deploy/kind/up.sh` | GitHub releases |
 | Reloader chart version + digest + image digest | `deploy/lib/platform.sh` | ghcr.io (chart appVersion names the image) |
 
@@ -295,8 +303,19 @@ copies that `deploy/helm/tests/run.sh` and `just tofu-check` compare move togeth
 chart snapshots and the ExternalSecret schema, is re-recorded by the workflow in the same PR; after a local `--apply` run
 `deploy/helm/tests/schemas/update-eso.sh` and `deploy/helm/tests/run.sh --update` yourself.
 
-Not bumped: floating tags without a digest (Maven, Flutter), the Gateway API version (it must match the Envoy Gateway
-compatibility matrix, ADR-0031: change it by hand together with Envoy Gateway), Lighthouse (not pinned in this repository).
+By hand, hashes held by a tool and not by `bump_pins.py`: the docs site's Python dependencies (`config/docs/requirements.txt`,
+every file of every version by SHA-256, installed with `pip install --require-hashes`; refresh with
+`python3 -I scripts/docs_requirements.py`, Dependabot keeps the hashes of its own PRs). Not pinned by digest, on purpose
+and listed in `scripts/tests/test_supply_chain_pins.py` (`BY_TAG`): the dev database and proxy of the local stack, the
+test database of the finance image check, the Lighthouse images of a local run; and `apk upgrade` plus the nginx.org
+package of `web.Containerfile`, which fetch signed packages at build time (the Trivy gate fails the image on a fixable
+HIGH or CRITICAL; drop both once the base image has caught up). ESO and the Envoy Gateway chart are pinned by version only.
+
+An agent's weekly PR for a Semgrep ruleset hash is a review item: new registry rules can add findings. Until it is merged
+the `semgrep` workflow stops with "changed upstream" (`scripts/semgrep-rules.sh`); that is the pin working.
+
+Not bumped: the Gateway API version (it must match the Envoy Gateway
+compatibility matrix, ADR-0031: change it by hand together with Envoy Gateway).
 Same major only; `--major` allows a major and the check output says when one exists.
 
 Locally (needs Podman; skopeo runs in a pinned container, no install):

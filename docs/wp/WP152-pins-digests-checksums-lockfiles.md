@@ -57,4 +57,82 @@ holds the pin policy if the policy changes.
   handover.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+
+### Built
+Every pin below carries a digest or a checksum, each is a `scripts/bump_pins.py` entry (27 entries now: 10 new, 5
+extended; `--check` and `--apply` ran against the registries, `--apply` on a throwaway copy), and
+`scripts/tests/test_supply_chain_pins.py` fails on a registry image without a digest (`BY_TAG` lists the exceptions with
+reasons), on a `flutter pub get` without `--enforce-lockfile`, and on each other pin below.
+
+| Pin | Old | New |
+|---|---|---|
+| Maven builder image (`service.Containerfile`) | `maven:3-eclipse-temurin-25` | `3.10.0-eclipse-temurin-25@sha256:84bd9615...d686` (3.10.2 is amd64 only: the bump skips a tag without amd64 and arm64) |
+| nginx-unprivileged (`web.Containerfile`) | `1.30-alpine` | `1.30-alpine@sha256:f5116ed4...df03` |
+| cirruslabs/flutter (`web.Containerfile`) | `:stable` | `3.44.0@sha256:46691e31...33f8` (same digest as `stable`) |
+| Trivy (ci.yml, image-publish, sbom.sh, infra/tofu/check.sh) | `0.76.2` | `0.76.2@sha256:8f6bb947...68fb` |
+| Keycloak (compose, chart values; templates render `digest`) | `26.8.2` | `26.8.2@sha256:7e66a96e...38b3`; `Chart.yaml` appVersion and `TestRealm.java` stay by tag, in their own entry |
+| CNPG database image (`databases` values) | `19.0-minimal-trixie` | `...@sha256:12688a49...a2af` (entry runs after the PostgreSQL one and recomputes the digest of its tag) |
+| Redis, Mailpit (chart values; mailpit template renders `digest`) | tag only (`digest: ""`) | `sha256:5af80107...3483`, `sha256:23a2ef85...1a4e` |
+| Flutter in CI (`setup-flutter`) | subosito `channel: stable` | own install of 3.50.0 from the release archive, `sha256sum -c` `6ea2d806...f9f5` (the version `pubspec.lock` was resolved with), `actions/cache` for `~/.pub-cache` |
+| CNPG operator manifest (`deploy/lib/platform.sh`) | `raw.githubusercontent.com/.../release-1.30/releases/cnpg-1.30.2.yaml`, no check | `releases/download/v1.30.2/cnpg-1.30.2.yaml`, `CNPG_MANIFEST_SHA256=ea4cc355...c68c` (the digest GitHub records for the asset; the same bytes as the branch file), checked before `kubectl apply` from a file |
+| Maven wrapper | no checksum | `distributionSha256Sum=9c1ef917...adb5` (publisher's SHA-512 matched on the same download) |
+| Maven | warns on a mismatch | `.mvn/maven.config` `-C` (strict checksums; also in the image build) |
+| `flutter pub get` (ci.yml x2, e2e.yml, images.yml, web.Containerfile, Tiltfile, justfile, build-images.sh, start.sh) | plain | `--enforce-lockfile` |
+| Semgrep rulesets p/java, p/rust, p/golang, p/owasp-top-ten | fetched live | `scripts/semgrep-rules.sh` fetches them against the SHA-256 in `.semgrep/registry-rules.txt` and stops on a change; `sarif-gate.py --strip-rule-prefix semgrep-registry.` keeps the rule ids of `.semgrep/accepted.json` |
+| pre-commit gitleaks | `v8.30.0` | `6eaad039...` `# frozen: v8.30.0` (the tag object is `2ca41cc1`, not pinned) |
+| pre-commit-hooks | `v6.0.0` | `3e8a8703...` `# frozen: v6.0.0` |
+| docs site requirements | versions only | 11 packages, 314 `--hash=sha256` lines (every file of every version), `pip install --require-hashes`; `scripts/docs_requirements.py` writes them |
+
+Docs: ADR-0068 amendment (the pin policy), `docs/runbooks/release.md` section 6, `docs/runbooks/docs-site.md`,
+`docs/security/sast-dast.md`, TM-04 and TM-05 (rows and findings), AG-12.
+
+### Verified
+- `python3 -I -m unittest discover -s scripts/tests`: 174 tests, 1 skipped (the online multi-arch check), green. The red
+  tests are commit `cd6534d6` (31 failures and 13 errors before the change). The tests for `--strip-rule-prefix`, the
+  semgrep fetch script and the rewrite of the new pins were written with their code, not before it.
+- `BUMP_PINS_ONLINE=1` multi-arch test and `scripts/bump-pins.sh --check` against the live registries: every new
+  digest is an index with amd64 and arm64; `--check` lists only unrelated bumps (Semgrep 1.187.0, LGTM 0.41.2,
+  distroless digest, Maven 3.10.2, Flutter 3.50.1, gitleaks v8.30.1). `--apply --root <copy>` rewrote each new pin in each file.
+- `./mvnw -B -ntp -T 1C verify -Dquarkus.http.test-port=0`, fresh, with `-C` on: BUILD SUCCESS, 15:15 min, 3794 tests
+  (38, 346, 585, 530, 1028, 1267 per module), 0 failures, 0 errors, 32 skipped. A first run failed once in
+  `InvalidTokenEventsTest` (Testcontainers Postgres start timeout under load 15); the module passed on the rerun.
+- Checksum policy online: `libs/contracts package` with a scratch `-Dmaven.repo.local` and `-C`: BUILD SUCCESS (53 s).
+  Mismatch proof on a file:// repository: without `-C` a wrong `.sha1` only warns and the build succeeds, with the
+  repository's `.mvn/maven.config` it fails ("Checksum validation failed"). Wrapper: a scratch `MAVEN_USER_HOME` accepts
+  the sum and refuses a wrong one ("Failed to validate Maven distribution SHA-256").
+- `flutter pub get --enforce-lockfile` (Flutter 3.50.0) leaves `pubspec.lock` unchanged. `just web-test`: 1958 tests, all passed (4 min 48 s).
+- `deploy/helm/tests/run.sh --update` then `run.sh`: ALL CHART TESTS PASSED; the snapshots change only in the image lines
+  (Keycloak, Redis, Mailpit, CNPG image) of the four umbrella renders.
+- Semgrep: the pinned image scanned the repository with the fetched rulesets: 27 findings, gate "accepted in baseline:
+  26 of 26", exit 0, no STALE entry (the rule ids still match `accepted.json`).
+- Docs: `just docs-build` in a fresh `.venv-docs` with `--require-hashes`: no issues; a wrong hash is refused.
+- `actionlint`, `shellcheck` on the new shell: clean. Images built with `scripts/build-images.sh`: `athlete-service`
+  (from the pinned Maven builder, `-C` in the container, runs as 65532) and `web` (pinned nginx base, nginx 1.30.7; the
+  pinned Trivy gate of `image-publish` on it: exit 0, no fixable HIGH or CRITICAL).
+
+### Could not be pinned, and why
+- `apk upgrade` and the nginx.org package in `web.Containerfile`: signed packages fetched at build time. Dropping them
+  was tried: the pinned base still carries fixable HIGH CVEs (nginx 1.30.6, zlib 1.3.2-r0 per the pinned Trivy), so the
+  gate would fail. Residual, written in TM-04, ADR-0068 and the release runbook.
+- Envoy Gateway and ESO charts stay by version (ESO is in `deploy/kind/up.sh`, WP151's; Envoy's chart reference would
+  need a digest form in `platform.sh` and a chart-kind variant of the bump). Not done.
+- By tag on purpose (`BY_TAG`): compose `postgres` and `nginx`, the finance image check's `postgres` in `images.yml`,
+  Lighthouse's two images, Keycloak's `Chart.yaml` appVersion and `TestRealm.java`, the Redpanda Dev Services tag.
+- `cirruslabs/flutter`: its last tag is 3.44.0 (= `stable`), older than `pubspec.lock` needs (>= 3.47), so
+  `WEB_SOURCE=flutter` cannot build the current app with any tag; pinned by digest all the same, no pipeline uses it.
+- `gen-api.sh` runs `dart pub get` in generated client packages, which have no lock file.
+- Maven `-C` does not re-verify artifacts already in a local repository.
+
+### Open points and what only GitHub can prove
+- `setup-flutter` downloads the 1.5 GB archive per job (no SDK cache): job time and the extract step on a runner, and
+  `flutter pub get --enforce-lockfile` with Flutter 3.50.0 on Linux (it ran green on macOS only).
+- `scripts/semgrep-rules.sh` on a runner: the registry must serve the same bytes there as here. Until the weekly
+  bump-pins PR is merged, a ruleset that changes upstream stops the `semgrep` job on every pull request ("changed upstream"):
+  by design, and the cost of the pin. The code-scanning alert ids of the registry rules now start with `semgrep-registry.`.
+- `docker run aquasec/trivy:...@sha256:...` in `ci.yml` and `image-publish`, the web job's Trivy gate with the pinned nginx
+  base, `images.yml` building the Maven image on amd64.
+- The pins in `ci.yml` (Trivy) are by hand under `bump-pins --skip-workflows`, like Semgrep's: the PR body lists them.
+- Merge: the four umbrella snapshots conflict with WP151 if it re-records them (take both: `run.sh --update`);
+  `keycloak.yaml` and `mailpit.yaml` templates changed on the image line only.
+- Pre-commit: after the first commit with the new revs, pre-commit rebuilds the hook environments (one slow commit).
+- No Node, no push, `main` untouched.

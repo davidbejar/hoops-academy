@@ -9,7 +9,7 @@ Findings are triaged into [`review-2026-11.md`](review-2026-11.md) ("Round 5 SAS
 |---|---|---|---|---|
 | SpotBugs 4.10.5 + find-sec-bugs 1.14.0 | `verify` of every module (root `pom.xml`), so `just test` and the `backend` job | main classes, effort Max, threshold Medium, all categories | any finding not excluded | `spotbugs-exclude.xml` (a comment per `<Match>`) |
 | CodeQL 2.27 (codeql-action v4.39.3) | `.github/workflows/codeql.yml`: push to main, PRs, weekly | Java main code, suite `security-extended` | `security-severity` >= 7.0 (High, Critical) | `.github/codeql/accepted.json` |
-| Semgrep (tag and digest pinned in `semgrep.yml`, bumped by `scripts/bump-pins.sh`; 1.186.0 since WP142) | `.github/workflows/semgrep.yml`: push to main, PRs, weekly | whole repo minus `.semgrepignore` (tests, generated clients, build output, Helm templates); `p/java`, `p/owasp-top-ten`, `.semgrep/rules` | level `error` (rule severity ERROR) | `.semgrep/accepted.json` |
+| Semgrep (tag and digest pinned in `semgrep.yml`, bumped by `scripts/bump-pins.sh`; 1.186.0 since WP142) | `.github/workflows/semgrep.yml`: push to main, PRs, weekly | whole repo minus `.semgrepignore` (tests, generated clients, build output, Helm templates); the registry rulesets `p/java`, `p/rust`, `p/golang`, `p/owasp-top-ten` fetched against the SHA-256 in `.semgrep/registry-rules.txt` (`scripts/semgrep-rules.sh`), `.semgrep/rules` | level `error` (rule severity ERROR) | `.semgrep/accepted.json` |
 | ZAP baseline (passive) | `ci.yml` job `zap-baseline` | nginx + Keycloak + core on compose | High/Medium alert | `.zap/baseline.conf` |
 | ZAP API scan (active) | `e2e.yml` after the journeys | each service's OpenAPI contract through nginx, signed in as the super admin | High/Medium alert | `.zap/api-<service>.conf` |
 | ZAP full scan (spider + active) | by hand (below) | nginx, Keycloak pages, the web app | — (triaged into the review) | — |
@@ -50,9 +50,11 @@ img=$(grep -oE 'docker.io/semgrep/semgrep:[^ ]+' .github/workflows/semgrep.yml) 
 python3 -m unittest discover -s scripts/tests                                  # gate scripts
 podman run --rm -v "$PWD:/src:ro" -w /src/.semgrep "$img" semgrep --test --metrics off --config rules tests
 mkdir -p target/semgrep && chmod 777 target/semgrep
+scripts/semgrep-rules.sh semgrep-registry      # the registry rulesets, each checked against its pinned SHA-256 (git-ignored)
 podman run --rm -v "$PWD:/src:ro" -v "$PWD/target/semgrep:/out" -w /src "$img" semgrep scan --metrics off \
-  --config p/java --config p/owasp-top-ten --config .semgrep/rules --sarif-output=/out/semgrep.sarif .
-python3 -I scripts/sarif-gate.py --fail-on error --baseline .semgrep/accepted.json target/semgrep/semgrep.sarif
+  --config semgrep-registry/ --config .semgrep/rules --sarif-output=/out/semgrep.sarif .
+python3 -I scripts/sarif-gate.py --fail-on error --strip-rule-prefix semgrep-registry. \
+  --baseline .semgrep/accepted.json target/semgrep/semgrep.sarif
 ```
 
 **CodeQL** (the same bundle as the action, in a JDK container; about 30 min on a laptop, needs about 6.5 GB of the Podman VM):
@@ -149,7 +151,7 @@ the next local run:
 - To scan the edge as CI sees it while the local `.env` exposes the Keycloak admin console, recreate only nginx with
   the default: `HOOPS_EXPOSE_KC_ADMIN=false podman compose --env-file .env -f infra/compose/compose.yaml up -d nginx`
   (and again without the override afterwards; `just e2e` needs `true`).
-- The Podman VM's resolver failed intermittently for `semgrep.dev` (registry rulesets are fetched at run time):
+- The Podman VM's resolver failed intermittently for `semgrep.dev` (the registry rulesets are fetched at run time, then checked against their pinned hashes):
   `podman run --dns 1.1.1.1 …` made the Semgrep scan reliable; it does not change what is scanned.
 - New request-text rules (SD-02) answer `400` with code `INVALID_CHARACTERS`; a ZAP "Server Error" alert on a NUL or
   control-character payload is a regression.
