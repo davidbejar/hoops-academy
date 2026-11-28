@@ -36,7 +36,8 @@ settings only after the owner has seen it. The hook already runs for every Bash 
    `podman system prune | reset`, `podman machine stop | rm | reset`, compose `down -v`, kind cluster deletion (also
    `just kind-down`, `deploy/kind/down.sh`), a force push, a push to or deleting `main` (a plain push while on `main`
    included), `git reset --hard` on `main`, moving or deleting the `main` branch ref, `--no-verify` / `-n` /
-   `core.hooksPath` on commit or push, `gh` repository settings, deletes and API writes, `gh pr merge --admin`, and
+   `core.hooksPath` on commit or push and `git config core.hooksPath`, the same Podman rules through the `docker`
+   shim, `gh` repository settings, deletes and API writes, `gh pr merge --admin`, and
    `scripts/pg-major-move.sh --clean-up --remove`. The rules match the words of each simple command (quoted text is a
    single word, so a commit message or a `grep` pattern that mentions a command does not ask); unreadable text is
    matched loosely. Gates run first (a failed gate blocks); the ask comes after. Runbooks that drop the database volume
