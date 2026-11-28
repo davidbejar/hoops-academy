@@ -6,6 +6,8 @@
 **/.dart_tool/
 **/node_modules/
 .mvn/
+# The registry rulesets scripts/semgrep-rules.sh fetches (rules, not code)
+semgrep-registry/
 # Generated Dart API clients (just gen-api; their source of truth is libs/contracts, scanned as OpenAPI only)
 apps/web/packages/
 # Test code and test fixtures: deliberate secrets, raw SQL and insecure set-ups belong there (SAST covers shipped code)
