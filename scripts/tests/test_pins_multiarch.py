@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import bump_pins  # noqa: E402
 
 REF = re.compile(r"(?<![\w./-])(?P<repo>[a-z0-9](?:[a-z0-9.-]*/)+[a-z0-9._-]+)(?::[\w.\-]+)?@(?P<digest>sha256:[0-9a-f]{64})")
-SCANNED = [".github/workflows", "scripts", "deploy/containers", "deploy/kind"]
+SCANNED = [".github/workflows", ".github/actions", "scripts", "deploy/containers", "deploy/kind", "deploy/lib", "deploy/helm/hoops"]
 INDEX_TYPES = {"application/vnd.oci.image.index.v1+json", "application/vnd.docker.distribution.manifest.list.v2+json"}
 NEEDED = {"amd64", "arm64"}
 
