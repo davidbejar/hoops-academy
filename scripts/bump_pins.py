@@ -28,7 +28,7 @@ class Pin:
 
 # Inventory. kind: image (repo + tag_re [+ floating tag, digest only]), release (GitHub releases), chart (OCI helm chart
 # whose appVersion names the image whose digest is also pinned). File | group(s) | resolved by:
-#   service.Containerfile  RUNTIME_IMAGE digest (distroless :nonroot) | skopeo inspect (floating tag)
+#   service, pdf, finance .Containerfile  RUNTIME_IMAGE digest (distroless java25, cc, static :nonroot) | skopeo inspect (floating tag)
 #   web.Containerfile      NGINX_IMAGE tag (even minor)| skopeo list-tags
 #   values.yaml            redis tag, mailpit tag     | skopeo
 #   values.yaml compose.yaml consumer_test.go (finance)  redpanda tag+digest (one pin over the three files) | skopeo
@@ -76,6 +76,12 @@ PINS = [
     Pin("distroless java25 nonroot", ["deploy/containers/service.Containerfile"],
         rf"distroless/java25-debian13:nonroot@(?P<digest>{DIGEST})", "image",
         repo="gcr.io/distroless/java25-debian13", floating="nonroot"),
+    Pin("distroless cc nonroot (pdf-service)", ["deploy/containers/pdf.Containerfile"],
+        rf"distroless/cc-debian13:nonroot@(?P<digest>{DIGEST})", "image",
+        repo="gcr.io/distroless/cc-debian13", floating="nonroot"),
+    Pin("distroless static nonroot (finance-service)", ["deploy/containers/finance.Containerfile"],
+        rf"distroless/static-debian13:nonroot@(?P<digest>{DIGEST})", "image",
+        repo="gcr.io/distroless/static-debian13", floating="nonroot"),
     Pin("nginx-unprivileged", ["deploy/containers/web.Containerfile"],
         rf"nginxinc/nginx-unprivileged:(?P<tag>[\w.\-]+)@(?P<digest>{DIGEST})\n", "image",
         repo="docker.io/nginxinc/nginx-unprivileged", tag_re=r"^(\d+\.\d+)-alpine$", even_minor=True),
