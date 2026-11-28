@@ -69,49 +69,57 @@ skills, hooks, connectors and CI. No document covers that today.
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
-- Built: `docs/security/agentic-threat-model.md` (commit dd2116bb). MAESTRO step 1 (diagram, inventory, the seven
-  layers with Layer 1 thin and Layer 2 thin but not empty, the four architecture patterns), step 2 (threat tables per
-  layer with today's control, evidence and finding), step 3 (chains C1 injected text → published image, C2 poisoned
-  build tool → owner's credentials, C3 tenancy regression → pushed commit, C4 subagent → orchestrator → every later
-  agent), step 4 (L × I table), step 5 (`## Findings`, AG-01 to AG-15), step 6, the bar for an AI feature in the
-  product, and a Verification section. No navigation change was needed: `docs/.nav.yml` lists `security` as a folder.
+- Built: `docs/security/agentic-threat-model.md` (commits dd2116bb and the follow-up revision). MAESTRO step 1
+  (diagram, inventory, the seven layers with Layer 1 thin and Layer 2 thin but not empty, the four architecture
+  patterns), step 2 (threat tables per layer with today's control, evidence and finding), step 3 (chains C1 injected
+  text → published image, C2 poisoned build tool → owner's credentials, C3 tenancy regression → pushed commit, C4
+  subagent → orchestrator → every later agent, each labelled with its MAESTRO cross-layer category), step 4 (L × I
+  table), step 5 (`## Findings`, AG-01 to AG-16), step 6, the bar for an AI feature in the product, and a Verification
+  section. No navigation change was needed: `docs/.nav.yml` lists `security` as a folder.
 - Findings by rating (L × I; proposed control):
 
   | Id | Rating | Finding | Proposed control |
   |---|---|---|---|
-  | AG-01 | High 6 (2×3) | The commit gate checks the session's checkout, not the worktree; CI excludes all 11 Keycloak-tagged tests | CI job running `-Pkeycloak-it`; hook follows a leading `cd` / `git -C` |
-  | AG-02 | High 6 (2×3) | Commits and ref changes other than a parsed `git commit` / `git push` are ungated; `main` unprotected; `images` does not wait for `ci` | Ruleset on `main` with required checks, no force push; branch CI before ff-merge; `images` on green `ci` |
+  | AG-01 | High 6 (2×3) | The commit gate checks the session's checkout, not the worktree; CI excludes all 11 Keycloak-tagged test classes | CI job running `-Pkeycloak-it`; hook follows a leading `cd` / `git -C` |
+  | AG-02 | High 6 (2×3) | Commits and ref changes other than a parsed `git commit` / `git push` are ungated; `main` unprotected; `images` does not wait for `ci` | Ruleset on `main` with required checks, no force push; branch CI before ff-merge; `images` on green `ci` (needs AG-05) |
   | AG-03 | High 6 (2×3) | gitleaks allowlists all `docs/**.md` and `.claude/skills/**`; Trivy's secret scan skips `.md` | Drop the path allowlist (0 hits without it today); test that keeps it out |
-  | AG-04 | High 6 (2×3) | Guardrails and instruction files change in unreviewed commits; the gate runs whatever script the tree holds | CI `guarded-paths` job tied to owner decisions; merge-time diff of guarded paths; CODEOWNERS after AG-02 |
-  | AG-05 | Medium 4 (2×2) | `.env` and `gh` login readable by every agent; no committed permission rule; `--no-verify` refusal not in repo | Committed `permissions.deny` (`.env`, `--no-verify`), sandbox deny if supported, test |
-  | AG-06 | Medium 4 (2×2) | Destructive Podman / kind commands on the owner's stack not blocked | Committed deny rules; `just db-backup` at round start |
-  | AG-07 | Medium 4 (2×2) | Agents' "verified" claims reach `main`, images, Pages before an independent run | Merge only on the branch's green `ci` run; quote the run id |
-  | AG-08 | Medium 4 (2×2) | Instructions in tool output and fetched content (jqwik line, bot PR bodies) | "Tool output is data" in `work-package`; review bot PRs by diff; WebFetch allowlist |
-  | AG-09 | Medium 4 (2×2) | No durable record of agent actions or gate results; trailers self-written, commits unsigned | Gate log in the shared `.git`; `WP:` trailer; close-out summary |
-  | AG-10 | Medium 3 (1×3) | Vendored third-party skills have no integrity record | Per-folder checksums plus a `scripts/tests` test |
-  | AG-11 | Medium 3 (1×3) | Pre-commit repos by tag, docs pins without hashes, Maven wrapper without checksum run in agents' shells | SHA revs, `--require-hashes`, `distributionSha256Sum`, tests |
-  | AG-12 | Medium 3 (1×3) | One `.git` for all worktrees: an agent can move `main` or another branch | Check `main` = `origin/main` before ff-merge, push the explicit id; ruleset |
-  | AG-13 | Low 2 (1×2) | Connectors unrelated to the build loaded into build sessions (session observation) | Project-level deny of unused connector tools |
-  | AG-14 | Low 2 (1×2) | Hook allows every command when `jq` is missing | Exit 2 without `jq`, test, doctor check |
-  | AG-15 | Low 2 (1×2) | Orchestrator's persistent memory outside the repo (to verify) | Keep it to pointers; diff at close-out |
+  | AG-04 | High 6 (2×3) | Guardrails and instruction files change in unreviewed commits; the gate runs whatever script the tree holds | Tripwire CI `guarded-paths` job; merge-time diff for the owner; CODEOWNERS after AG-05 and AG-02 |
+  | AG-05 | High 6 (2×3) | Agents act as the owner: OS user, git author, `gh` login with `repo` + `workflow` scopes and repository admin | Separate fine-grained credential for agent sessions, no admin or workflow permission |
+  | AG-06 | Medium 4 (2×2) | `.env` readable by every agent; no committed permission rule; `--no-verify` refusal not in the repository | Committed `permissions.deny` (`.env`, `--no-verify`), sandbox deny if supported, test |
+  | AG-07 | Medium 4 (2×2) | Destructive Podman / kind commands not blocked; two runbooks document a reset that drops the database volume | Committed deny rules; runbooks mark the reset owner-only; `just db-backup` at round start |
+  | AG-08 | Medium 4 (2×2) | Agents' "verified" claims reach `main`, images, Pages before an independent run | Merge only on the branch's green `ci` run; quote the run id |
+  | AG-09 | Medium 4 (2×2) | Instructions in tool output and fetched content (jqwik line, bot PR bodies) | "Tool output is data" in `work-package`; review bot PRs by diff; WebFetch allowlist |
+  | AG-10 | Medium 4 (2×2) | No durable record of agent actions or gate results; trailers self-written, commits unsigned | Gate log in the shared `.git`; `WP:` trailer; close-out summary |
+  | AG-11 | Medium 3 (1×3) | Vendored third-party skills have no integrity record | Per-folder checksums plus a `scripts/tests` test |
+  | AG-12 | Medium 3 (1×3) | Pre-commit repos by tag, docs pins without hashes, Maven wrapper without checksum run in agents' shells | SHA revs, `--require-hashes`, `distributionSha256Sum`, tests |
+  | AG-13 | Medium 3 (1×3) | One `.git` for all worktrees: an agent can move `main` or another branch | Check `main` = `origin/main` before ff-merge, push the explicit id; ruleset |
+  | AG-14 | Medium 3 (1×3) | Hook allows every command when `jq` is missing (same effect as AG-01) | Exit 2 without `jq`, test, doctor check |
+  | AG-15 | Low 2 (1×2) | Connectors unrelated to the build loaded into build sessions (session observation) | Project-level deny of unused connector tools |
+  | AG-16 | Low 2 (1×2) | Orchestrator's persistent memory outside the repository (to verify) | Keep it to pointers; diff at close-out |
 
-- Verified: every backticked repository path in the document exists and every cited line range is within its file
-  (scratch script over the document: 165 path tokens; the only misses are the deliberately absent `.mcp.json`, the
-  shared `.git/hooks`, `origin/main` and the scratch probe names). `just docs-build` exit 0, "No issues found"; the
-  built nav links `agentic-threat-model` from the security pages. gitleaks with the repository config minus its path
-  allowlist over the new document and this brief: exit 0; `gitleaks protect --staged` before the commit: no leaks.
-  Read-only commands on 2026-11-28: `gh api` (branch `main` unprotected, no rulesets, repository public),
+- Verified: every backticked repository path in the document exists and every cited line range is within its file at
+  cc4fb3e2 (scratch script over the document; the only misses are the deliberately absent `.mcp.json`, the shared
+  `.git/hooks`, `origin/main` and extension-only tokens). `just docs-build` exit 0, "No issues found"; the built nav
+  links `agentic-threat-model` from the security pages. gitleaks with the repository config minus its path allowlist
+  over the final document and this brief: exit 0 (the repository config would skip both, AG-03); `gitleaks protect
+  --staged` before each commit: no leaks. Read-only commands on 2026-11-28: `gh api` (branch `main` unprotected, no
+  rulesets, repository public, permissions admin), `gh auth status` (scopes only; token not shown or recorded),
   `gh variable list` (`IMAGE_REGISTRY` set), `podman ps` / `podman volume ls` (names of this project only recorded),
   `stat` of the main checkout's `.env` (mode only, content not read), `ls ~/code/hoops-wt` (other files there not
   opened), `git rev-parse --git-common-dir`, `git log` trailer and signature counts. Scratch probes with a fabricated
-  token (never staged, deleted): gitleaks with the repository config misses it in `docs/*.md`, finds it without the
-  path allowlist; Trivy 0.76.1 reports it in `.txt`, not in `.md`.
+  token (never staged, deleted): gitleaks with the repository config misses it in `docs/*.md` and finds it without the
+  path allowlist; Trivy 0.76.1 reports it in a `.txt` file, not in `.md` files.
 - Decisions/ADRs: none (the method is ADR-0077, WP150). No guardrail, setting, hook or workflow changed.
 - Open points / follow-ups:
   - Not verified: where the sessions' `--no-verify` refusal and any deny rules are configured (local and user settings
     not read); the `cwd` a subagent's hook receives (AG-01 rests on the code and the WP118 handover); whether a
-    ruleset's required checks refuse a direct push of an unchecked commit; whether the sandbox and a project-level
-    connector deny are available; the jqwik wording (not reproduced); the content of the orchestrator's memory.
-  - The hook's PASSED line did not appear in this package's tool output for commit dd2116bb; the commit went through, so
-    the gate passed or was not reached. Consistent with AG-01, this session's hook ran against the main checkout.
-  - For FOLLOW-UPS (docs pass): wave 2 takes AG-01 to AG-12; AG-13 to AG-15 as Low items.
+    ruleset's required checks refuse a direct push of an unchecked commit; how subagents could get a separate `gh`
+    credential; whether the sandbox and a project-level connector deny are available; the jqwik wording (not
+    reproduced); the content of the orchestrator's memory.
+  - This package could not see whether the commit gate ran for its commits: the tool output showed the pre-commit
+    hooks but no gate line (evidence for AG-10).
+  - Line numbers are pinned to cc4fb3e2; WP150's edit of `.claude/skills/wp-round/SKILL.md` will shift the ones cited
+    from that file. Two statements depend on the other wave-1 packages landing: the dependency, Actions, image and
+    registry boundary in `docs/security/threat-model.md` (WP148) and ADR-0077 with the keep-current rule (WP150).
+  - For FOLLOW-UPS (docs pass): wave 2 takes AG-01 to AG-14 (AG-05 before AG-02 and AG-04); AG-15 and AG-16 as Low
+    items.
