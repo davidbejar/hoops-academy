@@ -77,7 +77,7 @@ reserved for you.
     | ID | Rating | Gate | Title |
     |---|---|---|---|
     | P-14 | Medium (L1 × I3) | yes | A PostgreSQL major move leaves the old volume and an unencrypted `pg_dumpall` file (every schema, password verifiers) with no deletion rule (ADR-0073, `scripts/pg-major-move.sh`) |
-    | P-15 | Medium (L3 × I1) | no | Exception events on server spans keep the message: game's `NotFoundException`s carry match / player ids (`MatchLookup`, `GetPlayerSeasonStats`, `IngestEventBatch`); a driver echo of refused input is untested (ADR-0074 §4) |
+    | P-15 | Low (L1 × I1) | no | Exception events on server spans keep the message: game's `NotFoundException`s carry match / player ids (`MatchLookup`, `GetPlayerSeasonStats`, `IngestEventBatch`); a driver echo of refused input is untested (ADR-0074 §4) |
 
     New residuals folded into existing findings, not numbered: the finance audit trail is readable through no API
     (joins P-01); dues, payments, expenses, finance audit rows and parked events are never deleted (P-02); guardians
@@ -89,15 +89,22 @@ reserved for you.
 - Verified: `just docs-build` (strict) green after each change ("No issues found"; the new anchor
   `#status-after-the-tenth-round-2026-11-28-wp150` present in the built page). `agentic-threat-model.md` is named in
   code formatting only (it arrives with WP149); `threat-model.md` is linked as a file, no anchor of WP148's new
-  sections. `just test` not run: docs and instruction files only, no code or configuration changed. Spot checks of
-  evidence: every test cited in §9 and §10 found by exact name (`grep -rn "^func Test"`, `fn ...` in the Rust tests),
-  the assertions read (finance role matrix: other family 403 whether the player exists or not, stranger 404;
-  `TestAuthenticationAndTheTenantHeader`: unknown and suspended academy 404).
+  sections. `just test` not run: docs and instruction files only, no code or configuration changed. Evidence: every
+  test cited in §9 and §10 found by exact name (`grep -rn "^func Test"`, `fn ...` in the Rust tests, Java method
+  names); assertions read only for the tests opened: finance `TestRoleMatrixOfDuesPaymentsAndTheReads` (other family
+  403 whether the player exists or not, stranger 404), `TestCrossTenantDuesAndPaymentsAreRefused` (404),
+  `TestAuthenticationAndTheTenantHeader` (unknown and suspended academy 404), `TestReasonsAndNotesNeverReachLogsOrAudit`,
+  `TestTheDuesExportFollowsTheCsvSpec`, `TestTheExpensesExportFollowsTheCsvSpec`, the expense lifecycle test's audit
+  and log check. `TestAPersonEventKeepsLoginRolesAndActiveOnly` was dropped as evidence: its name predates V11 (the
+  person replica keeps a display name), so the row cites `decode.go` instead.
 - Decisions/ADRs: ADR-0077 (decisions 119–122). The P-14 and P-15 ratings are this package's judgement on that scale.
 - Open points / follow-ups:
-  - Wave 2 candidates: P-14 (a dated deletion or encryption rule for the dump and the old volume; the owner's PG17
-    volume and dump are kept on purpose until the owner says otherwise) and P-15 (messages without ids, or no message
-    on 4xx exception events; a test for the driver-echo case).
+  - Wave 2 candidate: P-14 (a dated deletion or encryption rule for the dump and the old volume; the owner's PG17
+    volume and dump are kept on purpose until the owner says otherwise). P-15 is Low, an open item (messages without
+    ids, or no message on 4xx exception events; a test for the driver-echo case).
+  - Likelihood is read as "how likely someone who should not see the data reaches it, given who can reach that store
+    or path today" (stated in the Findings preamble); WP148 and WP149 may read it differently, the docs pass should
+    align the three documents.
   - P-01..P-13 are not re-rated on the ADR-0077 scale (out of scope); a later revision may do it.
   - To verify: what finance's "request failed" log line (`rest/problem.go`, the error text of an unexpected error)
     can contain; the rows of §1–§8 that WP150 did not touch were not re-checked against the code beyond the tenth
