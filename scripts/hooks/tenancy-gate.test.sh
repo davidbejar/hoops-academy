@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Tests of the command matcher in .claude/hooks/tenancy-gate.sh (run: just test-hooks). The hook is asked only to
-# classify (TENANCY_GATE_CLASSIFY_ONLY=1); it prints which gates the command needs: commit, push, "commit push" or none.
-# When the parser is unsure the gate must run: false positives cost time, false negatives skip the isolation check.
+# Tests of .claude/hooks/tenancy-gate.sh (run: just test-hooks). The matcher: TENANCY_GATE_CLASSIFY_ONLY=1 prints which
+# gates the command needs (commit, push, "commit push" or none); =plan prints each gate with its checkout and each ask
+# rule (WP154, ADR-0078). When the parser is unsure the gate must run: false positives cost time, false negatives skip
+# the isolation check. Then end to end with stub gates in throwaway repositories, the gate log, and the hook without jq.
 # shellcheck disable=SC2016 # the test commands are literal text, not expansions
 set -uo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 1
@@ -105,10 +106,10 @@ plan() { # plan <command text> [cwd]: the plan, lines joined by ";"
   jq -nc --arg d "${2:-/s}" --arg c "$1" '{cwd: $d, tool_input: {command: $c}}' |
     env -u CLAUDE_PROJECT_DIR HOME=/home/u TENANCY_GATE_CLASSIFY_ONLY=plan "$hook" 2>&1 | paste -sd ';' -
 }
-expect_plan() { # expect_plan <expected plan> <command text> [cwd]
+expect_plan() { # expect_plan <expected plan> <command text> [cwd] [only the lines that start with this]
   local got
   total=$((total + 1))
-  got=$(plan "$2" "${3:-/s}")
+  got=$(plan "$2" "${3:-/s}" | tr ';' '\n' | grep -E "^${4:-}" | paste -sd ';' -)
   [ "$got" = "$1" ] && return 0
   fail=$((fail + 1))
   printf 'FAIL plan expected [%s] got [%s] for: %s\n' "$1" "$got" "$2"
@@ -133,6 +134,7 @@ expect_plan 'commit ?' 'git --work-tree=/w commit -m x'
 expect_plan 'commit ?' 'git --git-dir /w/.git commit -m x'
 expect_plan 'commit ?' '"$GIT" commit -m x'
 expect_plan 'commit ?' 'echo "$(git commit -m x)"'
+expect_plan 'commit /w' $'cd /w && git commit -m "$(cat <<\'EOF\'\nfeat: it\'s done\n\nCo-Authored-By: x\nEOF\n)"'
 expect_plan '' 'cd /w && git status'
 
 # --- AG-07 (decision 127): destructive commands ask the owner. One case per rule of ASK_RULES in the hook, then near
@@ -144,7 +146,7 @@ m=$repos/on-main f=$repos/on-feature
 asked=""
 expect_ask() { # expect_ask <rule> <command text> [cwd]
   asked+=" $1 "
-  expect_plan "ask $1" "$2" "${3:-$f}"
+  expect_plan "ask $1" "$2" "${3:-$f}" ask # a push also gets its push gate: only the ask lines count here
 }
 expect_ask podman-volume-rm 'podman volume rm hoops_pgdata'
 expect_ask podman-volume-rm 'podman volume prune -f'
@@ -176,6 +178,7 @@ expect_ask git-push-main 'git push origin :main'
 expect_ask git-push-main 'git push --all origin'
 expect_ask git-push-main 'git push' "$m"
 expect_ask git-push-main 'git push origin HEAD' "$m"
+expect_ask git-push-main 'git push origin "$(git branch --show-current)"' "$m"
 expect_ask git-reset-hard-main 'git reset --hard origin/main' "$m"
 expect_ask git-reset-hard-main "cd $m && git reset --hard HEAD~1"
 expect_ask git-main-ref 'git branch -D main'
@@ -217,11 +220,10 @@ for cmd in 'podman volume ls' 'podman volume inspect hoops_pgdata' 'podman machi
   'gh run watch 5 --exit-status' 'gh api repos/o/r/branches/main' 'gh api -X GET repos/o/r/pulls -f state=open' \
   'gh pr checks 12 --watch' 'gh secret list' 'grep -n "podman volume rm" docs/x.md' 'echo "git push --force"' \
   "git log --grep 'kind delete cluster'" 'scripts/pg-major-move.sh --clean-up --out /x' 'git push origin main:refs/heads/x'; do
-  expect_plan '' "$cmd" "$f"
+  expect_plan '' "$cmd" "$f" ask
 done
 expect_plan "commit $f" 'git commit -m "podman volume rm hoops_pgdata"' "$f" # a commit message mentioning it
 expect_plan '' 'git reset --hard HEAD~1' "$f"
-rm -rf "$repos"
 
 # --- end to end in real repositories: a main checkout and a worktree of it, stub gate scripts in each
 e2e() { # e2e <session exit> <worktree exit> <command, WT = the worktree> [jq input filter]; prints "<rc>|<stderr+stdout>"
@@ -261,15 +263,18 @@ total=$((total + 1))
 case "$E2E_LOG" in *s3cr3t*) fail=$((fail + 1)); echo "FAIL the gate log holds the command text" ;; esac
 e2e 0 1 'cd WT && git commit -m x' >/dev/null
 check "a blocked gate is logged" "$E2E_LOG" $'*commit\tblocked*'
-out=$(e2e 0 0 'podman volume rm hoops_pgdata')
+e2e 0 0 'podman volume rm hoops_pgdata' >"$repos.out" # not in $( ): E2E_LOG must reach this shell
+out=$(cat "$repos.out") && rm -f "$repos.out"
 check "a destructive command answers ask" "$out" '0|{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"*podman-volume-rm*"}}'
 check "an ask is logged" "$E2E_LOG" $'*ask podman-volume-rm\tasked*'
 check "an ordinary command prints nothing and logs nothing" "$(e2e 1 1 'ls -la'; echo "[$E2E_LOG]")" "0|"$'\n'"[]"
+rm -rf "$repos"
 
 # --- AG-14: without jq the hook cannot read the command, so it blocks; unreadable input blocks too
 nojq=$(mktemp -d)
 for tool in cat git date grep env sed paste; do ln -s "$(command -v "$tool")" "$nojq/$tool"; done
-out=$(echo '{"tool_input":{"command":"git commit -m x"}}' | PATH=$nojq "$(command -v bash)" "$hook" 2>&1)
+out=$(cd "$nojq" && echo '{"tool_input":{"command":"git commit -m x"}}' |
+  PATH=$nojq "$(command -v bash)" "$OLDPWD/$hook" 2>&1) # outside any repository: nothing logged here
 check "no jq blocks" "$?|$out" "2|Blocked: jq is missing*"
 rm -rf "$nojq"
 out=$(echo 'not json' | "$hook" 2>&1)
