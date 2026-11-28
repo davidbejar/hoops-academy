@@ -542,6 +542,39 @@ d6539fc6); then the docs pass WP147. What the orchestrator ran at merge time is 
 118. **Models**: Opus · high for the upgrade; Opus · medium for the spans, the index, the kind and CI package and the
      docs pass; Sonnet · high for the pins.
 
+## Plan (2026-11-28, eleventh round)
+Decided in the interview of 2026-11-28 (decisions 119–124 below), after the owner asked whether the MAESTRO
+framework could improve the project's threat modelling. Same mechanics (`wp-round` skill). Wave 1 is three documents
+written side by side: the STRIDE model brought up to date with ratings and attack chains, a new MAESTRO model of the
+agent-driven build system, and the method ADR with the privacy model refresh and the keep-current rule. The
+orchestrator then reads the findings (`TM-`, `AG-`, new `P-`), shows them to the owner and briefs wave 2: the High
+and Medium findings get a fix, the rest become open items. The docs pass closes.
+
+| Wave | WP | Title | Model | Status |
+|---|---|---|---|---|
+| 1 | WP148 | Security docs: the STRIDE threat model covers the system as built, with ratings and attack chains | Opus · high | Running |
+| 1 | WP149 | Security docs: a threat model of the agent-driven build system (MAESTRO) | Opus · high | Running |
+| 1 | WP150 | Security docs: the method ADR, the privacy model refresh, the keep-current rule | Opus · medium | Running |
+| 2 | WP151… | Hardening: the High and Medium findings of wave 1 (briefs written from the findings; ADR-0078 reserved) | Opus | After wave 1 |
+| 3 | last | Docs pass | Opus · medium | Last alone |
+
+### Decisions of 2026-11-28, tenth interview (product owner)
+119. **STRIDE model** → WP148: brought up to date in this round: the four boundaries the privacy model already has
+     (Redpanda, telemetry, pdf-service, finance-service), a build and supply-chain boundary, a rating for every
+     residual risk.
+120. **Other frameworks** → WP148, WP150 (ADR-0077): a combination, not one method. From PASTA the likelihood and
+     impact rating and attack chains for the top assets; LINDDUN stays the privacy method and its two "planned"
+     sections are rewritten as built; from VAST the rule that a change of a trust boundary updates the model
+     (Definition of Done, round close-out). Trike and OCTAVE are not used: the authz matrix already is Trike's
+     matrix, and OCTAVE is for organisations.
+121. **MAESTRO** → WP149: applied to the agent-driven build system only, as a separate document; the product has no
+     AI. A short closing section says what an AI feature in the product would have to meet.
+122. **Hardening** → wave 2: High and Medium findings are fixed in this round; the rest become open items.
+123. **The prompt-audit edits** of 2026-11-25 (14 skill files and `CLAUDE.md`): committed and pushed before the round
+     (7288707a).
+124. **Models**: Opus · high for the two threat models; Opus · medium for the method ADR and privacy refresh and the
+     docs pass; wave 2 by finding.
+
 ## Open
 
 ### Pending user actions
