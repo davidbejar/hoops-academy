@@ -1,5 +1,6 @@
 """Black-box tests of scripts/pg-major-move.sh (WP144, ADR-0073): the move of the compose database to the PostgreSQL major
-of compose.yaml. Podman and just are stubs on PATH that log every call; nothing here touches a real container.
+of compose.yaml, and its clean-up of the copies a move leaves (WP154, P-14). Podman and just are stubs on PATH that log
+every call; nothing here touches a real container, volume or dump.
 Run: python3 -I -m unittest discover -s scripts/tests"""
 import os
 import pathlib
@@ -7,6 +8,7 @@ import stat
 import subprocess
 import tempfile
 import textwrap
+import time
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -20,6 +22,9 @@ PODMAN = textwrap.dedent(f"""\
       "inspect --format {{{{.State.Running}}}} "*) echo "${{STUB_RUNNING:-true}}" ;;
       "inspect --format "*Mounts*) echo "${{STUB_MOUNTS:-hoops_pgdata:/var/lib/postgresql/data}}" ;;
       "volume exists "*) case " $STUB_VOLUMES " in *" ${{3}} "*) exit 0 ;; *) exit 1 ;; esac ;;
+      "volume inspect --format {{{{.CreatedAt.Unix}}}} "*) echo "${{STUB_CREATED:-0}}" ;;
+      "volume rm "*) ;;
+      "ps -a --filter volume="*) echo "${{STUB_USERS:-}}" ;;
       *"show server_version_num"*) if [ -f "$STUB_STATE/up" ]; then echo 190000; else echo "${{STUB_OLD:-170007}}"; fi ;;
       *"show standard_conforming_strings"*) echo "${{STUB_SCS:-on}}" ;;
       *pg_dumpall*)
@@ -36,7 +41,9 @@ JUST = textwrap.dedent("""\
     """)
 
 
-class PgMajorMove(unittest.TestCase):
+class Harness(unittest.TestCase):
+    """Stub podman and just on PATH, a call log, a dump directory that does not exist yet."""
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         base = pathlib.Path(self.tmp.name)
@@ -60,6 +67,9 @@ class PgMajorMove(unittest.TestCase):
 
     def dumps(self):
         return sorted(self.out.glob("*.sql")) if self.out.exists() else []
+
+
+class PgMajorMove(Harness):
 
     # --- arguments
     def test_without_arguments_it_prints_the_usage_and_calls_nothing(self):
@@ -112,12 +122,15 @@ class PgMajorMove(unittest.TestCase):
         self.assertNotIn("planted-verifier", out)
         self.assertNotIn("PASSWORD '", out)
 
-    def test_the_old_volume_is_never_removed(self):
-        _, _, calls = self.run_move("--out", str(self.out), "--apply")
+    def test_the_old_volume_is_never_removed_by_the_move(self):
+        _, out, calls = self.run_move("--out", str(self.out), "--apply")
         for call in calls:
             self.assertNotRegex(call, r"volume (rm|prune)|\brm\b.*-v|down -v|--volumes", call)
         text = SCRIPT.read_text()
-        self.assertNotRegex(text, r"volume (rm|prune|remove)|down -v|--volumes|system prune")
+        self.assertNotRegex(text, r"down -v|--volumes|system prune|volume prune")
+        start, end = text.index("# --- clean-up (P-14)"), text.index("# --- end of clean-up")
+        self.assertNotRegex(text[:start] + text[end:], r"volume (rm|remove)", "only the clean-up step removes a volume")
+        self.assertIn("--clean-up", out)  # the closing message names the clean-up step
 
     def test_dump_only_stops_after_the_dump(self):
         code, out, calls = self.run_move("--out", str(self.out), "--apply", "--dump-only")
@@ -162,6 +175,99 @@ class PgMajorMove(unittest.TestCase):
 
     def test_refused_when_standard_conforming_strings_is_off(self):
         self.assertIn("standard_conforming_strings", self.refused(STUB_SCS="off"))
+
+
+class CleanUp(Harness):
+    """--clean-up (P-14): lists the old volume and the dumps with their age; removes them only with --remove and the
+    words typed at a terminal, after the move is done, never a volume compose names or a container uses."""
+    DAY = 86400
+
+    def setUp(self):
+        super().setUp()
+        self.out.mkdir(mode=0o700)
+        old = time.time() - 20 * self.DAY
+        self.copies = [self.out / "pg_dumpall-hoops-postgres-pg17-20261101T100000Z.sql",
+                       self.out / "pg_dumpall-hoops-postgres-pg17-20261101T100000Z.sql.sha256"]
+        for copy in self.copies:
+            copy.write_text("x")
+            os.utime(copy, (old, old))
+        self.other = self.out / "notes.txt"
+        self.other.write_text("kept")
+        self.after_move = {"STUB_OLD": "190000", "STUB_MOUNTS": "hoops_pgdata-19:/var/lib/postgresql",
+                           "STUB_CREATED": str(int(old)), "STUB_VOLUMES": "hoops_pgdata hoops_pgdata-19"}
+
+    def clean(self, *args, typed=None, **env):
+        """Runs --clean-up; with typed= the words arrive on a terminal (a pty), as only a person at one can give them."""
+        if typed is None:
+            return self.run_move("--clean-up", "--out", str(self.out), *args, **{**self.after_move, **env})
+        import pty
+        master, slave = pty.openpty()
+        environment = {"PATH": f"{self.bin}:/usr/bin:/bin", "STUB_LOG": str(self.log), "STUB_STATE": str(self.state),
+                       "HOME": os.environ.get("HOME", "/tmp"), **self.after_move, **env}
+        os.write(master, (typed + "\n").encode())
+        done = subprocess.run(["bash", str(SCRIPT), "--clean-up", "--out", str(self.out), *args], stdin=slave,
+                              capture_output=True, text=True, env=environment, cwd=ROOT, timeout=30)
+        os.close(slave)
+        os.close(master)
+        return done.returncode, done.stdout + done.stderr, self.log.read_text().splitlines()
+
+    def removed_volumes(self, calls):
+        return [c for c in calls if c.startswith("podman volume rm")]
+
+    def test_the_default_lists_the_copies_with_their_age_and_removes_nothing(self):
+        code, out, calls = self.clean()
+        self.assertEqual(code, 0, out)
+        self.assertIn("hoops_pgdata", out)
+        self.assertIn("20 days", out)
+        for copy in self.copies:
+            self.assertIn(copy.name, out)
+            self.assertTrue(copy.exists())
+        self.assertNotIn("notes.txt", out)
+        self.assertEqual(self.removed_volumes(calls), [])
+        self.assertIn("--remove", out)  # says how
+
+    def test_remove_without_a_terminal_refuses(self):
+        code, out, calls = self.clean("--remove")
+        self.assertEqual(code, 1, out)
+        self.assertIn("terminal", out)
+        self.assertEqual(self.removed_volumes(calls), [])
+        self.assertTrue(all(copy.exists() for copy in self.copies))
+
+    def test_remove_with_other_words_typed_removes_nothing(self):
+        code, out, calls = self.clean("--remove", typed="yes")
+        self.assertEqual(code, 1, out)
+        self.assertEqual(self.removed_volumes(calls), [])
+        self.assertTrue(all(copy.exists() for copy in self.copies))
+
+    def test_remove_with_the_words_typed_removes_the_old_volume_and_the_dumps_only(self):
+        code, out, calls = self.clean("--remove", typed="remove hoops_pgdata")
+        self.assertEqual(code, 0, out)
+        self.assertEqual(self.removed_volumes(calls), ["podman volume rm hoops_pgdata"])
+        self.assertFalse(any(copy.exists() for copy in self.copies))
+        self.assertTrue(self.other.exists())
+
+    def test_refused_for_the_volume_compose_names(self):
+        code, out, calls = self.clean("--old-volume", "hoops_pgdata-19")
+        self.assertEqual(code, 1, out)
+        self.assertEqual(self.removed_volumes(calls), [])
+
+    def test_remove_refused_while_a_container_uses_the_old_volume(self):
+        code, out, calls = self.clean("--remove", typed="remove hoops_pgdata", STUB_USERS="hoops-old-postgres")
+        self.assertEqual(code, 1, out)
+        self.assertIn("hoops-old-postgres", out)
+        self.assertEqual(self.removed_volumes(calls), [])
+
+    def test_remove_refused_before_the_move_is_done(self):
+        code, out, calls = self.clean("--remove", typed="remove hoops_pgdata", STUB_OLD="170007",
+                                      STUB_MOUNTS="hoops_pgdata:/var/lib/postgresql/data")
+        self.assertEqual(code, 1, out)
+        self.assertEqual(self.removed_volumes(calls), [])
+        self.assertTrue(all(copy.exists() for copy in self.copies))
+
+    def test_remove_belongs_to_the_clean_up(self):
+        code, out, calls = self.run_move("--out", str(self.out), "--remove")
+        self.assertEqual(code, 2, out)
+        self.assertEqual(calls, [])
 
 
 if __name__ == "__main__":
