@@ -21,6 +21,7 @@
 #   git-force-push  git push --force | -f | --force-with-lease | --mirror | --prune | +<refspec>
 #   git-push-main  git push to or deleting main (a refspec onto main, --all, a plain push or HEAD while on main)
 #   git-reset-hard-main  git reset --hard while on main (or in a checkout that cannot be told)
+#   git-no-verify  git commit | push --no-verify | -n, git -c core.hooksPath=… (skips the pre-commit hooks and gitleaks)
 #   git-main-ref  git branch -d | -D | -f | -m | -M … main, git checkout -B main, git switch -C main, git update-ref … main
 #   gh-repo-settings  gh repo edit | rename | archive | unarchive | deploy-key, gh secret | variable set, gh workflow enable | disable
 #   gh-delete  gh <anything> delete | delete-asset | remove | rm
@@ -186,12 +187,23 @@ ask_push() { # ask_push <words after push>
 
 ask_git() { # ask_git <literal words>
   local -a a=("$@") r=()
-  local w sub moves=0
+  local w sub moves=0 lower
   git_where "$@"
   [ "$g_i" -ge 0 ] || return 0
   sub=${a[g_i]}
   r=("${a[@]:g_i+1}")
   [ "${#r[@]}" -gt 0 ] || r=("")
+  lower=$(tr '[:upper:]' '[:lower:]' <<<"${a[*]:0:g_i}")
+  case " $lower" in *" core.hookspath"*) add_ask git-no-verify ;; esac
+  if [ "$sub" = commit ] || [ "$sub" = push ]; then
+    for w in "${r[@]}"; do
+      case "$w" in
+        --no-v | --no-ve*) add_ask git-no-verify ;;
+        --*) ;;
+        -*n*) [ "$sub" = commit ] && add_ask git-no-verify ;; # push -n is --dry-run
+      esac
+    done
+  fi
   case "$sub" in
     push) ask_push "${r[@]}" ;;
     reset) if has_word --hard "${r[@]}" && on_main; then add_ask git-reset-hard-main; fi ;;
