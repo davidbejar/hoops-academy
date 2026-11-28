@@ -65,6 +65,7 @@ check "cargo-deny"        "cargo-deny --version"
 check "go (pinned)"       "cd services/finance-service && go version | grep -F \"\$(sed -n 's/^toolchain //p' go.mod) \""
 check "golangci-lint v2"  "golangci-lint --version | grep -E 'version v?2\\.'"
 check "gitleaks"          "gitleaks version"
+check "jq"                "jq --version"   # the Claude hook reads the command with it and blocks without it (AG-14)
 check "pre-commit"        "pre-commit --version"
 check "openapi-generator" "openapi-generator --version 2>&1 | head -1"
 check "trivy"             "trivy --version | head -1" optional
