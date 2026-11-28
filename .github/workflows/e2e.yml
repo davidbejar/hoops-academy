@@ -74,7 +74,7 @@ jobs:
           CHROME: /usr/bin/google-chrome
           HOOPS_E2E_ARTIFACT_DIR: ${{ github.workspace }}/browser-login-artifacts
         run: |
-          flutter pub get
+          flutter pub get --enforce-lockfile
           start=$(date +%s)
           tool/ci_login_check.sh
           echo "browser login check took $(( $(date +%s) - start )) s" | tee -a "$GITHUB_STEP_SUMMARY"

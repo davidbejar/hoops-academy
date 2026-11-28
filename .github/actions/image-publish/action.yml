@@ -39,7 +39,7 @@ runs:
         IMAGE: ${{ inputs.image }}
       run: |
         podman save -o image.tar "$IMAGE"
-        docker run --rm -v "$PWD:/w" aquasec/trivy:0.76.2 image --input /w/image.tar \
+        docker run --rm -v "$PWD:/w" aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb image --input /w/image.tar \
           --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress
     - name: SBOM of the Maven build (the image build's cached stage)
       if: ${{ inputs.maven-sbom == 'true' }}

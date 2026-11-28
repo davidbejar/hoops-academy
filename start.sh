@@ -60,7 +60,7 @@ e2e/bin/services-up.sh ${services_flag:+"$services_flag"}
 
 API=--dart-define=HOOPS_API_BASE=http://localhost:8080
 cd apps/web
-flutter pub get
+flutter pub get --enforce-lockfile
 case "$mode" in
   chrome)
     echo "==> web app (debug) in Chrome on http://localhost:$WEB_PORT"

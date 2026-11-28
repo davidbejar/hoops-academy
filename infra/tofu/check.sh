@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 TOFU_DIR=infra/tofu
-TRIVY_IMAGE=aquasec/trivy:0.76.2   # same pin as the trivy-fs job in .github/workflows/ci.yml
+TRIVY_IMAGE=aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb   # same pin as the trivy-fs job in .github/workflows/ci.yml
 fail=0
 ok()  { printf '  ok   %s\n' "$*"; }
 bad() { printf '  FAIL %s\n' "$*"; fail=1; }

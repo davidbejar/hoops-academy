@@ -70,7 +70,7 @@ build_web() {
   if [ "$WEB_IN_CONTAINER" = 1 ]; then
     src=flutter ignore=deploy/containers/web-flutter.containerignore
   elif [ "$SKIP_WEB_BUILD" = 0 ]; then
-    (cd apps/web && flutter pub get >/dev/null && flutter build web --release --pwa-strategy=offline-first)
+    (cd apps/web && flutter pub get --enforce-lockfile >/dev/null && flutter build web --release --pwa-strategy=offline-first)
   fi
   [ "$src" = flutter ] || [ -f apps/web/build/web/index.html ] || { echo "build-images: apps/web/build/web missing" >&2; exit 1; }
   echo "==> $ref (WEB_SOURCE=$src)"

@@ -35,7 +35,7 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
         - name: keycloak
-          image: {{ printf "%s:%s" .Values.image.repository (toString .Values.image.tag) | quote }}
+          image: {{ printf "%s:%s%s" .Values.image.repository (toString .Values.image.tag) (ternary (printf "@%s" .Values.image.digest) "" (ne (.Values.image.digest | default "") "")) | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           # Production mode. Realm import is skipped when the realm already exists (IGNORE_EXISTING).
           args: ["start", "--import-realm"]

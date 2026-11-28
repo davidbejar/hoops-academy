@@ -1,0 +1,8 @@
+# SHA-256 of each Semgrep registry ruleset the semgrep workflow runs (TM-05). The registry serves a ruleset by name only
+# (https://semgrep.dev/c/<name>), so the pin is the hash of the bytes: scripts/semgrep-rules.sh fetches each one and
+# refuses to go on when it differs. The weekly scripts/bump-pins.sh moves the hashes (review the PR: new rules can add
+# findings); by hand: scripts/bump-pins.sh --apply. Format: one "<ruleset> <sha256>" line each, in this order.
+p/java 7d0e2b65102ae62df716d06ed5cc66d095773416b880aec6771d1b6af70dab0e
+p/rust 3d3edde1eca1467780e2eb41c780a22382a27ad35226dea9bdf602ae57f15366
+p/golang aa0bbc54377862f14cd291b7e4f32e3b48239507607f48f1879b540bf81e82c3
+p/owasp-top-ten 983513761ad687c438843c13974af3694036898db19170dd50e838e42b017649

@@ -1314,7 +1314,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: keycloak
-          image: "quay.io/keycloak/keycloak:26.8.2"
+          image: "quay.io/keycloak/keycloak:26.8.2@sha256:7e66a96e4739239070aeaf72e4c5decf0f7f682cfc725b9f7ea2b336eaba38b3"
           imagePullPolicy: IfNotPresent
           # Production mode. Realm import is skipped when the realm already exists (IGNORE_EXISTING).
           args: ["start", "--import-realm"]
@@ -1809,7 +1809,7 @@ metadata:
     helm.sh/chart: databases-0.1.0
 spec:
   instances: 1
-  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-minimal-trixie
+  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-minimal-trixie@sha256:12688a494f25aa0b7e1e3cd1800abe85b427fd1a09c991668a48162e3431a2af
   enableSuperuserAccess: false
   storage:
     size: 5Gi
@@ -1952,7 +1952,7 @@ metadata:
     helm.sh/chart: databases-0.1.0
 spec:
   instances: 1
-  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-minimal-trixie
+  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-minimal-trixie@sha256:12688a494f25aa0b7e1e3cd1800abe85b427fd1a09c991668a48162e3431a2af
   enableSuperuserAccess: false
   storage:
     size: 1Gi

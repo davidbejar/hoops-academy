@@ -1,11 +1,29 @@
 name: setup-flutter
 description: >-
-  Flutter (stable channel) with the pub cache. Run actions/checkout first. `flutter pub get` stays with the caller:
-  its working directory differs per job.
+  Flutter (stable channel release) installed from its release archive and checked against its SHA-256 (no third-party
+  action, as setup-go does for Go; TM-04), with the pub cache. The version is the one pubspec.lock was resolved with;
+  scripts/bump_pins.py moves version and checksum together (releases_linux.json of the stable channel). Run
+  actions/checkout first. `flutter pub get --enforce-lockfile` stays with the caller: its working directory differs per
+  job.
 runs:
   using: composite
   steps:
-    - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+    - name: Flutter, checked against its SHA-256
+      shell: bash
+      env:
+        FLUTTER_VERSION: 3.50.0
+        FLUTTER_SHA256: 6ea2d806fd57269ae783e6788e2a81fc26eaad782f1e0d0ff38623bb765ff9f5
+      run: |
+        set -euo pipefail
+        cd "$RUNNER_TEMP"
+        archive="flutter_linux_${FLUTTER_VERSION}-stable.tar.xz"
+        curl -sSfLO "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/$archive"
+        echo "$FLUTTER_SHA256  $archive" | sha256sum -c -
+        tar -xJf "$archive"
+        rm "$archive"
+        echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
-        channel: stable
-        cache: true
+        path: ~/.pub-cache
+        key: pub-${{ runner.os }}-${{ hashFiles('apps/web/pubspec.lock') }}
+        restore-keys: pub-${{ runner.os }}-

@@ -20,7 +20,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # Pinned tools (bump tag and digest together; scripts/bump-pins.sh lists them)
-TRIVY_IMAGE="docker.io/aquasec/trivy:0.76.2"
+TRIVY_IMAGE="docker.io/aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb"
 CYCLONEDX_CLI_IMAGE="docker.io/cyclonedx/cyclonedx-cli:0.33.1@sha256:252c2e26f468c25fea1e63ecde1bc3198ad6e9dbb57f5ed3236bddcb2281b3a7"
 ORAS_IMAGE="ghcr.io/oras-project/oras:v1.4.0@sha256:5fabb4e523de1781443c227fca62782a51aeacd044413c07f54dc64935d7f013"
 SBOM_MEDIA_TYPE="application/vnd.cyclonedx+json"

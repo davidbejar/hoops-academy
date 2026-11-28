@@ -12,7 +12,9 @@
 #   host            - stage `app-host` copies services/$SERVICE/target/quarkus-app built on the host by
 #                     `./mvnw package` (fast inner loop for Tilt; use service-prebuilt.containerignore).
 ARG APP_SOURCE=maven
-ARG MAVEN_IMAGE=docker.io/library/maven:3-eclipse-temurin-25
+# Maven builder of the shipped jars: version and digest of the multi-arch index (scripts/bump_pins.py picks the newest tag
+# published for amd64 and arm64; 3.10.2 was amd64 only on 2026-11-29). The checksum policy of .mvn/maven.config applies.
+ARG MAVEN_IMAGE=docker.io/library/maven:3.10.0-eclipse-temurin-25@sha256:84bd96155bf37d1be2858433aee89320f487c2d21faf06406640e7dc2b82d686
 # Distroless Java 25 (ADR-0054): Debian 13, Temurin JRE, user nonroot (65532), no shell, no package manager. Distroless
 # publishes floating tags only, so the pin is the digest (trivy DS-0001) of the multi-arch index of
 # `java25-debian13:nonroot`. The weekly scripts/bump-pins.sh moves the digest; a new JDK or Debian major changes the name

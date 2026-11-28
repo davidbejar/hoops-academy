@@ -1,7 +1,7 @@
 # PostgreSQL 19 (ADR-0073), the version of compose and the test harnesses (scripts/bump_pins.py). CloudNativePG's
 # MM.mm-TYPE-OS tag: `minimal` (no extension is used; JIT is off by default from 19), Debian trixie like the official
 # image. A cluster with data changes major by import, not by editing this line (docs/runbooks/postgresql-major.md).
-imageName: ghcr.io/cloudnative-pg/postgresql:19.0-minimal-trixie
+imageName: ghcr.io/cloudnative-pg/postgresql:19.0-minimal-trixie@sha256:12688a494f25aa0b7e1e3cd1800abe85b427fd1a09c991668a48162e3431a2af
 hoopsDb:
   name: hoops-db
   instances: 1

@@ -25,7 +25,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: mailpit
-          image: {{ printf "%s:%s" .Values.mailpit.image.repository .Values.mailpit.image.tag | quote }}
+          image: {{ printf "%s:%s%s" .Values.mailpit.image.repository .Values.mailpit.image.tag (ternary (printf "@%s" .Values.mailpit.image.digest) "" (ne (.Values.mailpit.image.digest | default "") "")) | quote }}
           imagePullPolicy: IfNotPresent
           env:
             - {name: MP_MAX_MESSAGES, value: "500"}

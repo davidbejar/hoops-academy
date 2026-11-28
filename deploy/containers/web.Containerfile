@@ -7,14 +7,16 @@
 #                              builds on the host too). Several GB image and, on Apple silicon, slow under emulation if
 #                              no arm64 variant is pulled.
 ARG WEB_SOURCE=host
-ARG FLUTTER_IMAGE=ghcr.io/cirruslabs/flutter:stable
+# cirruslabs stopped at 3.44.0 (its `stable` tag is that digest) and the app needs a newer Flutter (pubspec.lock: >=3.47):
+# this stage builds no pipeline and, with this image, not the current app either (ADR-0068 DEP-06). Pinned all the same.
+ARG FLUTTER_IMAGE=ghcr.io/cirruslabs/flutter:3.44.0@sha256:46691e311715845de03a3ba4753a475476936805b29431b1f00f1816981033f8
 # The stable nginx line (even minor); scripts/bump_pins.py moves it to the next even minor.
-ARG NGINX_IMAGE=docker.io/nginxinc/nginx-unprivileged:1.30-alpine
+ARG NGINX_IMAGE=docker.io/nginxinc/nginx-unprivileged:1.30-alpine@sha256:f5116ed4606f3eb015dd4a8e28cb9b351476dc0ad4bc6e9f93b19cec130cdf03
 
 FROM ${FLUTTER_IMAGE} AS web-flutter
 WORKDIR /src/apps/web
 COPY apps/web/ ./
-RUN flutter pub get && flutter build web --release --pwa-strategy=offline-first \
+RUN flutter pub get --enforce-lockfile && flutter build web --release --pwa-strategy=offline-first \
  && mkdir -p /out && cp -R build/web /out/web
 
 FROM ${NGINX_IMAGE} AS web-host
