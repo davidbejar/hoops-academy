@@ -133,7 +133,19 @@ expect_plan 'commit ?' 'cd - && git commit -m x'
 expect_plan 'commit ?' 'git --work-tree=/w commit -m x'
 expect_plan 'commit ?' 'git --git-dir /w/.git commit -m x'
 expect_plan 'commit ?' '"$GIT" commit -m x'
-expect_plan 'commit ?' 'echo "$(git commit -m x)"'
+expect_plan 'commit /s' 'echo "$(git commit -m x)"' # inside quotes: loose, in the directory known so far
+# a message or body in a quoted substitution that mentions git: an extra gate at most, never a block
+expect_plan 'commit /w;push /w' $'cd /w && git commit -m "$(cat <<\'EOF\'\ndocs: say when git push asks\nEOF\n)"'
+expect_plan 'commit /w;push /w' $'cd /w && gh pr create --body "$(cat <<\'EOF\'\ngit commit, then git push\nEOF\n)"'
+# an unquoted substitution inside a command: its text is read, the outer command keeps its words
+expect_plan 'commit ?' 'git -C $(pwd) commit -m x'
+expect_plan 'commit ?' 'cd $(git rev-parse --show-toplevel) && git commit -m x'
+expect_plan 'commit ?' 'git -C `pwd` commit -m x'
+expect_plan 'commit /s' 'echo $(git commit -m x)'
+expect_plan 'commit /w' 'echo $(cd /w && git commit -m x)'
+expect_plan 'commit /s' 'x=$(cd /w; pwd) && git commit -m x'
+expect_plan 'push ?;ask git-force-push' 'git -C $(pwd) push --force origin wp-x'
+expect_plan 'ask podman-volume-rm' 'podman volume rm $(podman volume ls -q)'
 expect_plan 'commit /w' $'cd /w && git commit -m "$(cat <<\'EOF\'\nfeat: it\'s done\n\nCo-Authored-By: x\nEOF\n)"'
 expect_plan '' 'cd /w && git status'
 
