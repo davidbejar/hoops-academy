@@ -192,6 +192,9 @@ expect_ask git-no-verify 'git commit -nm x'
 expect_ask git-no-verify 'git -C /w commit -a -n -m x'
 expect_ask git-no-verify 'git push --no-verify origin wp-x'
 expect_ask git-no-verify 'git -c core.hooksPath=/dev/null commit -m x'
+expect_ask git-no-verify 'git config core.hooksPath /dev/null'
+expect_ask podman-volume-rm 'docker volume rm hoops_pgdata' # the podman-docker shim
+expect_ask compose-down-volumes 'docker compose down -v'
 expect_ask gh-repo-settings 'gh repo edit --visibility private'
 expect_ask gh-repo-settings 'gh repo rename other'
 expect_ask gh-repo-settings 'gh secret set X --body y'
@@ -223,7 +226,7 @@ for cmd in 'podman volume ls' 'podman volume inspect hoops_pgdata' 'podman machi
   'git branch -D wp-x' 'git branch feature main' 'git checkout -b feature main' 'git worktree remove --force ../wt' \
   'git stash push' 'gh pr create --base main --head wp-x' 'gh pr merge 12 --rebase --match-head-commit abc' \
   'gh run watch 5 --exit-status' 'gh api repos/o/r/branches/main' 'gh api -X GET repos/o/r/pulls -f state=open' \
-  'gh pr checks 12 --watch' 'gh secret list' 'grep -n "podman volume rm" docs/x.md' 'echo "git push --force"' \
+  'gh pr checks 12 --watch' 'git config --get core.hooksPath' 'docker ps' 'gh secret list' 'grep -n "podman volume rm" docs/x.md' 'echo "git push --force"' \
   "git log --grep 'kind delete cluster'" 'scripts/pg-major-move.sh --clean-up --out /x' 'git push origin main:refs/heads/x'; do
   expect_plan '' "$cmd" "$f" ask
 done
