@@ -26,7 +26,7 @@ Repository permissions it **needs**:
 | Contents | Read and write | `git fetch`, `git push origin <wp-slug>` (branches), the rebase merge |
 | Pull requests | Read and write | `gh pr create`, `gh pr view`, `gh pr merge --rebase` |
 | Actions | Read | `gh run list`, `gh run watch`, logs of a failed job |
-| Commit statuses | Read | `gh pr checks` |
+| Commit statuses | Read | `gh pr checks` (*to verify* at setup: add the read permission an error names) |
 
 It **must not have**: Administration (repository settings, rulesets, branch protection), Workflows (changing
 `.github/workflows`), Secrets, Variables, Environments, Deployments, Pages, Webhooks, any account permission, and access
@@ -60,7 +60,8 @@ claude
 - `GH_TOKEN` takes precedence over a stored `gh` login.
 - `GH_CONFIG_DIR` points `gh` at an empty configuration, so the owner's stored login is not found by name.
 - The two `GIT_CONFIG_*` pairs clear the credential helper for github.com (the owner's Keychain entry) and let `gh`
-  answer git's credential requests with `GH_TOKEN`, so `git push` uses the token too.
+  answer git's credential requests with `GH_TOKEN`, so `git push` uses the token too. *To verify* at setup with the
+  helper check below: if osxkeychain still answers, pushes silently use the owner's credential.
 
 The owner's own terminals keep the owner's admin login for repository settings, rulesets and workflow changes.
 
@@ -74,7 +75,8 @@ gh pr list --limit 1                                  # works: Pull requests rea
 gh run list --limit 1                                 # works: Actions read
 gh secret list                                        # refused (HTTP 403): no Secrets permission
 gh api repos/{owner}/{repo}/actions/permissions       # refused (HTTP 403): no Administration permission
-git ls-remote origin HEAD                             # works through gh's credential helper
+printf 'protocol=https\nhost=github.com\n\n' | GIT_TRACE=1 git credential fill 2>&1 >/dev/null | grep -i credential
+#   shows which helper answers git: "gh auth git-credential", not osxkeychain (the token itself goes to /dev/null)
 ```
 
 The first `git push origin <wp-slug>` of the next round proves Contents write; a push of a branch that changes a
