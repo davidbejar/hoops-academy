@@ -1,12 +1,16 @@
 # Privacy threat model — Hoops Academy (LINDDUN per trust boundary)
 
-Version 2026-11-15 (WP112, decision 102). Companion to [`threat-model.md`](threat-model.md) (STRIDE: same assets, actors,
-data-flow overview and trust boundaries), [`review-2026-11.md`](review-2026-11.md) (security findings F-xx / SD-xx) and
-[`asvs-checklist.md`](asvs-checklist.md). Scope: the tree of `main` at 8eec8325 (core, game, athlete, `libs/common-quarkus`,
-`libs/contracts`, `apps/web`, the realm export, compose and the chart) plus the two services of
-[ADR-0051](../adr/0051-polyglot-services-finance-in-go-pdf-renderer-in-rust.md) that this round builds. Their code does
-not exist in this tree: their rows are modelled from ADR-0051, decisions 86–103 (`docs/wp/FOLLOW-UPS.md`) and the briefs
-WP111, WP116–WP119, WP123, and are marked **planned**.
+Version 2026-11-28 (WP150, decisions 119–122; first version 2026-11-15, WP112, decision 102). Companion to
+[`threat-model.md`](threat-model.md) (STRIDE: same assets, actors, data-flow overview and trust boundaries, the same
+boundary numbers), [`review-2026-11.md`](review-2026-11.md) (security findings F-xx / SD-xx) and
+[`asvs-checklist.md`](asvs-checklist.md); the build system has its own model (`agentic-threat-model.md`, MAESTRO).
+Method and rating: [ADR-0077](../adr/0077-threat-modelling-methods.md). Scope: the tree of `main` at 8eec8325 for §1–§8
+(core, game, athlete, `libs/common-quarkus`, `libs/contracts`, `apps/web`, the realm export, compose and the chart),
+and at cc4fb3e2 for §9 and §10 (`pdf-service`, `finance-service`, both built since the eighth round,
+[ADR-0051](../adr/0051-polyglot-services-finance-in-go-pdf-renderer-in-rust.md)), for the tenth round's changes
+(PostgreSQL 19, [ADR-0073](../adr/0073-postgresql-19.md); database spans,
+[ADR-0074](../adr/0074-database-spans-in-the-services-traces.md)) and for the rows corrected in WP150 (see
+[Status after the tenth round](#status-after-the-tenth-round-2026-11-28-wp150)).
 
 **Project nature.** Hoops Academy is a learning project with test and demo data, not a commercial product
 ([ADR-0025](../adr/0025-one-login-many-academies-easy-sign-up.md)). One login in several academies is a feature; F-11
@@ -33,7 +37,7 @@ looked up in the tree (see [Verification](#verification)). "Not verified" in a r
 | Data | Subjects | Where it lives (copies included) | Who reads it |
 |---|---|---|---|
 | Names, e-mail, phone, birth date, gender, locale, invitation state | members and players (many minors) | `core.person` (V2); `core.app_user` (e-mail, V2); Keycloak user (username = e-mail, first/last name, ADR-0023); replicas `game.person_ref` / `player_ref` and `athlete.*_ref` (display name, birth date, gender, `subject`; game V4, athlete V6); every version in `core.outbox` (V3) and the compacted Redpanda topics `core.person` / `core.player` (ADR-0036); `game.match_roster.display_name` (V1) | members of the academy per `docs/domain/authz-matrix.md`; the super admin for logins only (V18) |
-| Guardian links | parents, players | `core.guardian_link` (V2); replicas `*.guardian_link_ref`; outbox and topic `core.guardian-link` | ADMIN writes; drives PARENT access to health, stats, absences (and finance, planned) |
+| Guardian links | parents, players | `core.guardian_link` (V2); replicas `*.guardian_link_ref`; outbox and topic `core.guardian-link` | ADMIN writes; drives PARENT access to health, stats, absences and dues |
 | Health and fitness (GDPR art. 9) | players | `athlete.injury` (body part, free-text description, severity, dates), `athlete.body_measurement` (height, weight), `athlete.physical_test_result` (value, notes) (athlete V3); availability derived from injuries | `HealthAccess`: ADMIN, staff of the player's team, the linked PARENT, the PLAYER; former staff up to the season's end (ADR-0042) |
 | Attendance, planned absences | players | `athlete.attendance` (status, free-text `note`), `athlete.planned_absence` (free-text `reason`) (athlete V1) | staff roles; PARENT linked; PLAYER self (`ManagePlannedAbsences`) |
 | Match events and stats | players, the recorder | `game.match_event` (append-only; `recorded_by_person_id`, `recorded_by_display_name`, `device_id`; game V2), projections; offline copy in the browser | `StatVisibility`, `EventVisibility` (ADR-0030) |
@@ -43,23 +47,24 @@ looked up in the tree (see [Verification](#verification)). "Not verified" in a r
 | Academy requests | non-members | `core.academy_request` (V17: name, e-mail, role, academy name, reason) | super admin |
 | Exports | as the roster | CSV files on the downloader's device (ADR-0048) | whoever holds the file |
 | Device storage | the signed-in user, the players of cached matches | browser: OIDC tokens and settings in localStorage, drift DB (IndexedDB/OPFS) with matches, roster names and jersey numbers, events | the device user |
-| **Planned**: finance | families (what a family owes and has paid), staff (salaries as expenses) | schema `finance` (ADR-0051 §2; WP118, WP119, WP123), its roster replica | ADMIN; PARENT linked; PLAYER self; a team's current COACH status only (decision 96) |
-| **Planned**: PDF request bodies | as the roster and match sheet | in flight only, core/game → `pdf-service` (decision 89) | nobody (stateless, nothing stored or logged: ADR-0051 Consequences) |
+| Finance | families (what a player owes, paid, waived; payment day and method), the recorders of payments, staff (salaries as expense lines) | schema `finance` (ADR-0056): `due` and `payment` with free-text reasons and notes (V3), `expense` with description and note (V20), `audit_event` (V4); roster replica `person_ref` (login `subject`, roles, display name), `player_ref` (person, display name, status), team, assignment, staff and guardian-link refs (V5, V10, V11; no birth date, gender or contact data); the dues and expenses CSV files on the downloader's device | ADMIN; PARENT linked and PLAYER self (their dues, without reasons, notes or voided payments); a team's current COACH the status only (decision 96, `domain/access.go`) |
+| PDF request bodies | as the roster CSV (guardians' names, e-mails, phones; birth dates) and the match sheet (the box score) | in flight only, core / game → `pdf-service`; the PDF on the downloader's device | nobody in pdf-service (no database, nothing logged: §9) |
 
 ## Data-flow overview
 The STRIDE overview, plus the flows that carry personal data outside the request path (events, telemetry) and the two
-planned services:
+services of ADR-0051:
 ```
 Browser (PWA: localStorage tokens + settings, drift DB, downloaded CSV/PDF files)
    │  HTTPS (Gateway) / HTTP (compose :8080, kind :8090)
    ▼
 nginx / Envoy Gateway ──/auth──▶ Keycloak ──▶ Postgres (keycloak db: users, 30-day events)
-   │  /api/core,/platform  /api/game  /api/athlete  [/api/finance planned]
+   │  /api/core,/platform  /api/game  /api/athlete  /api/finance
    ▼
-core-service ◀──/internal── game, athlete          core, game ──/internal/pdf/*──▶ pdf-service [planned, no route]
-   │  outbox ──▶ Redpanda (compacted core.* topics) ──▶ replicas in game, athlete [finance planned]
-   └── Postgres `hoops` (schemas core / game / athlete [/ finance planned], RLS)
-services ──OTLP (traces, logs incl. hoops.audit / hoops.security)──▶ otel-collector ──▶ environment's backend
+core-service ◀──/internal── game, athlete          core, game ──/internal/pdf/*──▶ pdf-service (no route)
+   │  outbox ──▶ Redpanda (compacted core.* topics) ──▶ replicas in game, athlete, finance
+   └── PostgreSQL 19 `hoops` (schemas core / game / athlete / finance, RLS)
+services ──OTLP (traces incl. database spans, logs incl. hoops.audit / hoops.security)──▶ otel-collector ──▶ backend
+                                                     (LGTM pod on kind and compose, 24 h; in-memory Jaeger on the cloud values)
 ```
 
 ## 1. Browser ↔ nginx / Envoy Gateway
@@ -70,7 +75,7 @@ services ──OTLP (traces, logs incl. hoops.audit / hoops.security)──▶ o
 | I | API responses identify people to members who do not need it | Role-matrix tests per resource (oracle `docs/domain/authz-matrix.md`); the event feed filtered like the box score (`EventVisibility`, `StatVisibility`, ADR-0030, `MatchEventFeedRoleMatrixTest`); health confined to the player's own teams (`HealthAccess`, `HealthRoleMatrixTest`); members list leaves out PENDING/REJECTED players (F-16) | Team-level events show who recorded them (`recordedBy`, a parent's name) to every reader of the feed; training data (planned absences with their free-text reason) is readable by every staff role of the academy, not only the player's team staff (P-06) |
 | N | A parent or coach is bound to a recorded event or a health write | `recorded_by_person_id` + display name on events and athlete records; VOID instead of delete (game V2) | By design (accountability for minors' data); an author cannot have their name removed from an append-only event (P-01) |
 | D | Learning that a person is a member, or that an e-mail has a login | Non-members 404, never 403 (CLAUDE.md rule 3, `TenantHeaderFilter`); public academy request answers 202 whatever the e-mail (ADR-0044 §2) | F-11 (accepted): an invite reveals an existing login; `LOGIN_SHARED` / `EMAIL_TAKEN` (409, core contract `updateMember`, `IssueTemporaryPassword`) tell an ADMIN that a member's login is active in another academy or that the address has a login (P-08); inside one academy `HealthAccess` answers 403 (not 404) when a filter names a player the caller may not read (ids are UUIDs: Info) |
-| DD | Bulk extraction of minors' data through the API or exports | Paging limits (`PageOffset`, page size ≤ 200 on lists); exports limited to 10,000 rows, `Cache-Control: no-store` (`CsvResponse`), current staff only for the roster (ADR-0048 amendment, decision 83); gateway rate limits for the three export paths and the public request (`deploy/helm/hoops/values.yaml` `rateLimits`); services log no bodies (`quarkus.http.access-log.enabled=false` in `common-quarkus`, `TeamRosterExportTest.theContentIsNeverLogged`) | A downloaded roster CSV (minors' birth dates, guardians' phones and e-mails) leaves every control; compose nginx has no export limit yet (WP115 adds it) |
+| DD | Bulk extraction of minors' data through the API or exports | Paging limits (`PageOffset`, page size ≤ 200 on lists); exports limited to 10,000 rows, `Cache-Control: no-store` (`CsvResponse`), current staff only for the roster (ADR-0048 amendment, decision 83); gateway rate limits for the three export paths and the public request (`deploy/helm/hoops/values.yaml` `rateLimits`), the same brake in compose nginx (`infra/compose/nginx.conf`, `export-limits.conf`; finance's two exports: §10); services log no bodies (`quarkus.http.access-log.enabled=false` in `common-quarkus`, `TeamRosterExportTest.theContentIsNeverLogged`) | A downloaded roster CSV or PDF (minors' birth dates, guardians' phones and e-mails) leaves every control |
 | DD | The SPA or service worker caches API data | Service worker network-only for `/api/`, `/auth/`, `/platform/`, `/internal/` (`apps/web/web/sw.js` `NETWORK_ONLY_PREFIXES`) | — |
 | U | People do not know what is collected about them or their children | Not mitigated: no privacy notice in the web app, the landing page or the academy request form (no such text in `apps/web/lib/l10n/*.arb`); Keycloak clients `consentRequired: false` | P-05 |
 | U | A member cannot see or correct their own data | `PATCH /api/core/me` changes one's own name (WP91); everything else through the academy's ADMIN | No self-service view of what an academy holds (health, absences, events, audit rows about me) (P-01) |
@@ -102,7 +107,7 @@ services ──OTLP (traces, logs incl. hoops.audit / hoops.security)──▶ o
 | LINDDUN | Threat | Mitigations (evidence) | Residual |
 |---|---|---|---|
 | L | Records of one person joined across academies inside the database | One `person` row per academy; `tenant_id` + `ENABLE`/`FORCE` RLS on every tenant table (`app.enable_tenant_rls`, `RlsSchemaMetaTest`); the shared-login e-mail sync touches only linked active persons (`LoginEmailSync`, `SharedLoginPersonsTest`, ADR-0026); core_platform reads only logins and their names (V18) | The membership index `core.user_membership_index` (V2) and the platform policies link a login's persons on purpose (ADR-0013, ADR-0029 amendment) |
-| I | Health data readable in clear by anyone with DB access | Non-owner app roles without BYPASSRLS (`just db-role-check`); health only in schema `athlete`; cloud system disk encrypted (`infra/tofu/main.tf` `system_disk_encrypted`, ADR-0050) | No column-level encryption; backups not designed (STRIDE out of scope) |
+| I | Health data readable in clear by anyone with DB access | Non-owner app roles without BYPASSRLS (`just db-role-check`); health only in schema `athlete`; cloud system disk encrypted (`infra/tofu/main.tf` `system_disk_encrypted`, ADR-0050); a major move's dump is written under `umask 077` to a 0700 directory outside the repository (`scripts/pg-major-move.sh`, ADR-0073) | No column-level encryption; backups not designed (STRIDE out of scope); a major move leaves full copies of every schema behind, the old volume and the `pg_dumpall` file, with no rule that deletes them (ADR-0073 §3, the runbook "a new PostgreSQL major"; P-14) |
 | N | Append-only stores bind people for ever | `core.audit_event` append-only trigger (V9, `AuditEventRlsTest`); metadata holds field names, never values (`AuditEvent` javadoc, `ChangedFields`); names resolved at read time, not stored (ADR-0029) | Audit rows keep `actor_sub` and person ids with no retention (P-02); the rule "no personal data in metadata" is a convention, not a test; the super admin's free-text `reason` is the documented exception (ADR-0029) |
 | D | — | Covered at boundary 1 | — |
 | DD | Personal data kept after its purpose ended | Replica bookkeeping pruned (`ReplicaRetentionJob` in game and athlete: `applied_event` after 7 days, inspected `parked_event` after 30 days, ADR-0037); `parked_event` keeps coordinates and messages, never the record's value (athlete V6 comment); soft-removed replica rows keep no name or login (game V6, athlete V9); withdrawn tenants marked with `retain_until` (`hoops.tenant.withdrawn-retention=P365D`, `TenantLifecycle`) | Nothing deletes a withdrawn tenant after `retain_until`, old audit rows or decided academy requests (P-02); published `core.outbox` rows (every `PersonChanged` / `PlayerChanged` payload: name, birth date, gender, `sub`) are never deleted (P-03); author snapshots (`recorded_by_name`, `match_roster.display_name`) survive renames (P-09) |
@@ -132,8 +137,8 @@ services ──OTLP (traces, logs incl. hoops.audit / hoops.security)──▶ o
 | NC | — | Not applicable | — |
 
 ## 7. core → Redpanda → replicas (roster events)
-Not a STRIDE boundary yet ([ADR-0036](../adr/0036-redpanda-event-broker.md) covers its security); added because it
-copies personal data.
+The STRIDE model takes it up as boundary 7 in the eleventh round (decision 119, WP148);
+[ADR-0036](../adr/0036-redpanda-event-broker.md) covers its security. It is here because it copies personal data.
 
 | LINDDUN | Threat | Mitigations (evidence) | Residual |
 |---|---|---|---|
@@ -141,42 +146,49 @@ copies personal data.
 | I | Birth date and gender travel to every consumer | Required by the roster contract (P-10) | game stores both for every player |
 | N | — | Not applicable | — |
 | D | — | Consumers read only `core.*` (ACL) | — |
-| DD | Copies outlive the person in core | Soft removals null every state column (game V6, athlete V9); tombstones kept 7 days | A person is never deleted in core, so no removal is ever emitted for them (P-01); the outbox history stays (P-03) |
+| DD | Copies outlive the person in core | Soft removals null every state column (game V6, athlete V9, finance V5 and V10); tombstones kept 7 days | A person is never deleted in core, so no removal is ever emitted for them (P-01); the outbox history stays (P-03) |
 | U | — | Not applicable | — |
-| NC | Erasure must reach the topic, the outbox and every replica | The `.removed` + tombstone mechanism exists and is applied by both consumers (ADR-0037 amendment) | No use case triggers it (P-01) |
+| NC | Erasure must reach the topic, the outbox and every replica | The `.removed` + tombstone mechanism exists and is applied by the three consumers (game, athlete: ADR-0037 amendment; finance: V5, V10, `adapters/in/events`) | No use case triggers it (P-01) |
 
 ## 8. Services → OpenTelemetry collector → log and trace backend
 | LINDDUN | Threat | Mitigations (evidence) | Residual |
 |---|---|---|---|
 | L | Logs tie one person's activity across academies | Logs carry ids, not names: `hoops.audit` lines (`AuditEventRepository`: action, target, actor `sub`, tenant) and `hoops.security` events (`SecurityEventLog`: `sub`, tenant, roles, route template); no tenant id on spans or resources (ADR-0046, collector `attributes/strip-ids` in `deploy/helm/hoops/templates/observability.yaml`) | The same `sub` with different `tenantId`s in one log store links a person's academies and activity; retention of shipped logs is the backend's and none is set (P-07) |
-| I | Request bodies, tokens or names in logs and spans | HTTP access log off (`quarkus.http.access-log.enabled=false`); OIDC's token-quoting WARN muted (`io.quarkus.oidc.runtime.OidcProvider` at ERROR); security-event values stripped and capped, never a claim of an unverified token (ADR-0043); `url.path`, `url.query`, Kafka keys deleted from spans (collector); `TeamRosterExportTest.theContentIsNeverLogged` | Log content depends on every log statement (no automated PII check beyond the export test); kind's collector runs `debugVerbosity: normal` (prints log bodies); cloud and default are `basic` (`values-cloud.yaml`, `values.yaml`) |
+| I | Request bodies, tokens or names in logs and spans | HTTP access log off (`quarkus.http.access-log.enabled=false`); OIDC's token-quoting WARN muted (`io.quarkus.oidc.runtime.OidcProvider` at ERROR); security-event values stripped and capped, never a claim of an unverified token (ADR-0043; Rust `security.rs`, Go `platform/security`); `url.path`, `url.query`, Kafka keys deleted from spans (collector `attributes/strip-ids`); `TeamRosterExportTest.theContentIsNeverLogged`; pdf-service and finance as §9 and §10. **Database spans** (ADR-0074): `db.statement` is the parameterised text, never a bound value, the tenant id of `set_config` is a bound value; a refused statement keeps the SQLSTATE only in finance and carries no `DETAIL` in Java because every table forces RLS; `DatabaseSpansTest` (core, game, athlete) and finance's `TestTheDuesListShowsItsSQLUnderTheRequestSpanAndNoValue` grep every exported span for seeded names, e-mails, notes and the tenant id; the collector's debug exporter is `basic` everywhere (`values.yaml`, `values-kind.yaml`, `values-cloud.yaml`) | Log content depends on every log statement (no automated PII check beyond the export, pdf and finance tests); `strip-ids` does not touch the new `db.*` attributes (they carry no value by construction, not by the collector); exception events on server spans keep the exception message: game's `NotFoundException`s name the match or player id (`MatchLookup`, `GetPlayerSeasonStats`), and a driver message that echoes refused input could reach a Java exception event (ADR-0074 §4, not tested) (P-15) |
 | N | Security events attribute refused requests to a person | By design (ASVS 16.3.2) | — |
 | D | — | Not applicable | — |
-| DD | Logs kept indefinitely | — | No retention configured (ADR-0046: "retention belongs to that backend"); WP120 builds the backend this round (P-07) |
+| DD | Logs kept indefinitely | The LGTM pod (kind, compose profile `observability`) keeps logs, traces and metrics 24 h, without persistence (`values.yaml` `observability.lgtm.retention`, WP120); the cloud values' Jaeger keeps traces in memory | A real backend's retention is the environment's (ADR-0046); database spans multiply the stored spans by about five (ADR-0074 §7), not their content (P-07) |
 | U | — | Not applicable (operational data) | — |
 | NC | — | Storage limitation applies to logs too | P-07 |
 
-## 9. core / game → `pdf-service` (planned: WP111, WP116, WP117)
-| LINDDUN | Threat | Mitigations (planned; evidence = ADR / decision / brief) | Residual |
-|---|---|---|---|
-| L | The renderer collects rosters of many academies | Stateless: no database, no broker, no outbound network (ADR-0051 §3); nothing stored | — |
-| I | Request bodies (minors' names, birth dates, guardians' contacts for the roster) reach logs, spans or Problems | "Nothing from a request body is logged or put on a span" (ADR-0051 Consequences, WP111 scope 3); callers log nothing of the roster (WP116 scope 2) | Parse and validation errors of typical Rust deserialisers quote the offending value; if a Problem `detail` or a log line carries it, a child's name or birth date leaks into core/game logs (P-11) |
-| N | — | Export audited by the calling service (`team.roster_exported` with the format, WP116) | game has no audit trail: the match sheet export is audited only "if the matrix asks for one" (WP117) |
-| D | Anyone calls the renderer | No gateway route; NetworkPolicy admits core and game only; audience `pdf-service` and realm role `service`; a `web` token refused by test (decision 89, WP111 scopes 4–5) | — |
-| DD | A PDF carries more than its readers see | Same authz as the CSV (decision 83) and the box score (WP117 scope 1: "if the sheet shows more than those readers see today, stop") | A printed roster with guardians' phones cannot be recalled (P-11) |
-| U | — | Labels in the user's language (decision 90) | — |
-| NC | — | Processor-like role inside the platform; no storage | — |
+## 9. core / game → `pdf-service`
+Built by WP111 (the renderer, ADR-0052), WP116 (core's roster PDF), WP117 (game's match sheet), WP122 and WP132.
+Evidence is in `services/pdf-service` unless another path is given.
 
-## 10. Browser ↔ `finance-service` (planned: WP118, WP119, WP121, WP123, WP124)
-| LINDDUN | Threat | Mitigations (planned; evidence = ADR / decision / brief) | Residual |
+| LINDDUN | Threat | Mitigations (evidence) | Residual |
 |---|---|---|---|
-| L | Payment history links a family's finances to the child's roster and attendance | Schema `finance` with RLS and its own roles (ADR-0051 §2); roster from events, no REST to core | The finance replica copies whatever core's events carry, including birth date and gender, unless WP119 drops them (P-10) |
-| I | A coach identifies which families are behind on payments | Decision 96: COACH of the team sees status only, no amounts, no expenses, no balance; ASSISTANT_COACH nothing | By design: payment status of a family is disclosed to the coach (P-12) |
-| N | A waiver or a voided payment binds a family to a hardship | Audit records for every write (WP119 scope 3, ADR-0017 pattern) | Free-text reasons (waive, amount change, void) and notes (payment, expense) will hold hardship or salary details; ADR-0017 forbids personal data in audit metadata (P-12) |
-| D | A parent learns that another family has dues | Non-members 404, a parent of another player gets no existence leak (WP119 scope 4) | — |
-| DD | Exports of dues and expenses | ADR-0048 spec, 10,000 rows, audit per export (WP123 scope 3) | Gateway rate limits for the finance export paths are not named in the briefs (P-12) |
-| U | Families do not know what is recorded about their payments | Parent and player read their own dues and payments (decision 96) | Whether a family sees the waiver or void reason is not decided (P-12) |
-| NC | Financial data of identifiable families (not art. 9, but sensitive; ADR-0051: "the same care as health data") | As above | Retention of finance records (tax law may require years) not decided; joins P-02 |
+| L | The renderer collects rosters of many academies | Stateless: no database, no broker, no file written (no `std::fs` write in `crates/*/src`); the only outbound calls are the two reads of Keycloak's discovery document and JWKS (`adapters/src/auth.rs`); egress limited to DNS, Keycloak and the chart's collector (`charts/pdf-service/templates/networkpolicy.yaml`) | — |
+| I | Request bodies (minors' names, birth dates, guardians' contacts) reach logs, spans or Problems | The body is parsed and rendered, never logged nor put on a span: the request span and the access line carry method, route template, status and duration only (`adapters/src/http.rs`, `telemetry.rs`; `tests/logs.rs` `nothing_of_the_body_reaches_a_log_line_or_a_span`); Problems name the field path and a code, never a value (`problem.rs`; `validation_failures_name_the_field_never_the_value`, `too_many_players_is_422_naming_the_list_never_the_children`, domain `errors_describe_themselves_without_values`); the security event's `tenantId` is always empty and its subject is the calling service's `sub` (`security.rs`); the callers log nothing of the roster or the sheet on success or failure (core `TeamRosterPdfTest.theContentIsNeverLogged`, `whenPdfServiceCannotRenderTheAnswerIsA503ThatAuditsAndLogsNothingOfTheRoster`; game `MatchSheetPdfResourceTest.aRenderedSheetLogsNoName`, `aPdfServiceFailureIs503AndNoNameIsLogged`) | — |
+| N | A print binds a member to having taken minors' contact data away | core audits every roster print with the row count and the format only (`team.roster_exported`, `TeamRosterPdfTest.everyPrintIsAuditedWithTheRowCountAndTheFormatOnly`) | The match sheet is not audited (`GetMatchSheetPdf`: "a read every member has"); by design |
+| D | Anyone calls the renderer | No gateway route; NetworkPolicy admits core and game only (decision 89); a token needs audience `pdf-service`, the realm role `service` and a `sub` (`auth.rs`); a `web` token is refused (`tests/api/http.rs` `a_web_client_token_is_refused`) | Compose publishes it on the host's loopback (`127.0.0.1:8084`, `infra/compose/compose.yaml`), still behind the bearer check (Info) |
+| DD | A PDF carries more than its readers see | Same authz as the CSV (decision 83: `TeamRosterPdfTest.roleMatrix`, `aNonMemberGetsNotFoundAndNothingIsRendered`) and as the box score (`MatchSheetPdfResourceTest.everyMemberGetsTheSheetWithTheLinesTheBoxScoreShowsThem`, `aNonMemberAnotherTenantsMatchAndAnUnknownMatchAre404WithoutRendering`); body limit 413 and list limits 422 (`http.rs`, `team_roster.rs`); the PDF's metadata holds the document title, the academy, the language and the creator, no person (`render.rs`); answers `Cache-Control: no-store` (core `ExportResponse`, game `MatchSheetPdfResource`) | The printed roster carries guardians' names, e-mails and phones and players' birth dates, as the CSV (decision 83); paper cannot be recalled (P-11) |
+| U | Guardians do not know their contact data is printed | Labels in the reader's language (decision 90, `labels.rs`) | Nothing tells a guardian that the roster (CSV or PDF) shows their phone and e-mail to the team's staff (joins P-05) |
+| NC | — | Processor-like role inside the platform; nothing stored | — |
+
+## 10. Browser ↔ `finance-service`
+Built by WP118 (stack, settings, fee plans, ADR-0055), WP119 (dues, payments, roster replica), WP121 and WP124 (web),
+WP123 (expenses, balance, exports), domain rules in ADR-0056. Evidence is in `services/finance-service` unless another
+path is given.
+
+| LINDDUN | Threat | Mitigations (evidence) | Residual |
+|---|---|---|---|
+| L | Payment history linked to the child's roster, health or attendance | Schema `finance` with RLS on every tenant table and its own non-owner roles (`finance_app` / `finance_migrator`, ADR-0055; `TestNoTenantReadsOrChangesAnotherTenantsRows`); the roster comes from core's topics (consumer user `finance-service` may consume `core.` only: `deploy/helm/hoops/values.yaml` `events.users`), no REST call to another service; the replica keeps no birth date, gender or contact data (V5, V10, V11; `TestAPlayerEventDropsBirthDateAndGender`, `TestAPersonEventKeepsLoginRolesAndActiveOnly`) | The replica keeps each member's login `subject` and display name (V5, V11), so the same `sub` ties finance records to the person's other services, as §2 |
+| I | A coach identifies which families are behind | Decision 96: a current COACH of the team reads the status only, no amounts, reasons, expenses or balance; ASSISTANT_COACH nothing (`domain/access.go`; `TestACurrentCoachOfTheTeamReadsItsStatusAndAnAssistantNothing`, `TestTheCoachSeesStatusOnlyAndTheFamilyNoReasonsNotesOrVoidedPayments`) | By design: which families are behind is disclosed to the team's coach (P-12) |
+| N | A waiver, an amount change or a voided payment binds a family to a hardship | Every write is audited in `finance.audit_event`, append-only for the app role (V4 trigger, `TestAuditEventsAreAppendOnly`); metadata holds ids, enum values and changed field names only, never a reason, note, description or amount (`TestReasonsAndNotesNeverReachLogsOrAudit`, `TestUpdatingAPlanAuditsTheChangedFieldNamesOnly`, `TestAnExpenseIsRecordedListedCorrectedAndDeleted`); reasons and notes at most 200 characters, read by ADMIN only (V3, V20, `finance.yaml`) | The free text itself is kept in clear on the due, the payment (a voided one with its reason and who voided it) and the expense, for as long as the row exists; "no health or family details, no named person's salary" is a contract rule, no check (P-12) |
+| D | A member learns that another family has dues, or that an academy uses finance | Non-members and unknown or suspended academies 404 (`TestRoleMatrixOfDuesPaymentsAndTheReads` `stranger`, `TestCrossTenantDuesAndPaymentsAreRefused`, `TestAuthenticationAndTheTenantHeader`); a parent or player asking for another player gets 403 whether the player exists or not (`parent2` on an unknown player, same test) | A member without the role gets 403, not 404 (members may know the academy exists; Info) |
+| DD | Exports and lists hand out more than the purpose needs | Dues and expenses exports ADMIN only (`TestRoleMatrixOfExpensesBalanceAndExports`), at most 10,000 rows (`TestAnExportOfMoreThanTenThousandRowsIsRefused`), audited (`dues.exported`, `expenses.exported`), never a reason or note (`TestTheDuesExportFollowsTheCsvSpec`, `TestTheExpensesExportFollowsTheCsvSpec`), formula guard, `Cache-Control: no-store` (`rest/exports.go`); rate-limited at the gateway (`charts/finance-service/values.yaml` `rateLimits`) and in compose nginx (`infra/compose/nginx.conf`); Problems name fields, never values (`TestInvalidRequestsAreProblemsNamingFieldsNeverValues`); spans carry no value (`TestTheDuesListShowsItsSQLUnderTheRequestSpanAndNoValue`); parked events without their value (`TestParkedEventsAreWrittenWithoutTheirValue`) | A downloaded dues CSV (player names, amounts, statuses) leaves every control; the expense `description` (1–120 characters, free text) is in the list and the expenses CSV, and "no names with salaries" is a contract rule, no check; an unexpected error is logged with its error text (`rest/problem.go`, "request failed"), whose content is not tested (to verify) |
+| U | Families do not know what is recorded about their payments | PARENT (linked) and PLAYER (self) read their dues: amount, status, period, plan and the valid payment's day and method (ADR-0056, `CanReadPlayerDues`) | A family never sees why a due was waived, changed or a payment voided (ADR-0056's minimal choice); nothing reads `finance.audit_event` through the API (no audit path in `finance.yaml`; core's audit list reads `core.audit_event` only), so a request for "who changed my dues" needs SQL (joins P-01) |
+| NC | Financial data of identifiable families (not art. 9, but sensitive; ADR-0051: "the same care as health data") | Replica bookkeeping: applied event ids deleted after 7 days (`application/retention.go`, `TestTheRetentionRunnerDeletesOldAppliedEventIDs`) | Nothing deletes dues, payments, expenses, audit rows or parked events; the retention of finance records (tax law may require years) is not decided (P-02) |
 
 ## Data-subject rights and retention (status)
 | Right / store | Today | Evidence |
@@ -189,15 +201,21 @@ copies personal data.
 | `core.audit_event` | Kept for ever (v2 purge job) | ADR-0029 §6; P-02 |
 | `core.academy_request` | Kept for ever (v2 purge job) | ADR-0044; P-02 |
 | `core.outbox` (published) | Kept for ever | V3, `JpaOutboxQueueRepository` (marks `published_at`, never deletes); P-03 |
-| Replica bookkeeping | 7 / 30 days | `ReplicaRetentionJob` (game, athlete) |
+| Replica bookkeeping | 7 / 30 days (game, athlete); finance: applied ids 7 days, parked events kept | `ReplicaRetentionJob` (game, athlete); finance `application/retention.go` |
+| Finance: dues, payments, expenses, `finance.audit_event` | Kept for ever; period not decided | finance V3, V4, V20 (only `applied_event` is ever deleted); P-02 |
 | Keycloak events | 30 days | realm `eventsExpiration`, `adminEventsExpiration` |
-| Shipped logs and traces | The backend's; none set | ADR-0046; P-07 |
+| Shipped logs and traces | 24 h in the LGTM pod (kind, compose profile); in memory on the cloud values; a real backend's own | `values.yaml` `observability.lgtm.retention`, ADR-0046 amendment (WP120); P-07 |
+| Database copies of a major move (old volume, `pg_dumpall` file) | Kept until someone deletes them | ADR-0073 §3, `scripts/pg-major-move.sh`, runbook "a new PostgreSQL major"; P-14 |
 | Device data | Until sign-out or the next user's sign-in | `MatchStore.wipe`, `bindOwner` |
 
 ## Findings
 
-Severity follows the security review's rubric (a concrete path, then impact), applied to the project as it runs today
-(learning project, demo data). "Gate" = must be closed or consciously accepted before real academies use the system.
+P-01 to P-13 keep the severity of WP112: the security review's rubric (a concrete path, then impact), applied to the
+project as it runs today (learning project, demo data); they are not re-rated here. Findings from P-14 on are rated on
+the scale of [ADR-0077](../adr/0077-threat-modelling-methods.md): likelihood (L) and impact (I) Low 1, Medium 2, High 3,
+likelihood for the project as exposed today, impact as if a real academy's data were in it; the product L×I is the
+rating: 6 or 9 High, 3 or 4 Medium, 1 or 2 Low. "Gate" = must be closed or consciously accepted before real academies
+use the system.
 
 | ID | Severity | Gate | Title | Location | Proposed action |
 |---|---|---|---|---|---|
@@ -210,13 +228,15 @@ Severity follows the security review's rubric (a concrete path, then impact), ap
 | P-07 | Low | no | Shipped logs link one person across academies (`sub` with each `tenantId` in `hoops.audit` and `hoops.security` lines) and are kept without any retention; kind prints log bodies in the collector | `AuditEventRepository`, `SecurityEventLog`, ADR-0046, `values-kind.yaml` `debugVerbosity: normal` | WP120 (the LGTM backend this round) sets a log and trace retention (e.g. 30 days, as Keycloak's events) and Grafana access for operators only; record it in the ADR-0046 amendment |
 | P-08 | Info | no | `LOGIN_SHARED` and `EMAIL_TAKEN` (409) tell an academy ADMIN that a member's login is an active member of another academy, or that an address already has a login elsewhere | core contract `updateMember`, temporary password; `IssueTemporaryPassword`, `LoginEmailSync` | Same family as F-11: record it as accepted in ADR-0025's consequences (or answer one neutral code) |
 | P-09 | Info | no | athlete's author snapshot falls back to `preferred_username` (the e-mail, ADR-0023) when the token has no `name`, and shows it to parents and players in `recordedBy`; snapshots also keep old names after a rename | `athlete CallerActor`; athlete V1, V3 | Fall back to a neutral label, never the username; resolve names at read time where the replica has them |
-| P-10 | Info | no | Data minimisation of the replicas: game (and athlete) store every player's birth date and gender because core's roster contract requires them; no game rule using them beyond that filter was found (not verified exhaustively); the finance replica (WP119) would copy them too | game V4 `player_ref`, `ReplicaPlayer`, `libs/contracts/events/core.player.schema.json` | WP119 stores only what finance needs (no birth date, gender or `subject` unless a rule needs it); check whether game needs them and drop them from its replica if not |
-| P-11 | Low | no | **Planned** `pdf-service`: parse and validation errors can quote request values (names, birth dates) into Problem details or the callers' logs; the roster PDF reproduces guardians' contact data on paper | ADR-0051 §3, decision 89, WP111 / WP116 / WP117 | WP111: generic 400/422 details that never echo input, a test that a known personal value appears in no response and no log line; WP116 / WP117: never log a `pdf-service` Problem body; WP116 decides whether guardians' contacts belong on the printed roster |
-| P-12 | Low | no | **Planned** finance: free-text reasons and notes (waive, amount change, void, payment, expense) will carry hardship or salary details into the audit trail and exports; a team's coach learns which families are behind (decision 96, by design); parent visibility of reasons, export rate limits and record retention are undecided | ADR-0051 §2, decisions 95–97, WP118 / WP119 / WP123 | Keep reasons and notes out of audit metadata and logs (or list them as a named exception, as `tenant.suspended`'s reason); decide in WP119 whether a family sees reasons; gateway rate limits on the finance export paths (WP123); retention period for finance records (joins P-02) |
-| P-13 | Low | no | A guardian link is created by one ADMIN, with no confirmation and no notification to the player (with a login) or the other guardians; a wrong link gives an adult read and write access to a child's health records (and finance, planned) | authz matrix "Members, roles, guardian links: ADMIN"; `guardian_link.created` audit (ADR-0017) | Show a player and existing guardians who is linked (and when a link is added) in their own profile; for real academies, a second ADMIN confirmation or the existing guardian's acknowledgement |
+| P-10 | Info | no | Data minimisation of the replicas: game (and athlete) store every player's birth date and gender because core's roster contract requires them; no game rule using them beyond that filter was found (not verified exhaustively); finance does not (WP119, see the status) | game V4 `player_ref`, `ReplicaPlayer`, `libs/contracts/events/core.player.schema.json` | WP119 stores only what finance needs (no birth date, gender or `subject` unless a rule needs it); check whether game needs them and drop them from its replica if not |
+| P-11 | Low | no | `pdf-service` (modelled while planned): parse and validation errors can quote request values (names, birth dates) into Problem details or the callers' logs; the roster PDF reproduces guardians' contact data on paper | ADR-0051 §3, decision 89, WP111 / WP116 / WP117 | WP111: generic 400/422 details that never echo input, a test that a known personal value appears in no response and no log line; WP116 / WP117: never log a `pdf-service` Problem body; WP116 decides whether guardians' contacts belong on the printed roster |
+| P-12 | Low | no | finance (modelled while planned): free-text reasons and notes (waive, amount change, void, payment, expense) will carry hardship or salary details into the audit trail and exports; a team's coach learns which families are behind (decision 96, by design); parent visibility of reasons, export rate limits and record retention are undecided | ADR-0051 §2, decisions 95–97, WP118 / WP119 / WP123 | Keep reasons and notes out of audit metadata and logs (or list them as a named exception, as `tenant.suspended`'s reason); decide in WP119 whether a family sees reasons; gateway rate limits on the finance export paths (WP123); retention period for finance records (joins P-02) |
+| P-13 | Low | no | A guardian link is created by one ADMIN, with no confirmation and no notification to the player (with a login) or the other guardians; a wrong link gives an adult read and write access to a child's health records (and, since WP119, the child's dues and payments) | authz matrix "Members, roles, guardian links: ADMIN"; `guardian_link.created` audit (ADR-0017) | Show a player and existing guardians who is linked (and when a link is added) in their own profile; for real academies, a second ADMIN confirmation or the existing guardian's acknowledgement |
+| P-14 | Medium (L1 × I3 = 3) | yes | A PostgreSQL major move leaves two full copies of the database behind: the old volume (no longer declared, so `down -v` keeps it) and the `pg_dumpall` file (every schema: minors' data, health records, finance, the roles' password verifiers). Both are kept "as the way back" with no period and no rule that deletes them; the dump is not encrypted, only protected by file modes (0700 directory, 0600 file). L1: only the owner's account on the owner's machine reaches them; I3: with real academies, a complete copy of everyone's data outside every RLS and retention control | ADR-0073 §3, `scripts/pg-major-move.sh` (`--out`, "never removes a volume"), `docs/runbooks/postgresql-major.md` | A dated rule in the runbook and the script's closing message: once the new major is verified (a set number of days), delete the dump and the old volume, or encrypt the dump if it must stay; for real academies, fold it into a backup and retention ADR with the periods of P-02 |
+| P-15 | Medium (L3 × I1 = 3) | no | Exception events on server spans keep the exception message: game's `NotFoundException`s name the match or player id ("Match <uuid> not found", "Player <uuid> not found"), seen in Tempo at the WP143 merge; a driver message that echoes refused input could reach a Java exception event (ADR-0074 §4, not tested). The collector's `strip-ids` does not touch exception events. L3: every 404 of those use cases writes one; I1: pseudonymous ids in a 24 h store today (a name, if an echo ever happens, would be more) | game `MatchLookup`, `GetPlayerSeasonStats`, `IngestEventBatch`; ADR-0074 §4; FOLLOW-UPS "Ids in exception messages on spans" | Messages without ids (the Problem already names the resource), or the exception event's message dropped for 4xx; a test that a refused statement's span holds no seeded value (the case ADR-0074 left untested); settles the P-11 / ADR-0043 question in FOLLOW-UPS |
 
-**Counts:** Critical 0 · High 0 · Medium 2 · Low 8 · Info 3 (13 findings; 2 of them on planned services). Gate before real
-academies: P-01 to P-05.
+**Counts:** P-01 to P-13 (WP112 rubric): Critical 0 · High 0 · Medium 2 · Low 8 · Info 3. P-14 and P-15 (ADR-0077
+scale): High 0 · Medium 2 · Low 0. Gate before real academies: P-01 to P-05 and P-14.
 
 Accepted by design and not repeated as findings: F-11 and F-22 (ADR-0025). Their privacy impact, for the record: under
 F-22 an admin of academy A who created a login for someone else's address enters academy B as that person once B
@@ -224,9 +244,9 @@ invites the address, and reads what that person may read there (a parent's linke
 under F-11 the owner of a login is linked into another academy without being asked.
 
 ## Status after the eighth round (2026-11-16, WP125)
-The tables above are kept as written on 2026-11-15; §9 and §10 are no longer planned: pdf-service (WP111, WP116,
-WP117) and finance-service (WP118, WP119, WP123) are built. What the round changed, from the handovers and the code
-(no new review was done):
+Recorded on 2026-11-16, when pdf-service (WP111, WP116, WP117) and finance-service (WP118, WP119, WP123) had been
+built and §9 and §10 still described them as planned (WP150 rewrote both, see the next section). What the round
+changed, from the handovers and the code (no new review was done):
 
 | ID | Status | Evidence |
 |---|---|---|
@@ -236,6 +256,20 @@ WP117) and finance-service (WP118, WP119, WP123) are built. What the round chang
 | P-12 | Partly mitigated | WP119, WP123, ADR-0056: reasons and notes never in audit metadata (ids, period, method, counts, field names), logs or the CSV exports; families see no reasons, notes or voided payments; `dues:export` and `expenses:export` rate-limited at the gateway and in compose nginx (WP118). Open: the coach sees who is behind (by design, decision 96); retention of finance records (P-02) |
 | P-13 | Wider | Since WP119 a guardian link also opens the child's dues and payments |
 | P-01..P-06, P-08, P-09 | Open | Nothing in the round addressed them; P-01's per-person export and P-02's periods now include finance |
+
+## Status after the tenth round (2026-11-28, WP150)
+What WP150 changed in this document, from the code on `main` at cc4fb3e2, ADR-0073 and ADR-0074:
+
+| Where | Change |
+|---|---|
+| Header, inventory, data-flow overview | pdf-service and finance-service as built (no "planned"); PostgreSQL 19; database spans; the telemetry backends as configured |
+| §1 DD | Compose nginx has the export brake now (`infra/compose/nginx.conf`); the residual names the roster PDF too |
+| §4 I | A major move's copies (old volume, dump): P-14 |
+| §7 DD, NC | finance is the third consumer and applies soft removals (V5, V10) |
+| §8 I, DD | Database spans (ADR-0074: parameterised statements, no bound value, tested per service); exception messages on spans: P-15; the LGTM pod's 24 h retention replaces "WP120 builds the backend this round" |
+| §9, §10 | Rewritten as built, with evidence in code and tests; new residuals: compose's loopback port of pdf-service (Info), the roster's guardians' contacts and unawareness (joins P-05), the finance audit trail that no API reads (joins P-01), finance records and parked events that nothing deletes (P-02), the expense description as free text in the CSV (P-12), 403 inside an academy (Info) |
+| Retention table | finance stores, the 24 h LGTM retention, a major move's copies |
+| Findings | P-14 (Medium, gate) and P-15 (Medium), on the ADR-0077 scale; P-10 to P-13 worded as built. P-01 to P-09 unchanged; P-10, P-11, P-12, P-13 as in the eighth round's status |
 
 ## Verification
 Every mitigation above was looked up in the tree on 2026-11-15 (worktree `wp112-linddun`, base 8eec8325): migrations
@@ -252,6 +286,21 @@ tests (`HealthRoleMatrixTest`, `MatchEventFeedRoleMatrixTest`, `PlatformUserRead
 `infra/tofu/main.tf`) and contracts (`core.yaml`, `athlete.yaml`, `game.yaml`, `events/core.*.schema.json`).
 
 Not verified: whether any client strips EXIF from logos (§6); whether a game rule reads `birthDate` / `gender` beyond the
-replica filter (P-10, searched by name only); backups (out of scope, as in the STRIDE model); everything marked
-**planned** (§9, §10, P-11, P-12), which rests on ADR-0051, decisions 86–103 and the briefs, not on code. No test was
-run: this work package changes documentation only.
+replica filter (P-10, searched by name only); backups (out of scope, as in the STRIDE model). No test was run: this
+work package changes documentation only.
+
+WP150 (2026-11-28, base cc4fb3e2) looked up every row of §9 and §10 and the corrected rows in the tree: pdf-service
+(`crates/adapters/src/{auth,http,problem,render,security,telemetry}.rs`, `crates/domain/src/{team_roster,error}.rs`,
+`tests/logs.rs`, `tests/api/http.rs`, the chart's `networkpolicy.yaml`, `infra/compose/compose.yaml`); its callers
+(core `TeamRosterPdfTest`, `ExportResponse`; game `MatchSheetPdfResourceTest`, `MatchSheetPdfResource`,
+`GetMatchSheetPdf`); finance-service (migrations V3, V4, V5, V10, V11, V20; `domain/access.go`,
+`application/retention.go`, `adapters/in/rest/{exports,handler,problem}.go`, `adapters/in/events/decode.go`,
+`adapters/out/persistence/replica.go`; the tests named in §10; `finance.yaml`; the chart's `values.yaml` and
+`networkpolicy.yaml`; `infra/compose/nginx.conf`); ADR-0073, ADR-0074, `scripts/pg-major-move.sh`,
+`docs/runbooks/postgresql-major.md`, `deploy/helm/hoops/values*.yaml`, `templates/observability.yaml`; game
+`MatchLookup`, `GetPlayerSeasonStats`, `IngestEventBatch`. Read, not run: the tests are cited by name and assertion.
+
+To verify (WP150): what finance's "request failed" log line can contain (`rest/problem.go` logs the error text of an
+unexpected error; no test seeds a value into one); whether a driver message can echo refused input into a Java
+exception event (ADR-0074 §4, P-15); the rows of §1–§8 that WP150 did not touch were not re-checked against the code
+(only the claims the tenth round changed and the "planned" or "this round" wording).
