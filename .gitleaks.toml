@@ -3,12 +3,13 @@ title = "hoops-academy gitleaks config"
 [extend]
 useDefault = true
 
+# No path allow-list for docs/ or .claude/ (AG-03, ADR-0078): agents write Markdown there and Pages publishes docs/.
+# A real false positive gets its fingerprint in .gitleaksignore (or a narrow regex here), never a path;
+# scripts/tests/test_agent_guardrails.py fails when such a path comes back.
 [allowlist]
-description = "Documented placeholders and test fixtures"
+description = "Documented placeholders"
 paths = [
   '''\.env\.example$''',
-  '''docs/.*\.md$''',
-  '''\.claude/skills/.*''',
 ]
 regexes = [
   '''change-me-[a-z0-9-]+''',

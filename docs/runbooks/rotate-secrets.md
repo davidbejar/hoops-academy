@@ -39,7 +39,7 @@ relay with credentials needs a realm change for Keycloak's mails (not built); co
 1. Edit `.env` with new random values (for example `openssl rand -base64 24`). Never paste them into a shell history
    line, ticket or chat.
 2. Database role passwords: `infra/db/init/02_passwords.sh` runs only on an empty volume. Either
-   - reset: `just down && podman volume rm hoops_pgdata-19 && just up && just seed-users` (loses all local data), or
+   - reset: `just down && podman volume rm hoops_pgdata-19 && just up && just seed-users` (loses all local data; the owner's step), or
    - rotate in place (design, not executed): `ALTER ROLE core_app PASSWORD '...'` as the superuser for each role
      (psql inside `hoops-postgres`), then restart the services.
 3. Keycloak client secrets and admin password are applied at the first realm import / first bootstrap only. With data to

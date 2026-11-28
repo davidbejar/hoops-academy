@@ -50,7 +50,7 @@ The Redpanda volume (`hoops_redpanda-data`) is kept; step 7 republishes the rost
 
 The dump is a second copy: into an empty 17 volume, `podman exec -i hoops-postgres psql -U postgres -d postgres <
 <dump>.sql` (one error, "role postgres already exists", is expected). Remove `hoops_pgdata` by hand
-(`podman volume rm hoops_pgdata`) only once PostgreSQL 19 has proven itself; nothing in the repository removes it.
+(`podman volume rm hoops_pgdata`, the owner's step) only once PostgreSQL 19 has proven itself; nothing in the repository removes it.
 
 ## CloudNativePG (kind, the cloud VM)
 A new cluster starts on `19.0-minimal-trixie` from the chart. Today only throwaway kind clusters exist (`just kind-down`,

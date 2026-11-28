@@ -44,7 +44,7 @@ podman cp hoops-postgres:/tmp/hoops.dump ./hoops-$(date +%F).dump
 Encrypt the file at rest and
 copy it off the machine. Restore into an **empty** volume so that `infra/db/init` creates the roles and schemas first:
 ```bash
-just down && podman volume rm hoops_pgdata-19 && just up
+just down && podman volume rm hoops_pgdata-19 && just up   # the owner's step: drops the database (the Claude hook asks)
 podman cp ./hoops-YYYY-MM-DD.dump hoops-postgres:/tmp/hoops.dump
 podman exec -e PGPASSWORD="$POSTGRES_SUPERUSER_PASSWORD" hoops-postgres \
   pg_restore -U postgres -d hoops --clean --if-exists --no-owner /tmp/hoops.dump

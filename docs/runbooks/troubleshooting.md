@@ -24,7 +24,7 @@ marked (unverified). Kind-specific problems are in `kind.md`, stack basics in `l
 - **Symptom:** a change in `infra/keycloak/realm-academy.json` (clients, scopes, redirect URIs, password policy) has no
   effect; or login still fails after pulling WP17.
 - **Cause:** Keycloak imports the realm only when it does not exist yet (import = ignore existing).
-- **Fix (compose, destroys all local data):** `just down && podman volume rm hoops_pgdata-19 && just up && just seed-users`.
+- **Fix (compose, destroys all local data, the owner's step):** `just down && podman volume rm hoops_pgdata-19 && just up && just seed-users`.
   Same for changed DB init scripts or role passwords. **kind:** `kubectl -n hoops delete cluster keycloak-db` and let
   Helm/Tilt recreate it; run `scripts/sync-chart-files.sh` first so the chart carries the new realm.
 

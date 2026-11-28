@@ -9,11 +9,11 @@ just seed-users                 # e-mail logins <name>@hoops-academy.com: supera
 just logs keycloak              # follow logs
 just down                       # stop (data kept in volume hoops_pgdata-19)
 ```
-Reset everything: `just down && podman volume rm hoops_pgdata-19` (needed after changing the realm JSON or DB init scripts).
+Reset everything, the owner's step (the Claude hook asks): `just down && podman volume rm hoops_pgdata-19` (needed after changing the realm JSON or DB init scripts).
 
 **Realm changes.** Keycloak imports `infra/keycloak/realm-academy.json` only into an empty database, so an existing stack
 keeps the realm it was first started with. After a realm change re-import it:
-`just down && podman volume rm hoops_pgdata-19 && just up && just seed-users` (this also drops the services' data).
+`just down && podman volume rm hoops_pgdata-19 && just up && just seed-users` (this also drops the services' data; the owner's step).
 
 **PostgreSQL major.** The volume carries the major (ADR-0073). A stack still on PostgreSQL 17 (`hoops_pgdata`) moves
 with `scripts/pg-major-move.sh`: [a new PostgreSQL major](postgresql-major.md).
