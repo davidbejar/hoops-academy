@@ -64,7 +64,7 @@ mutation MODULE="all":
 # files of tool/mutation/manifest.json and runs their flutter tests per mutant; fails below the manifest's baseline.
 # Report in apps/web/build/mutation/report.json. ARGS: e.g. --workers 2, --target lib/<file>.dart, --list
 web-mutation *ARGS:
-    cd apps/web && flutter pub get >/dev/null && dart run tool/mutation/run.dart {{ARGS}}
+    cd apps/web && flutter pub get --enforce-lockfile >/dev/null && dart run tool/mutation/run.dart {{ARGS}}
 
 # Regenerate the Mermaid ER and class diagrams of docs/domain/*-model.md (throwaway PostgreSQL via Podman, ~10 s)
 diagrams:
@@ -74,7 +74,7 @@ diagrams:
 diagrams-check:
     scripts/model-diagrams.sh --check
 
-# Virtualenv of the documentation site (.venv-docs, pinned by config/docs/requirements.txt); rebuilt when the pins change
+# Virtualenv of the documentation site (.venv-docs, pinned by hash in config/docs/requirements.txt); rebuilt when the pins change
 [private]
 docs-venv:
     #!/usr/bin/env bash
@@ -82,7 +82,7 @@ docs-venv:
     if [ ! -x .venv-docs/bin/zensical ] || [ config/docs/requirements.txt -nt .venv-docs/.installed ]; then
       rm -rf .venv-docs
       python3 -m venv .venv-docs
-      .venv-docs/bin/pip install --quiet --disable-pip-version-check -r config/docs/requirements.txt
+      .venv-docs/bin/pip install --quiet --disable-pip-version-check --require-hashes -r config/docs/requirements.txt
       touch .venv-docs/.installed
     fi
 

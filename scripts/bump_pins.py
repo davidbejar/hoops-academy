@@ -47,20 +47,44 @@ class Pin:
 #                          a version counts only when every registry publishes it in its flavour. Minor of the pinned
 #                          major only; a pin naming the major alone ("19") stays and a newer major is only reported. The
 #                          major moves by hand (WP144, ADR-0073).
+# WP152 (TM-04, TM-05, AG-12): every image of the build carries its digest, and the pins that are not images carry a
+# checksum that moves with the version:
+#   service.Containerfile  maven builder tag+digest   | skopeo, newest tag published for amd64 and arm64 (multiarch)
+#   web.Containerfile      nginx tag+digest, cirruslabs/flutter tag+digest | skopeo
+#   keycloak               compose.yaml + chart values tag+digest (appVersion and the Testcontainers name: second entry)
+#   databases values.yaml  CNPG postgresql image digest for the tag the postgresql entry wrote (track="digest")
+#   values.yaml            redis, mailpit tag+digest
+#   .mvn wrapper           Maven version + distributionSha256Sum | Maven Central (zip checked against its SHA-512)
+#   setup-flutter action   Flutter version + SHA-256 of the linux archive | releases_linux.json of the stable channel
+#   platform.sh            CNPG version + SHA-256 of the release manifest | the release asset's digest (GitHub API)
+#   .semgrep/registry-rules.txt  SHA-256 of each registry ruleset | semgrep.dev (scripts/semgrep-rules.sh checks them)
+#   .pre-commit-config.yaml  hook repos by commit SHA, tag in a comment | git ls-remote (peeled tag)
 # Recorded from the pins, not pins themselves: the chart snapshots (deploy/helm/tests/run.sh --update) and the
 # ExternalSecret schema of the ESO version (deploy/helm/tests/schemas/update-eso.sh). bump-pins.yml re-records both.
 # Gateway API (platform.sh) is NOT bumped here: it must match Envoy Gateway's compatibility matrix (ADR-0031), by hand.
 SEMVER = r"^v?(\d+\.\d+\.\d+)$"
 PLATFORM = ["deploy/lib/platform.sh"]
 PINS = [
+    Pin("maven builder image", ["deploy/containers/service.Containerfile"],
+        rf"docker\.io/library/maven:(?P<tag>[\w.\-]+)@(?P<digest>{DIGEST})", "image",
+        repo="docker.io/library/maven", tag_re=r"^(\d+\.\d+\.\d+)-eclipse-temurin-25$", multiarch=True),
+    Pin("maven wrapper", [".mvn/wrapper/maven-wrapper.properties"],
+        r"apache-maven/(?P<tag>[\d.]+)/apache-maven-(?P<tag_file>[\d.]+)-bin\.zip\n.*?^distributionSha256Sum=(?P<sha256>[0-9a-f]{64})$",
+        "maven"),
+    Pin("flutter sdk (CI)", [".github/actions/setup-flutter/action.yml"],
+        r"FLUTTER_VERSION: (?P<tag>\d+\.\d+\.\d+)\n\s+FLUTTER_SHA256: (?P<sha256>[0-9a-f]{64})", "flutter"),
     Pin("distroless java25 nonroot", ["deploy/containers/service.Containerfile"],
         rf"distroless/java25-debian13:nonroot@(?P<digest>{DIGEST})", "image",
         repo="gcr.io/distroless/java25-debian13", floating="nonroot"),
     Pin("nginx-unprivileged", ["deploy/containers/web.Containerfile"],
-        r"nginxinc/nginx-unprivileged:(?P<tag>[\w.\-]+)\n", "image",
+        rf"nginxinc/nginx-unprivileged:(?P<tag>[\w.\-]+)@(?P<digest>{DIGEST})\n", "image",
         repo="docker.io/nginxinc/nginx-unprivileged", tag_re=r"^(\d+\.\d+)-alpine$", even_minor=True),
+    # cirruslabs publishes no newer Flutter than 3.44.0 (2026-11); the stage is built by no pipeline (ADR-0068 DEP-06).
+    Pin("flutter image (container)", ["deploy/containers/web.Containerfile"],
+        rf"cirruslabs/flutter:(?P<tag>[\w.\-]+)@(?P<digest>{DIGEST})", "image",
+        repo="ghcr.io/cirruslabs/flutter", tag_re=SEMVER),
     Pin("redis (chart)", ["deploy/helm/hoops/values.yaml"],
-        r"repository: docker\.io/library/redis, tag: (?P<tag>[\w.\-]+),", "image",
+        rf"repository: docker\.io/library/redis, tag: (?P<tag>[\w.\-]+), digest: (?P<digest>{DIGEST})\}}", "image",
         repo="docker.io/library/redis", tag_re=r"^(\d+\.\d+\.\d+)-alpine$"),
     # One Redpanda for the chart, compose and finance-service's Testcontainers broker (deploy/helm/tests/run.sh compares
     # them); the Quarkus Dev Services name the same tag without a digest, hence the second entry.
@@ -80,8 +104,22 @@ PINS = [
         r"(?:library/postgres|cloudnative-pg/postgresql):(?P<tag>\d+(?:\.\d+)?)(?:-[a-z]+)*(?![\w.\-])", "image",
         repo="docker.io/library/postgres", tag_re=r"^(\d+(?:\.\d+)?)$", major_only_stays=True,
         flavours={"docker.io/library/postgres": "{}-trixie", "ghcr.io/cloudnative-pg/postgresql": "{}-minimal-trixie"}),
+    # The database image the CNPG Cluster runs: the tag is the postgresql entry's (above, so it runs first), only the
+    # digest of that tag is recomputed here.
+    Pin("cloudnative-pg postgresql image", ["deploy/helm/hoops/charts/databases/values.yaml"],
+        rf"cloudnative-pg/postgresql:(?P<tag>[\w.\-]+)@(?P<digest>{DIGEST})", "image",
+        repo="ghcr.io/cloudnative-pg/postgresql", track="digest"),
+    Pin("keycloak", ["infra/compose/compose.yaml", "deploy/helm/hoops/charts/keycloak/values.yaml"],
+        rf'quay\.io/keycloak/keycloak(?::|\n\s+tag: ")(?P<tag>[\w.\-]+)(?:@|"\n\s+digest: )(?P<digest>{DIGEST})', "image",
+        repo="quay.io/keycloak/keycloak", tag_re=SEMVER),
+    # the chart's appVersion and the Testcontainers name of the realm tests follow the version above
+    Pin("keycloak (appVersion, tests)",
+        ["deploy/helm/hoops/charts/keycloak/Chart.yaml",
+         "libs/common-quarkus/src/test/java/com/hoopsacademy/common/testing/TestRealm.java"],
+        r'(?:appVersion: "|KEYCLOAK_IMAGE = "quay\.io/keycloak/keycloak:)(?P<tag>\d+\.\d+\.\d+)"', "image",
+        repo="quay.io/keycloak/keycloak", tag_re=SEMVER),
     Pin("mailpit (chart)", ["deploy/helm/hoops/values.yaml"],
-        r"repository: docker\.io/axllent/mailpit, tag: (?P<tag>[\w.\-]+)\}", "image",
+        rf"repository: docker\.io/axllent/mailpit, tag: (?P<tag>[\w.\-]+), digest: (?P<digest>{DIGEST})\}}", "image",
         repo="docker.io/axllent/mailpit", tag_re=SEMVER),
     # WP120: the dev-only Grafana LGTM pod (chart) and container (compose profile observability) move together.
     Pin("grafana otel-lgtm (chart, compose)", ["deploy/helm/hoops/values.yaml", "infra/compose/compose.yaml"],
@@ -89,7 +127,8 @@ PINS = [
         repo="docker.io/grafana/otel-lgtm", tag_re=r"^(\d+\.\d+\.\d+)$"),
     Pin("trivy", [".github/workflows/ci.yml", ".github/actions/image-publish/action.yml", "scripts/sbom.sh",
                   "infra/tofu/check.sh"],
-        r"aquasec/trivy:(?P<tag>[\w.\-]+)", "image", repo="docker.io/aquasec/trivy", tag_re=SEMVER),
+        rf"aquasec/trivy:(?P<tag>[\w.\-]+)@(?P<digest>{DIGEST})", "image", repo="docker.io/aquasec/trivy",
+        tag_re=SEMVER),
     Pin("semgrep", [".github/workflows/semgrep.yml"],
         rf"semgrep/semgrep:(?P<tag>[\w.\-]+)@(?P<digest>{DIGEST})", "image",
         repo="docker.io/semgrep/semgrep", tag_re=SEMVER),
@@ -105,8 +144,9 @@ PINS = [
     # kind and the cloud VM install the same operators from one sourced file (infra/tofu/check.sh, DEP-02).
     Pin("Envoy Gateway", PLATFORM, r'^ENVOY_GATEWAY_VERSION="(?P<tag>[^"]+)"', "release",
         gh="envoyproxy/gateway"),
-    Pin("CloudNativePG", PLATFORM, r'^CNPG_VERSION="(?P<tag>[^"]+)"', "release",
-        gh="cloudnative-pg/cloudnative-pg"),
+    Pin("CloudNativePG", PLATFORM,
+        r'^CNPG_VERSION="(?P<tag>[^"]+)"\nCNPG_MANIFEST_SHA256="(?P<sha256>[0-9a-f]{64})"', "release",
+        gh="cloudnative-pg/cloudnative-pg", asset="cnpg-{version}.yaml"),
     Pin("External Secrets Operator", ["deploy/kind/up.sh"], r'^ESO_VERSION="(?P<tag>[^"]+)"', "release",
         gh="external-secrets/external-secrets"),
     Pin("Stakater Reloader", PLATFORM,
@@ -114,6 +154,15 @@ PINS = [
         rf'RELOADER_CHART_DIGEST="(?P<digest>{DIGEST})"\nRELOADER_IMAGE_DIGEST="(?P<image_digest>{DIGEST})"',
         "chart", chart="ghcr.io/stakater/charts/reloader", image="ghcr.io/stakater/reloader",
         tag_re=r"^(\d+\.\d+\.\d+)$"),
+    Pin("semgrep rulesets", [".semgrep/registry-rules.txt"],
+        r"^p/java (?P<java>[0-9a-f]{64})$.*^p/rust (?P<rust>[0-9a-f]{64})$.*^p/golang (?P<golang>[0-9a-f]{64})$.*"
+        r"^p/owasp-top-ten (?P<owasp>[0-9a-f]{64})$", "semgrep-rules"),
+    Pin("pre-commit gitleaks", [".pre-commit-config.yaml"],
+        r"github\.com/gitleaks/gitleaks\n\s+rev: (?P<sha>[0-9a-f]{40}) # frozen: (?P<tag>v[\d.]+)", "git-tag",
+        git="https://github.com/gitleaks/gitleaks"),
+    Pin("pre-commit hooks", [".pre-commit-config.yaml"],
+        r"github\.com/pre-commit/pre-commit-hooks\n\s+rev: (?P<sha>[0-9a-f]{40}) # frozen: (?P<tag>v[\d.]+)",
+        "git-tag", git="https://github.com/pre-commit/pre-commit-hooks"),
 ]
 
 
@@ -151,17 +200,83 @@ def chart_digest(repo, tag):
     return "sha256:" + hashlib.sha256(skopeo("inspect", "--raw", f"docker://{repo}:{tag}").encode()).hexdigest()
 
 
-def pick(tags, tag_re, current, major, even_minor=False):
-    """Highest tag matching tag_re; same major as `current` unless major is True. Returns (best, best_any)."""
+def pick(tags, tag_re, current, major, even_minor=False, usable=None):
+    """Highest tag matching tag_re; same major as `current` unless major is True. Returns (best, best_any).
+    `usable(tag)` (optional) skips a tag the caller cannot use, e.g. one not yet published for every architecture."""
     rx = re.compile(tag_re)
     cands = [(vtuple(m.group(1) if m.groups() else t), t) for t in tags if (m := rx.match(t))]
     if even_minor:
         cands = [c for c in cands if len(c[0]) < 2 or c[0][1] % 2 == 0]
     cur = vtuple(current)
-    pool = [c for c in cands if major or c[0][0] == cur[0]]
-    best = max(pool)[1] if pool else current
+    pool = sorted((c for c in cands if major or c[0][0] == cur[0]), reverse=True)
+    if usable:
+        pool = [c for c in pool if usable(c[1])]
+    best = pool[0][1] if pool else current
     anyv = max(cands)[1] if cands else current
     return best, anyv
+
+
+def has_both_architectures(repo, tag):
+    """True when the tag is an index naming linux/amd64 and linux/arm64 (a digest of one platform fails on the other)."""
+    doc = json.loads(skopeo("inspect", "--raw", f"docker://{repo}:{tag}"))
+    return {"amd64", "arm64"} <= {m.get("platform", {}).get("architecture") for m in doc.get("manifests", [])}
+
+
+def http_get(url, accept=None):
+    req = urllib.request.Request(url, headers={"User-Agent": "hoops-bump-pins", **({"Accept": accept} if accept else {})})
+    if os.environ.get("GITHUB_TOKEN") and url.startswith("https://api.github.com/"):
+        req.add_header("Authorization", "Bearer " + os.environ["GITHUB_TOKEN"])
+    with urllib.request.urlopen(req, timeout=120) as resp:  # nosemgrep: fixed https URLs of the pin inventory
+        return resp.read()
+
+
+def release_asset_digest(gh, tag, name):
+    """The SHA-256 GitHub records for a release asset (the publisher's upload), without downloading it."""
+    assets = json.loads(http_get(f"https://api.github.com/repos/{gh}/releases/tags/{tag}"))["assets"]
+    digest = next(a["digest"] for a in assets if a["name"] == name)
+    return digest.removeprefix("sha256:")
+
+
+def maven_versions():
+    xml = http_get("https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/maven-metadata.xml").decode()
+    return re.findall(r"<version>(\d+\.\d+\.\d+)</version>", xml)
+
+
+def maven_distribution_sha256(version):
+    """SHA-256 of the -bin.zip, computed on the download that Maven Central's own SHA-512 vouches for."""
+    url = f"https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/{version}/apache-maven-{version}-bin.zip"
+    data = http_get(url)
+    published = http_get(url + ".sha512").decode().split()[0]
+    if hashlib.sha512(data).hexdigest() != published:
+        raise RuntimeError(f"maven {version}: the download does not match Central's SHA-512")
+    return hashlib.sha256(data).hexdigest()
+
+
+def flutter_releases():
+    """[(version, sha256 of the linux archive)] of the stable channel (storage.googleapis.com release manifest)."""
+    doc = json.loads(http_get("https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json"))
+    return [(r["version"], r["sha256"]) for r in doc["releases"]
+            if r["channel"] == "stable" and re.fullmatch(r"\d+\.\d+\.\d+", r["version"])]
+
+
+SEMGREP_RULESETS = {"java": "p/java", "rust": "p/rust", "golang": "p/golang", "owasp": "p/owasp-top-ten"}
+
+
+def ruleset_sha256(ruleset):
+    return hashlib.sha256(http_get(f"https://semgrep.dev/c/{ruleset}")).hexdigest()
+
+
+def git_tag_commit(url, tag):
+    """The commit a tag names: the peeled line of an annotated tag, else the tag's own line (never a tag object)."""
+    out = subprocess.run(["git", "ls-remote", "--tags", url, f"refs/tags/{tag}", f"refs/tags/{tag}^{{}}"],
+                         capture_output=True, text=True, check=True).stdout.split("\n")
+    refs = dict(reversed(line.split("\t")) for line in out if line)
+    return refs.get(f"refs/tags/{tag}^{{}}") or refs[f"refs/tags/{tag}"]
+
+
+def git_tags(url):
+    out = subprocess.run(["git", "ls-remote", "--tags", "--refs", url], capture_output=True, text=True, check=True).stdout
+    return [line.split("refs/tags/")[1] for line in out.splitlines()]
 
 
 def github_releases(repo):
@@ -179,9 +294,12 @@ def resolve(pin, current, major):
     if pin.kind == "image":
         if "floating" in o:
             new["digest"] = image_digest(o["repo"], o["floating"])
+        elif o.get("track") == "digest":  # the tag is another pin's; follow it
+            new["digest"] = image_digest(o["repo"], current["tag"])
         else:
             tags = published_everywhere(o["flavours"]) if "flavours" in o else list_tags(o["repo"])
-            new["tag"], anyv = pick(tags, o["tag_re"], current["tag"], major, o.get("even_minor", False))
+            usable = (lambda t: has_both_architectures(o["repo"], t)) if o.get("multiarch") else None
+            new["tag"], anyv = pick(tags, o["tag_re"], current["tag"], major, o.get("even_minor", False), usable)
             if o.get("major_only_stays") and len(vtuple(current["tag"])) == 1 and not major:
                 new["tag"] = current["tag"]  # a floating major ("19") has no minor to bump
             if "digest" in current:
@@ -193,8 +311,31 @@ def resolve(pin, current, major):
         tags = [t for t in github_releases(o["gh"]) if re.match(SEMVER, t)]
         best, anyv = pick(tags, SEMVER, current["tag"], major)
         new["tag"] = prefix + best.lstrip("v")
+        if "asset" in o:  # a checksum of the release's manifest travels with the version
+            version = new["tag"].lstrip("v")
+            new["sha256"] = release_asset_digest(o["gh"], "v" + version, o["asset"].format(version=version))
         note = f"major {anyv} available (--major)" if vtuple(anyv)[0] != vtuple(best)[0] and not major else ""
         return new, f"https://github.com/{o['gh']}/releases/tag/{prefix}{best.lstrip('v')}", note
+    if pin.kind == "maven":
+        best, anyv = pick(maven_versions(), SEMVER, current["tag"], major)
+        new.update(tag=best, tag_file=best, sha256=maven_distribution_sha256(best) if best != current["tag"]
+                   else current["sha256"])
+        note = f"major {anyv} available (--major)" if vtuple(anyv)[0] > vtuple(best)[0] and not major else ""
+        return new, f"https://maven.apache.org/docs/{best}/release-notes.html", note
+    if pin.kind == "flutter":
+        known = dict(flutter_releases())
+        best, anyv = pick(list(known), SEMVER, current["tag"], major)
+        new.update(tag=best, sha256=known[best])
+        note = f"major {anyv} available (--major)" if vtuple(anyv)[0] > vtuple(best)[0] and not major else ""
+        return new, f"https://github.com/flutter/flutter/releases/tag/{best}", note
+    if pin.kind == "semgrep-rules":
+        new = {name: ruleset_sha256(ruleset) for name, ruleset in SEMGREP_RULESETS.items()}
+        return new, "https://semgrep.dev/explore", ""
+    if pin.kind == "git-tag":
+        best, anyv = pick(git_tags(o["git"]), SEMVER, current["tag"], major)
+        new.update(tag=best, sha=git_tag_commit(o["git"], best))
+        note = f"major {anyv} available (--major)" if vtuple(anyv)[0] > vtuple(best)[0] and not major else ""
+        return new, f"{o['git']}/releases/tag/{best}", note
     tags = json.loads(skopeo("list-tags", f"docker://{o['chart']}"))["Tags"]
     new["tag"], anyv = pick(tags, o["tag_re"], current["tag"], major)
     new["digest"] = chart_digest(o["chart"], new["tag"])
@@ -258,7 +399,8 @@ def main():
         manual = changed and by_hand(pin, args.skip_workflows)
         if changed and args.apply and not manual:
             rewrite(pin, root, new)
-        show = lambda g: " ".join(str(g.get(k, ""))[:19] for k in ("tag", "digest") if g.get(k))  # noqa: E731
+        shown = ("tag", "digest", "sha256", "sha", *SEMGREP_RULESETS)  # what a row of the table names
+        show = lambda g: " ".join(str(g[k])[:19] for k in shown if g.get(k))  # noqa: E731
         rows.append((pin.name, show(cur), show(new) if changed else "", link, note, ", ".join(pin.files), manual))
     outdated = [r for r in rows if r[2]]
     if args.markdown:

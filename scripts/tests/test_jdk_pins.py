@@ -30,7 +30,7 @@ class JdkPinsAgree(unittest.TestCase):
         # must be the one the Containerfile names, or a JDK or Debian change would leave the bump on the old image.
         text = (ROOT / "deploy/containers/service.Containerfile").read_text()
         image = re.search(r"ARG RUNTIME_IMAGE=(\S+)\n", text)[1]
-        pins = [p for p in bump_pins.PINS if "deploy/containers/service.Containerfile" in p.files]
+        pins = [p for p in bump_pins.PINS if p.name == "distroless java25 nonroot"]
         self.assertEqual(len(pins), 1)
         digest = bump_pins.read_groups(pins[0], ROOT)["digest"]
         self.assertEqual(f"{pins[0].opts['repo']}:{pins[0].opts['floating']}@{digest}", image)

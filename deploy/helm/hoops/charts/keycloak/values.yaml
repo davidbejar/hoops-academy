@@ -2,6 +2,7 @@ fullnameOverride: keycloak
 image:
   repository: quay.io/keycloak/keycloak
   tag: "26.8.2"
+  digest: sha256:7e66a96e4739239070aeaf72e4c5decf0f7f682cfc725b9f7ea2b336eaba38b3
   pullPolicy: IfNotPresent
 # Public base URL as the browser sees it (no trailing slash). Issuer = <publicUrl>/auth/realms/academy.
 publicUrl: http://localhost:8090

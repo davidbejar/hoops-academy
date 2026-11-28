@@ -10,8 +10,10 @@
 # docs/adr/0031-gateway-api.md (amendment WP100).
 ENVOY_GATEWAY_VERSION="v1.10.0"
 GATEWAY_API_VERSION="v1.6.1"
+# CloudNativePG: the operator manifest of the release (a release asset, not a branch file), applied only when its SHA-256
+# is the one pinned here (TM-04). scripts/bump_pins.py moves both: the digest GitHub records for the asset.
 CNPG_VERSION="1.30.2"
-CNPG_BRANCH="release-${CNPG_VERSION%.*}"
+CNPG_MANIFEST_SHA256="ea4cc355b394e10661d30c6b409cefb19029dd973bccb76b1ed8c789985bc68c"
 # Stakater Reloader (WP87, ADR-0012 amendment): rolls every Deployment/StatefulSet annotated with
 # secret.reloader.stakater.com/auto (the chart with global.reloader.enabled, on in values-kind.yaml and values-cloud.yaml;
 # envoy-ratelimit through eg_values) when a Secret it reads changes, whether ESO refreshed it or secrets.sh re-applied it.
@@ -57,8 +59,19 @@ install_envoy_gateway() { # helm-command...
 }
 
 install_cnpg() { # kubectl-command...
-  "$@" apply --server-side --force-conflicts \
-    -f "https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/${CNPG_BRANCH}/releases/cnpg-${CNPG_VERSION}.yaml"
+  local dir manifest sum
+  dir=$(mktemp -d) && manifest="$dir/cnpg-${CNPG_VERSION}.yaml"
+  curl -sSfL -o "$manifest" \
+    "https://github.com/cloudnative-pg/cloudnative-pg/releases/download/v${CNPG_VERSION}/cnpg-${CNPG_VERSION}.yaml" \
+    || { rm -rf "$dir"; echo "install_cnpg: cannot fetch the v${CNPG_VERSION} manifest" >&2; return 1; }
+  sum=$(if command -v sha256sum >/dev/null; then sha256sum "$manifest"; else shasum -a 256 "$manifest"; fi)
+  if [ "${sum%% *}" != "$CNPG_MANIFEST_SHA256" ]; then
+    rm -rf "$dir"
+    echo "install_cnpg: the v${CNPG_VERSION} manifest is not the pinned one (SHA-256 ${sum%% *}, pinned $CNPG_MANIFEST_SHA256)" >&2
+    return 1
+  fi
+  "$@" apply --server-side --force-conflicts -f "$manifest"
+  rm -rf "$dir"
 }
 
 wait_for_platform() { # kubectl-command...: both operators rolled out, and the Gateway API CRDs Envoy Gateway needs

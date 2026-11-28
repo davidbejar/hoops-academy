@@ -97,7 +97,7 @@ if finance:
 # Flutter: `flutter build web` on the host (native arm64, uses the local pub cache), then an nginx image.
 local_resource(
     'flutter-build-web',
-    cmd='cd apps/web && flutter pub get >/dev/null && flutter build web --release --pwa-strategy=offline-first',
+    cmd='cd apps/web && flutter pub get --enforce-lockfile >/dev/null && flutter build web --release --pwa-strategy=offline-first',
     deps=['apps/web/lib', 'apps/web/web', 'apps/web/pubspec.yaml', 'apps/web/assets'],
     labels=['web'],
     auto_init=not cfg.get('skip-flutter', False),

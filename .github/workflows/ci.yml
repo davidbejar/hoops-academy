@@ -151,7 +151,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-flutter
       - uses: extractions/setup-just@53165ef7e734c5c07cb06b3c8e7b647c5aa16db3 # v4.0.0
-      - run: flutter pub get
+      - run: flutter pub get --enforce-lockfile
         working-directory: apps/web
       - run: just web-format-check
       - run: flutter analyze
@@ -173,7 +173,7 @@ jobs:
       - uses: ./.github/actions/setup-flutter
       - id: chrome
         uses: ./.github/actions/setup-pinned-chrome
-      - run: flutter pub get
+      - run: flutter pub get --enforce-lockfile
         working-directory: apps/web
       - name: Web smoke (mock mode, headless)
         working-directory: apps/web
@@ -264,7 +264,7 @@ jobs:
         run: ./mvnw -B -ntp -q dependency:go-offline
       - name: trivy fs
         run: |
-          docker run --rm -v "$PWD:/src" -v "$HOME/.m2:/root/.m2:ro" -w /src aquasec/trivy:0.76.2 fs \
+          docker run --rm -v "$PWD:/src" -v "$HOME/.m2:/root/.m2:ro" -w /src aquasec/trivy:0.76.2@sha256:8f6bb947dbc528902e11f2f5be52f7b519f6a39d5d148f41166f2040499768fb fs \
             --scanners vuln,misconfig,secret --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress \
             --skip-dirs apps/web/build --skip-dirs '**/target' --skip-dirs apps/web/.dart_tool \
             --ignorefile .trivyignore.yaml .

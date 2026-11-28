@@ -3305,7 +3305,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: keycloak
-          image: "quay.io/keycloak/keycloak:26.8.2"
+          image: "quay.io/keycloak/keycloak:26.8.2@sha256:7e66a96e4739239070aeaf72e4c5decf0f7f682cfc725b9f7ea2b336eaba38b3"
           imagePullPolicy: IfNotPresent
           # Production mode. Realm import is skipped when the realm already exists (IGNORE_EXISTING).
           args: ["start", "--import-realm"]
@@ -3587,7 +3587,7 @@ spec:
         seccompProfile: {type: RuntimeDefault}
       containers:
         - name: mailpit
-          image: "docker.io/axllent/mailpit:v1.34.0"
+          image: "docker.io/axllent/mailpit:v1.34.0@sha256:23a2ef85bc50853ab3093645d1d64679afd8887e89da5e48a88940c172591a4e"
           imagePullPolicy: IfNotPresent
           env:
             - {name: MP_MAX_MESSAGES, value: "500"}
@@ -3805,7 +3805,7 @@ spec:
         # only its keys, only +ping +incrby +expire. Redis reads the file once at start: restart the Deployment after
         # rotating the password (docs/runbooks/rotate-secrets.md).
         - name: acl
-          image: "docker.io/library/redis:8.12.0-alpine"
+          image: "docker.io/library/redis:8.12.0-alpine@sha256:5af80107c1eeecb484a2269b80a26d12bfa6521787da4663bd9f19f60a163483"
           imagePullPolicy: IfNotPresent
           command:
             - sh
@@ -3837,7 +3837,7 @@ spec:
             - {name: acl, mountPath: /acl}
       containers:
         - name: redis
-          image: "docker.io/library/redis:8.12.0-alpine"
+          image: "docker.io/library/redis:8.12.0-alpine@sha256:5af80107c1eeecb484a2269b80a26d12bfa6521787da4663bd9f19f60a163483"
           imagePullPolicy: IfNotPresent
           # In-memory only (no RDB/AOF), bounded memory with LRU eviction, CONFIG disabled so a client cannot
           # reconfigure the server (e.g. turn persistence on or change the bind address), users from the ACL file.
@@ -4405,7 +4405,7 @@ metadata:
     helm.sh/chart: databases-0.1.0
 spec:
   instances: 1
-  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-minimal-trixie
+  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-minimal-trixie@sha256:12688a494f25aa0b7e1e3cd1800abe85b427fd1a09c991668a48162e3431a2af
   enableSuperuserAccess: false
   storage:
     size: 2Gi
@@ -4548,7 +4548,7 @@ metadata:
     helm.sh/chart: databases-0.1.0
 spec:
   instances: 1
-  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-minimal-trixie
+  imageName: ghcr.io/cloudnative-pg/postgresql:19.0-minimal-trixie@sha256:12688a494f25aa0b7e1e3cd1800abe85b427fd1a09c991668a48162e3431a2af
   enableSuperuserAccess: false
   storage:
     size: 1Gi

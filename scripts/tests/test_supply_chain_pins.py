@@ -37,6 +37,8 @@ BY_TAG = {
     (".github/workflows/images.yml", "docker.io/library/postgres:19.0-trixie"):
         "throw-away test database of the finance image check (postgres pin)",
     ("apps/web/tool/lighthouse.sh", "docker.io/library/nginx:1.27-alpine"): "local Lighthouse run, nothing shipped",
+    ("apps/web/tool/lighthouse.sh", "docker.io/femtopixel/google-lighthouse:v11.7.1"):
+        "local Lighthouse run on the developer's machine, nothing shipped",
 }
 
 
@@ -105,9 +107,10 @@ class EveryDigestIsTracked(unittest.TestCase):
 
     def test_every_file_naming_a_keycloak_image_belongs_to_the_pin(self):
         named = set(subprocess.run(["git", "grep", "-lE", r"quay\.io/keycloak/keycloak", "--", ".", ":!docs",
-                                    ":!scripts/tests", ":!deploy/helm/tests/snapshots", ":!audit"],
-                                   cwd=ROOT, capture_output=True, text=True).stdout.split())
-        self.assertEqual(named - set(pin("keycloak").files) - {"services/core-service/README.md"}, set())
+                                    ":!scripts/tests", ":!scripts/bump_pins.py", ":!deploy/helm/tests/snapshots",
+                                    ":!audit"], cwd=ROOT, capture_output=True, text=True).stdout.split())
+        covered = set(pin("keycloak").files) | set(pin("keycloak (appVersion, tests)").files)
+        self.assertEqual(named - covered - {"services/core-service/README.md"}, set())
 
     def test_the_multi_arch_scan_covers_the_actions_and_the_chart(self):
         sys.path.insert(0, str(ROOT / "scripts/tests"))
@@ -210,12 +213,37 @@ class SemgrepRulesArePinned(unittest.TestCase):
 
     def test_the_hashes_are_committed_and_tracked(self):
         groups = bump_pins.read_groups(pin("semgrep rulesets"), ROOT)
-        self.assertRegex(groups["sha256"], SHA256)
+        self.assertEqual(set(groups), set(bump_pins.SEMGREP_RULESETS))
+        for value in groups.values():
+            self.assertRegex(value, SHA256)
+
+    def test_the_gate_strips_the_prefix_semgrep_gives_a_config_directory(self):
+        body = text(".github/workflows/semgrep.yml")
+        self.assertIn("--strip-rule-prefix semgrep-registry.", body)
+        self.assertIn("--config semgrep-registry/", body)
+
+    def test_the_fetched_rules_are_not_scanned_themselves(self):
+        self.assertIn("semgrep-registry/", text(".semgrepignore"))
+        self.assertIn("semgrep-registry/", text(".gitignore"))
+
+    def run_fetch(self, served):
+        """scripts/semgrep-rules.sh with a stub curl that writes `served`; returns (exit code, files written)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            bin_dir = pathlib.Path(tmp) / "bin"
+            bin_dir.mkdir()
+            stub = bin_dir / "curl"
+            stub.write_text('#!/bin/sh\nwhile [ "$#" -gt 0 ]; do [ "$1" = -o ] && printf %s "$SERVED" > "$2"; shift; done\n')
+            stub.chmod(0o755)
+            out = pathlib.Path(tmp) / "out"
+            done = subprocess.run([str(ROOT / "scripts/semgrep-rules.sh"), str(out)], capture_output=True, text=True,
+                                  env={**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}", "SERVED": served})
+            return done.returncode, done.stderr, sorted(f.name for f in out.glob("*.yml"))
 
     def test_the_fetch_script_refuses_a_ruleset_that_changed(self):
-        script = text("scripts/semgrep-rules.sh")
-        self.assertIn("sha256", script)
-        self.assertIn("exit 1", script)
+        code, err, written = self.run_fetch("rules: []\n")
+        self.assertEqual(code, 1)
+        self.assertIn("changed upstream", err)
+        self.assertEqual(written, [])
 
 
 class PreCommitHooksArePinnedByCommit(unittest.TestCase):
@@ -227,11 +255,6 @@ class PreCommitHooksArePinnedByCommit(unittest.TestCase):
                 self.assertRegex(rev, r"^[0-9a-f]{40}$")
                 self.assertRegex(comment, r"# frozen: v\d+\.\d+\.\d+")
 
-    def test_the_gitleaks_hook_is_the_version_ci_installs(self):
-        hook = re.search(r"gitleaks/gitleaks\n\s+rev: [0-9a-f]{40} # frozen: v([\d.]+)", text(".pre-commit-config.yaml"))
-        action = text(".github/actions/setup-chart-tools/action.yml")
-        self.assertIn(f"gitleaks/gitleaks/releases/download/v{hook[1]}/", action)
-
 
 class DocsRequirementsCarryHashes(unittest.TestCase):
     REQ = "config/docs/requirements.txt"
@@ -242,7 +265,7 @@ class DocsRequirementsCarryHashes(unittest.TestCase):
         self.assertGreaterEqual(len(names), 11)
         for name in names:
             with self.subTest(requirement=name):
-                block = re.search(rf"(?m)^{re.escape(name)}==[^\n]*(?:\\\n[^\n]*)*", body)[0]
+                block = re.search(rf"(?m)^{re.escape(name)}==[^\n]*(?:\n[ \t]+[^\n]*)*", body)[0]
                 self.assertRegex(block, rf"--hash=sha256:{SHA256}")
         self.assertIn("--require-hashes", text("justfile"))
 
@@ -250,6 +273,48 @@ class DocsRequirementsCarryHashes(unittest.TestCase):
         for line in text(self.REQ).replace("\\\n", " ").splitlines():
             if re.match(r"^[A-Za-z]", line):
                 self.assertIn("--hash=sha256:", line, line)
+
+
+class BumpRewritesWhatItTracks(unittest.TestCase):
+    """The weekly bump rewrites each new pin in every file it names, so the copies cannot drift apart."""
+    NEW = {
+        "maven wrapper": {"tag": "9.9.9", "tag_file": "9.9.9", "sha256": "a" * 64},
+        "flutter sdk (CI)": {"tag": "9.9.9", "sha256": "b" * 64},
+        "CloudNativePG": {"tag": "9.9.9", "sha256": "c" * 64},
+        "semgrep rulesets": {k: "d" * 64 for k in bump_pins.SEMGREP_RULESETS},
+        "pre-commit gitleaks": {"tag": "v9.9.9", "sha": "e" * 40},
+        "pre-commit hooks": {"tag": "v9.9.9", "sha": "f" * 40},
+        "keycloak": {"tag": "9.9.9", "digest": "sha256:" + "1" * 64},
+        "cloudnative-pg postgresql image": {"tag": "9.9-minimal-trixie", "digest": "sha256:" + "2" * 64},
+        "maven builder image": {"tag": "9.9.9-eclipse-temurin-25", "digest": "sha256:" + "3" * 64},
+        "mailpit (chart)": {"tag": "v9.9.9", "digest": "sha256:" + "4" * 64},
+    }
+
+    def test_each_pin_is_rewritten_in_all_its_files(self):
+        for name, new in self.NEW.items():
+            with self.subTest(pin=name), tempfile.TemporaryDirectory() as tmp:
+                root = pathlib.Path(tmp)
+                for rel in pin(name).files:
+                    (root / rel).parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy(ROOT / rel, root / rel)
+                bump_pins.rewrite(pin(name), root, new)
+                self.assertEqual(bump_pins.read_groups(pin(name), root), new)
+
+    def test_the_maven_wrapper_names_the_new_version_in_the_url_and_the_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            rel = ".mvn/wrapper/maven-wrapper.properties"
+            (root / rel).parent.mkdir(parents=True)
+            shutil.copy(ROOT / rel, root / rel)
+            bump_pins.rewrite(pin("maven wrapper"), root, self.NEW["maven wrapper"])
+            self.assertIn("apache-maven/9.9.9/apache-maven-9.9.9-bin.zip", (root / rel).read_text())
+
+    def test_a_tag_that_is_not_published_for_both_architectures_is_skipped(self):
+        tags = ["3.10.0-eclipse-temurin-25", "3.10.2-eclipse-temurin-25"]
+        rx = r"^(\d+\.\d+\.\d+)-eclipse-temurin-25$"
+        newest, _ = bump_pins.pick(tags, rx, "3.10.0-eclipse-temurin-25", False)
+        usable, _ = bump_pins.pick(tags, rx, "3.10.0-eclipse-temurin-25", False, usable=lambda t: t.startswith("3.10.0"))
+        self.assertEqual((newest, usable), ("3.10.2-eclipse-temurin-25", "3.10.0-eclipse-temurin-25"))
 
 
 if __name__ == "__main__":
