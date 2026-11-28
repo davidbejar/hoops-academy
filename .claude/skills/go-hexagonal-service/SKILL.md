@@ -91,8 +91,8 @@ lock `finance.replica-retention`, daily (`job.Retention`), counted in `hoops_ros
 
 ## Image, compose, chart, kind
 - `deploy/containers/finance.Containerfile` (context `services/finance-service`): bump the golang tag + index digest with
-  go.mod's toolchain line and the CI action `.github/actions/setup-go` (version and SHA-256), and the distroless
-  static digest; `scripts/tests/test_toolchain_pins.py` fails when the three disagree. `images.yml` job `finance`.
+  go.mod's toolchain line and the CI action `.github/actions/setup-go` (version and SHA-256); the distroless
+  static digest is moved by the weekly `bump-pins` PR. `scripts/tests/test_toolchain_pins.py` fails when the three disagree. `images.yml` job `finance`.
 - Compose: `just finance-up` (profile `finance`, :8085; roles on an existing database by `infra/compose/db-roles.sh`);
   nginx routes `/api/finance/`. On the host: `go run ./cmd/finance-service` with `FINANCE_*_PASSWORD` exported.
 - Chart: sub-chart `charts/finance-service` (alias `finance`): routes, rate-limited exports, NetworkPolicy (in: gateway;

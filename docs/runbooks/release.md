@@ -73,8 +73,8 @@ kubectl -n hoops create secret docker-registry ghcr-pull --docker-server=ghcr.io
   --docker-username=<owner> --docker-password=<PAT with read:packages>
 helm upgrade --install hoops deploy/helm/hoops -n hoops --set 'global.imagePullSecrets[0].name=ghcr-pull' ...
 ```
-The digest of the distroless `java25-debian13:nonroot` runtime in `deploy/containers/service.Containerfile` is bumped
-by the weekly `bump-pins` PR (section 6; distroless has floating tags only, ADR-0054).
+The digests of the distroless `java25`, `cc` (pdf-service) and `static` (finance-service) `-debian13:nonroot` runtimes in
+`deploy/containers/*.Containerfile` are bumped by the weekly `bump-pins` PR (section 6; distroless has floating tags only, ADR-0054).
 
 ### SBOM
 ADR-0043 (WP85). Every image job of `images.yml` writes CycloneDX SBOMs (Maven plugin 1.6, Trivy 1.7), validates each

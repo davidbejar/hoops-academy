@@ -76,7 +76,7 @@ DTO, handler, route in `http::router`, the operation in `pdf.yaml`. Never accept
 
 ## Image, compose, chart, kind
 - `deploy/containers/pdf.Containerfile` (context `services/pdf-service`): `cargo auditable` on the pinned rust image,
-  distroless `cc-debian13:nonroot`; bump the toolchain, the builder tag+digest and the runtime digest together
+  distroless `cc-debian13:nonroot`; bump the toolchain and the builder tag+digest together; the runtime digest is moved by the weekly `bump-pins` PR
   (`scripts/tests/test_toolchain_pins.py` checks that `rust-toolchain.toml` and the builder image agree).
   `scripts/build-images.sh pdf-service`, CI `images.yml` job `pdf` (Trivy gate, SBOM).
 - Compose: `just pdf-up` (profile `pdf`, :8084). Callers on the host use `PDF_SERVICE_URL` from `.env`.

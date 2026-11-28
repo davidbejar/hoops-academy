@@ -105,6 +105,23 @@ class EveryDigestIsTracked(unittest.TestCase):
                 self.assertIn("digest", pin(name).regex.groupindex)
                 self.assertIn("digest", bump_pins.read_groups(pin(name), ROOT))
 
+    def test_every_distroless_runtime_digest_is_moved_by_a_pin(self):
+        """The cc and static bases went stale unseen (libzstd1 CVE in the pdf image): each distroless reference of the
+        container files belongs to a pin of its repo, tracked by its floating tag."""
+        ref = re.compile(r"(gcr\.io/distroless/[\w.\-]+):([\w.\-]+)@" + DIGEST)
+        pins = {p.opts.get("repo"): p for p in bump_pins.PINS if p.kind == "image"}
+        found = 0
+        for path in sorted((ROOT / "deploy/containers").glob("*.Containerfile")):
+            rel = str(path.relative_to(ROOT))
+            for m in ref.finditer(path.read_text()):
+                found += 1
+                with self.subTest(file=rel, image=m[1]):
+                    self.assertIn(m[1], pins, "no bump_pins entry for " + m[1])
+                    self.assertIn(rel, pins[m[1]].files)
+                    self.assertEqual(pins[m[1]].opts.get("floating"), m[2])
+                    self.assertIn("digest", bump_pins.read_groups(pins[m[1]], ROOT))
+        self.assertGreaterEqual(found, 3)
+
     def test_every_file_naming_a_keycloak_image_belongs_to_the_pin(self):
         named = set(subprocess.run(["git", "grep", "-lE", r"quay\.io/keycloak/keycloak", "--", ".", ":!docs",
                                     ":!scripts/tests", ":!scripts/bump_pins.py", ":!deploy/helm/tests/snapshots",
