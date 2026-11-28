@@ -49,8 +49,26 @@ The Redpanda volume (`hoops_redpanda-data`) is kept; step 7 republishes the rost
 3. `just events-backfill force`.
 
 The dump is a second copy: into an empty 17 volume, `podman exec -i hoops-postgres psql -U postgres -d postgres <
-<dump>.sql` (one error, "role postgres already exists", is expected). Remove `hoops_pgdata` by hand
-(`podman volume rm hoops_pgdata`, the owner's step) only once PostgreSQL 19 has proven itself; nothing in the repository removes it.
+<dump>.sql` (one error, "role postgres already exists", is expected).
+
+### Clean-up: the owner removes the copies (P-14)
+Both copies hold every schema in full (minors' data, health records, finance, the roles' password verifiers), outside
+every RLS and retention control, so they do not stay for good. **When:** 14 days after the move, once PostgreSQL 19 has
+run with green checks (`just isolation-check`, `just db-role-check`, `just events-drift`) and the way back is no longer
+needed. If a copy must stay longer, encrypt the dump and keep it off the machine; for real academies this becomes part
+of a backup and retention ADR (P-02, P-14).
+
+```bash
+scripts/pg-major-move.sh --clean-up --out "$HOME/hoops-pg17-dump"            # lists hoops_pgdata and the dumps, with age
+scripts/pg-major-move.sh --clean-up --out "$HOME/hoops-pg17-dump" --remove   # the owner's step, at a terminal
+```
+
+The first only reads. The second refuses unless `hoops-postgres` runs 19 on `hoops_pgdata-19`, no container uses
+`hoops_pgdata`, and `hoops_pgdata` is not the volume compose names; then it asks for the words `remove hoops_pgdata`
+typed at a terminal (an agent's shell has none, and the Claude hook asks the owner before it runs: `pg-copies-remove`,
+ADR-0078) and removes the volume and the `pg_dumpall-*.sql` files of `--out` with their `.sha256`, nothing else there.
+Removing the volume by hand (`podman volume rm hoops_pgdata`) is the same owner's step; nothing else in the repository
+removes it.
 
 ## CloudNativePG (kind, the cloud VM)
 A new cluster starts on `19.0-minimal-trixie` from the chart. Today only throwaway kind clusters exist (`just kind-down`,
