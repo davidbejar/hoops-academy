@@ -59,4 +59,48 @@ reserved for you.
   handover.
 
 ## Handover
-<!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->
+- Built:
+  - **ADR-0077** `docs/adr/0077-threat-modelling-methods.md` and its line at the end of `docs/adr/README.md`: STRIDE
+    per boundary (product, `TM-`), LINDDUN per boundary with the same numbers where both have the boundary (1 to 10;
+    STRIDE's 11, build and supply chain, has no privacy table; `P-`), MAESTRO for the build system only (`AG-`), PASTA's
+    rating (thresholds as in the brief) and attack chains, VAST's keep-current rule; Trike and OCTAVE not used, with the
+    reasons. Consequence written down: findings rated before the ADR (`F-`, P-01..P-13) keep their severity until a
+    revision re-rates them.
+  - **Privacy model** `docs/security/privacy-threat-model.md`: §9 (pdf-service) and §10 (finance-service) rewritten
+    as built, every row with code or test evidence; header, inventory and data-flow overview without "planned"
+    (PostgreSQL 19, database spans, telemetry backends); §1 DD (compose nginx has the export brake), §4 I (a major
+    move's copies), §7 (finance is the third consumer), §8 I and DD (database spans per ADR-0074, exception messages,
+    LGTM 24 h) corrected; retention table extended (finance stores, LGTM, dump and old volume); P-10..P-13 worded as
+    built; a "Status after the tenth round" section lists every change; the Verification section names what was read.
+  - **New findings** (ADR-0077 scale):
+
+    | ID | Rating | Gate | Title |
+    |---|---|---|---|
+    | P-14 | Medium (L1 × I3) | yes | A PostgreSQL major move leaves the old volume and an unencrypted `pg_dumpall` file (every schema, password verifiers) with no deletion rule (ADR-0073, `scripts/pg-major-move.sh`) |
+    | P-15 | Medium (L3 × I1) | no | Exception events on server spans keep the message: game's `NotFoundException`s carry match / player ids (`MatchLookup`, `GetPlayerSeasonStats`, `IngestEventBatch`); a driver echo of refused input is untested (ADR-0074 §4) |
+
+    New residuals folded into existing findings, not numbered: the finance audit trail is readable through no API
+    (joins P-01); dues, payments, expenses, finance audit rows and parked events are never deleted (P-02); guardians
+    are not told the roster CSV/PDF prints their contacts (joins P-05); the expense description is free text in the
+    list and the CSV, its "no names with salaries" rule a contract convention only (P-12); Info: pdf-service on
+    compose's `127.0.0.1:8084`, finance answers 403 (not 404) to members without the role.
+  - **Rule**: one clause in `CLAUDE.md`'s Definition of Done, one checkbox in the `wp-round` Close-out list; `git diff`
+    of both files shows nothing else.
+- Verified: `just docs-build` (strict) green after each change ("No issues found"; the new anchor
+  `#status-after-the-tenth-round-2026-11-28-wp150` present in the built page). `agentic-threat-model.md` is named in
+  code formatting only (it arrives with WP149); `threat-model.md` is linked as a file, no anchor of WP148's new
+  sections. `just test` not run: docs and instruction files only, no code or configuration changed. Spot checks of
+  evidence: every test cited in §9 and §10 found by exact name (`grep -rn "^func Test"`, `fn ...` in the Rust tests),
+  the assertions read (finance role matrix: other family 403 whether the player exists or not, stranger 404;
+  `TestAuthenticationAndTheTenantHeader`: unknown and suspended academy 404).
+- Decisions/ADRs: ADR-0077 (decisions 119–122). The P-14 and P-15 ratings are this package's judgement on that scale.
+- Open points / follow-ups:
+  - Wave 2 candidates: P-14 (a dated deletion or encryption rule for the dump and the old volume; the owner's PG17
+    volume and dump are kept on purpose until the owner says otherwise) and P-15 (messages without ids, or no message
+    on 4xx exception events; a test for the driver-echo case).
+  - P-01..P-13 are not re-rated on the ADR-0077 scale (out of scope); a later revision may do it.
+  - To verify: what finance's "request failed" log line (`rest/problem.go`, the error text of an unexpected error)
+    can contain; the rows of §1–§8 that WP150 did not touch were not re-checked against the code beyond the tenth
+    round's claims and the "planned / this round / yet" wording.
+  - §7's note says the STRIDE model takes the Redpanda boundary up as 7 in WP148; if WP148 numbers it differently,
+    the docs pass aligns the note.
