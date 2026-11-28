@@ -30,7 +30,7 @@ is `docs/SPEC.md` (verbatim), the plan `docs/PLAN.md` (see its implementation no
 ```
 source scripts/env.sh        # JDK 25 + Podman socket for Testcontainers (always do this first)
 just doctor                  # toolchain check
-just up / just down          # local stack: Postgres, Keycloak, nginx, MailHog
+just up / just down          # local stack: Postgres, Keycloak, nginx, MailHog, Redpanda
 just test                    # ./mvnw verify (unit + integration + arch + RLS suites + coverage gates), then test-rust, test-go
 just test-rust               # pdf-service: rustfmt, clippy -D warnings, tests + coverage gates, cargo deny
 just test-go                 # finance-service: gofmt, golangci-lint, tests (RLS + isolation suites) + coverage gates, govulncheck

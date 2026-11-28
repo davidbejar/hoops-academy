@@ -55,8 +55,7 @@ Skip any step = lying, not verifying
 - Trusting agent success reports
 - Relying on partial verification
 - Thinking "just this once"
-- Tired and wanting work over
-- **ANY wording implying success without having run verification**
+- Any wording that implies success without having run the verification
 
 ## Rationalization Prevention
 
@@ -67,7 +66,6 @@ Skip any step = lying, not verifying
 | "Just this once" | No exceptions |
 | "Linter passed" | Linter ≠ compiler |
 | "Agent said success" | Verify independently |
-| "I'm tired" | Exhaustion ≠ excuse |
 | "Partial check is enough" | Partial proves nothing |
 | "Different words so rule doesn't apply" | Spirit over letter |
 
@@ -105,16 +103,5 @@ Skip any step = lying, not verifying
 
 ## When To Apply
 
-**ALWAYS before:**
-- ANY variation of success/completion claims
-- ANY expression of satisfaction
-- ANY positive statement about work state
-- Committing, PR creation, task completion
-- Moving to next task
-- Delegating to agents
-
-**Rule applies to:**
-- Exact phrases
-- Paraphrases and synonyms
-- Implications of success
-- ANY communication suggesting completion/correctness
+Before any statement that work is complete, fixed or passing, however it is worded: in a report, a handover, a
+commit or a PR, and before building the next step on that work or accepting an agent's result.

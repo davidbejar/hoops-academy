@@ -27,7 +27,7 @@ com.hoopsacademy.<svc>
    `X-Tenant-Id` header param). Run `./mvnw -pl libs/contracts verify`.
 2. **Red**: write the failing `@QuarkusTest` REST test (REST Assured + `@TenantUser(tenant=A, roles=…)`), including
    the negative role-matrix cases and the cross-tenant 404 case. Add contract validation
-   (`OpenApiValidationFilter`) to the test.
+   (the service's `Contract` filter in its test support, built on common's `ContractFilters`) to the test.
 3. **Red**: write the use-case unit test (pure, Mockito for ports).
 4. **Green**: domain → use case → adapter, minimal code.
 5. **Migration** (if a table changes): `V<nn>__<name>.sql`; for tenant tables call

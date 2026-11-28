@@ -35,7 +35,8 @@ needed>.
 - Other agents build at the same time: on a Testcontainers "localhost:2375 failed to respond" or a port clash, re-run
   that module alone with `-Dquarkus.http.test-port=0`.
 - Do not edit README.md, docs/HANDOVER.md, docs/wp/FOLLOW-UPS.md; notes go in this file's Handover.
-- Finish per the `work-package` skill. Final report to the orchestrator, at most 300 words.
+- Finish per the `work-package` skill. Final report to the orchestrator: short, the detail stays in the
+  handover.
 
 ## Handover
 <!-- Appended by the agent when done: Built, Verified, Decisions/ADRs, Open points (work-package skill). -->

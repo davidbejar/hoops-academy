@@ -13,9 +13,9 @@ description: How an agent starts, executes and hands over a Hoops Academy work p
    so a long build, kind proof or mutation run is not suspended by host sleep (which also stalls the Podman VM clock).
 4. Write the acceptance criteria from the brief as a checklist at the top of your working notes; add any you
    discover.
-5. Skills to apply: `test-driven-development` (always), `clean-code` (always), `quarkus-hexagonal-service` or
-   `flutter-feature` (by area), `tenant-isolation-testing` (any table/endpoint), `owasp-security` (auth, uploads,
-   config, deps), `systematic-debugging` (any failure).
+5. Skills to apply: `test-driven-development` (always), `clean-code` (always), `quarkus-hexagonal-service`,
+   `go-hexagonal-service`, `rust-service` or `flutter-feature` (by area), `tenant-isolation-testing` (any
+   table/endpoint), `owasp-security` (auth, uploads, config, deps), `systematic-debugging` (any failure).
 
 ## During
 - Small vertical slices: contract → failing test → minimal code → refactor → commit (Conventional Commits).
@@ -42,5 +42,5 @@ description: How an agent starts, executes and hands over a Hoops Academy work p
    - Decisions/ADRs: …
    - Open points / follow-ups: …
    ```
-4. Final report to the orchestrator, at most 300 words: what was built, how verified (with numbers), what was left
-   out and why.
+4. Final report to the orchestrator, short and readable without the handover open: what was built, how verified
+   (with numbers), what was left out and why. The detail stays in the handover.

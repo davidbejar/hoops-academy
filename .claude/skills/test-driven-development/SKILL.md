@@ -112,7 +112,7 @@ Vague name, tests mock not code
 
 ### Verify RED - Watch It Fail
 
-**MANDATORY. Never skip.**
+Run it every time: a test you did not watch fail proves nothing.
 
 ```bash
 npm test path/to/test.test.ts
@@ -167,7 +167,7 @@ Don't add features, refactor other code, or "improve" beyond the test.
 
 ### Verify GREEN - Watch It Pass
 
-**MANDATORY.**
+Run it every time.
 
 ```bash
 npm test path/to/test.test.ts

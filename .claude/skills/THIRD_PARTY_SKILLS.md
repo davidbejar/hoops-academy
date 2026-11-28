@@ -2,6 +2,9 @@
 
 Each folder below was copied verbatim (Markdown only, no scripts or hooks) after review on 2026-11-01.
 Re-vet before updating from upstream.
+Local edits since (prompt audit of 2026-11-25): references to files and skill names that were not vendored removed
+(`systematic-debugging`, `test-driven-development`); emphasis-only wording (capitals, "MANDATORY", fatigue lines)
+reworded in `verification-before-completion`, `test-driven-development` and `systematic-debugging`, rules unchanged.
 
 | Skill folder | Upstream | Commit date | License |
 |---|---|---|---|

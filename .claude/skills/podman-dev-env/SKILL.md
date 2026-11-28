@@ -31,9 +31,9 @@ Volumes with `:Z` labels are harmless on macOS. Never run compose from the OneDr
 ## kind (WP16)
 - `KIND_EXPERIMENTAL_PROVIDER=podman` (exported by env.sh). A rootful machine is strongly recommended:
   `podman machine stop && podman machine set --rootful && podman machine start`.
-- Map 8080/8443 in the kind config, not 80/443.
-- Load images with `kind load image-archive <tar>` (built by Quarkus Jib `buildTar` / `podman save`), not a local
-  registry.
+- The kind config maps host ports 8090/8453 (not 80/443, and not 8080: the compose stack uses it).
+- Load images with `kind load image-archive <tar>` (`scripts/build-images.sh`: `podman build`, then
+  `podman save`), not a local registry.
 
 ## Tilt
 Use `custom_build` that produces a tar and calls `kind load image-archive`; `docker_build` assumes BuildKit and is

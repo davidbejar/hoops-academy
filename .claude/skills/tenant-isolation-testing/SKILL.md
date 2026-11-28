@@ -5,7 +5,8 @@ description: How tenant isolation is tested in Hoops Academy and how to extend t
 
 # Tenant isolation testing
 
-Three layers, all mandatory for every service:
+Layers 1 to 3 are mandatory for every service; layer 4 adds the database role check per service and core's
+end-to-end check:
 
 ## 1. Schema meta-test (`RlsSchemaMetaTest` base class, common-quarkus test-jar)
 Queries `pg_tables` / `pg_policies` for the service schema and asserts for every table:
