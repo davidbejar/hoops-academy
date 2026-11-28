@@ -56,3 +56,5 @@ __pycache__/
 /tmp/
 # per-machine Claude Code permissions
 .claude/settings.local.json
+# Semgrep registry rulesets fetched by scripts/semgrep-rules.sh (semgrep workflow)
+semgrep-registry/

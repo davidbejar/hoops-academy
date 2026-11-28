@@ -14,6 +14,7 @@ The baseline is {"accepted": [entry, ...]}; an entry covers one finding:
 acceptance survives lines moving around it but not a change of the flagged line itself. `reason` and `expires` are
 mandatory (exit 2 otherwise); after `expires` the finding blocks again. Entries matching nothing are reported STALE.
 `--suggest` prints entries for the blocking results (reason and expiry to fill in by a reviewer).
+`--strip-rule-prefix P` cuts P from every rule id first (Semgrep names the ids of a config directory after it).
 """
 import argparse
 import datetime
@@ -46,13 +47,15 @@ def load_baseline(path):
     return entries
 
 
-def findings(report, root):
-    """(rule id, path, line, fingerprint, label, blocking-relevant attributes) of every unsuppressed result."""
+def findings(report, root, strip=""):
+    """(rule id, path, line, fingerprint, label, blocking-relevant attributes) of every unsuppressed result.
+    `strip` is a prefix cut from every rule id: Semgrep prefixes the ids of a config directory with its name."""
     lines_cache = {}
     for run in report.get("runs", []):
         tool = run.get("tool", {})
         components = [tool.get("driver", {})] + tool.get("extensions", [])  # CodeQL lists rules per query pack
         rules = {r.get("id"): r for c in components for r in c.get("rules", [])}
+        rule_id = lambda res: (res.get("ruleId") or "").removeprefix(strip) if strip else res.get("ruleId")  # noqa: E731
         for res in run.get("results", []):
             if any(s.get("status", "accepted") == "accepted" for s in res.get("suppressions", [])):
                 continue
@@ -71,7 +74,7 @@ def findings(report, root):
                 lines_cache[path] = source.read_text(errors="replace").splitlines() if source.is_file() else []
             text = lines_cache[path][line - 1] if 0 < line <= len(lines_cache[path]) else \
                 region.get("snippet", {}).get("text", "")
-            yield {"rule": res.get("ruleId"), "path": path, "line": line, "fingerprint": fingerprint(text),
+            yield {"rule": rule_id(res), "path": path, "line": line, "fingerprint": fingerprint(text),
                    "level": level, "severity": severity}
 
 
@@ -94,12 +97,13 @@ def main():
     parser.add_argument("--root", default=".", help="checkout the SARIF paths are relative to")
     parser.add_argument("--today", type=datetime.date.fromisoformat, default=datetime.date.today())
     parser.add_argument("--suggest", action="store_true")
+    parser.add_argument("--strip-rule-prefix", default="", help="cut this prefix from every rule id (config directory name)")
     args = parser.parse_args()
 
     baseline = load_baseline(args.baseline)
     used, counts, blocking, expired = set(), {}, [], []
     for report in args.reports:
-        for f in findings(json.loads(pathlib.Path(report).read_text()), args.root):
+        for f in findings(json.loads(pathlib.Path(report).read_text()), args.root, args.strip_rule_prefix):
             counts[label(f)] = counts.get(label(f), 0) + 1
             relevant = f["severity"] >= 7.0 if args.fail_on == "high" else f["level"] == "error"
             if not relevant:

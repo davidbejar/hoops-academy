@@ -101,6 +101,21 @@ class SarifGateTest(unittest.TestCase):
         report = sarif([result("java/sql-injection", suppressed=True)], [rule("java/sql-injection", 9.1)])
         self.assertEqual(0, self.run_gate(report, [], "--fail-on", "high")[0])
 
+    # --- WP152: the registry rulesets are fetched into a directory, Semgrep prefixes their rule ids with its name
+    def test_a_rule_id_prefix_is_stripped_before_the_baseline_is_matched(self):
+        rid, prefixed = "java.lang.sql", "semgrep-registry.java.lang.sql"
+        report = sarif([result(prefixed, level="error")], [rule(prefixed)])
+        self.assertEqual(1, self.run_gate(report, [], "--fail-on", "error")[0])
+        accepted = [self.entry(rule_id=rid)]
+        code, out = self.run_gate(report, accepted, "--fail-on", "error", "--strip-rule-prefix", "semgrep-registry.")
+        self.assertEqual(0, code, out)
+
+    def test_the_blocking_line_names_the_stripped_rule(self):
+        report = sarif([result("semgrep-registry.java.lang.sql", level="error")], [rule("semgrep-registry.java.lang.sql")])
+        code, out = self.run_gate(report, [], "--fail-on", "error", "--strip-rule-prefix", "semgrep-registry.")
+        self.assertEqual(1, code, out)
+        self.assertIn("BLOCKING error java.lang.sql ", out)
+
     # --- Semgrep: level error blocks (result level, else the rule's default level)
     def test_an_error_level_result_blocks_on_error(self):
         report = sarif([result("semgrep.rules.x", level="error"), result("semgrep.rules.y")],
