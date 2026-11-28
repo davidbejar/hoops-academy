@@ -552,11 +552,14 @@ and Medium findings get a fix, the rest become open items. The docs pass closes.
 
 | Wave | WP | Title | Model | Status |
 |---|---|---|---|---|
-| 1 | WP148 | Security docs: the STRIDE threat model covers the system as built, with ratings and attack chains | Opus · high | Running |
-| 1 | WP149 | Security docs: a threat model of the agent-driven build system (MAESTRO) | Opus · high | Running |
-| 1 | WP150 | Security docs: the method ADR, the privacy model refresh, the keep-current rule | Opus · medium | Running |
-| 2 | WP151… | Hardening: the High and Medium findings of wave 1 (briefs written from the findings; ADR-0078 reserved) | Opus | After wave 1 |
-| 3 | last | Docs pass | Opus · medium | Last alone |
+| 1 | WP148 | Security docs: the STRIDE threat model covers the system as built, with ratings and attack chains | Opus · high | Done (75cc0c08; boundaries 7–11, four chains; TM-01..14: 0 High, 7 Medium, 7 Low) |
+| 1 | WP149 | Security docs: a threat model of the agent-driven build system (MAESTRO) | Opus · high | Done (f74797a6; `docs/security/agentic-threat-model.md`; AG-01..16: 5 High, 9 Medium, 2 Low) |
+| 1 | WP150 | Security docs: the method ADR, the privacy model refresh, the keep-current rule | Opus · medium | Done (28836b5d; ADR-0077; privacy §9 and §10 as built; P-14 Medium, P-15 Low) |
+| 2 | WP151 | Chart: serving pods without the migrator password; outbound network policies (TM-01, TM-02) | Opus · high | Running |
+| 2 | WP152 | Supply chain: digests, checksums, enforced lock files (TM-04, TM-05, AG-12) | Sonnet · high | Running |
+| 2 | WP154 | Agent guardrails: hook follows the worktree and asks before destructive commands; gitleaks, skill checksums, gate log, PR flow (AG-01, AG-03, AG-05..07, AG-09..11, AG-13, AG-14, P-14) | Opus · high | Running |
+| 3 | WP153 | CI: Keycloak tests run, guarded paths, images after green CI and signed (AG-01, AG-02, AG-04, AG-08, TM-03, TM-08) | Opus · high | After wave 2 |
+| 4 | WP155 | Docs pass; then the orchestrator sets the ruleset on `main` | Opus · medium | Last alone |
 
 ### Decisions of 2026-11-28, tenth interview (product owner)
 119. **STRIDE model** → WP148: brought up to date in this round: the four boundaries the privacy model already has
@@ -574,6 +577,21 @@ and Medium findings get a fix, the rest become open items. The docs pass closes.
      (7288707a).
 124. **Models**: Opus · high for the two threat models; Opus · medium for the method ADR and privacy refresh and the
      docs pass; wave 2 by finding.
+
+### Decisions of 2026-11-29, eleventh interview (product owner, on the findings of wave 1)
+125. **Branches and pull requests** → WP154 (procedure), WP153 (checks), orchestrator (ruleset): from wave 2 on a
+     package lands through a pull request that waits for green CI and is merged with a rebase merge; at the end of
+     the round the orchestrator sets a ruleset on `main` that requires the checks (TM-03, AG-02). The commit with
+     the wave-2 briefs is the last direct push.
+126. **A separate credential for agents** (AG-05): a pending action of the owner; WP154 writes the runbook.
+127. **Destructive commands and `.env`** (AG-06, AG-07) → WP154: the hook asks, so the owner can approve at the
+     prompt and an agent alone cannot; reading `.env` gets a deny rule in the committed settings, shown to the
+     owner before it is committed. Both match command text and stop accidents, not a determined bypass; the
+     operating-system sandbox is recorded as an open item to evaluate.
+128. **Second factor** (TM-07): decision 39 stays; revisit before real academies.
+129. **Not in this round**: the Low findings and deploying by digest (the chart half of TM-08) become open items.
+130. **Models**: Opus · high for the chart, the guardrails and the CI gates; Sonnet · high for the pins; Opus ·
+     medium for the docs pass.
 
 ## Open
 
