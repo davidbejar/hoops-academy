@@ -69,7 +69,7 @@ expect none 'echo "git push" | cat'
 # --- unsure: the gate must run
 expect 'commit push' 'echo "unbalanced; git commit'
 expect commit "bash -c 'git commit -m x'"
-expect commit 'sh -c "git push" && git commit'
+expect 'commit push' 'sh -c "git push" && git commit' # the wrapper's script is read like a command line (WP154)
 expect commit 'echo "$(git commit -m x)"'
 expect commit '"$GIT" commit -m x'
 expect 'commit push' 'echo "unbalanced; git push'
@@ -95,9 +95,185 @@ check() { # check <label> <actual> <expected glob>: a trailing * instead of `cut
   fail=$((fail + 1))
   printf 'FAIL %s: got [%s] expected [%s]\n' "$1" "$2" "$3"
 }
-check "passing gate" "$(run_gate 0 'git commit -m x')" "0|tenancy-gate: isolation-check PASSED in [0-9]* s"
+check "passing gate" "$(run_gate 0 'git commit -m x')" "0|tenancy-gate: isolation-check PASSED in [0-9]* s, checkout *"
 check "failing gate blocks" "$(run_gate 1 'git commit -m x')" "2|Blocked: the tenant isolation*"
 check "unrelated command skips the gate" "$(run_gate 1 'git status')" "0|"
+
+# --- AG-01 (WP154, ADR-0078): the gate runs in the checkout the git command acts on. The plan mode prints one line per
+# gate ("commit <dir>", "push <dir>"; "?" = cannot tell, which blocks) and per destructive rule ("ask <rule>").
+plan() { # plan <command text> [cwd]: the plan, lines joined by ";"
+  jq -nc --arg d "${2:-/s}" --arg c "$1" '{cwd: $d, tool_input: {command: $c}}' |
+    env -u CLAUDE_PROJECT_DIR HOME=/home/u TENANCY_GATE_CLASSIFY_ONLY=plan "$hook" 2>&1 | paste -sd ';' -
+}
+expect_plan() { # expect_plan <expected plan> <command text> [cwd]
+  local got
+  total=$((total + 1))
+  got=$(plan "$2" "${3:-/s}")
+  [ "$got" = "$1" ] && return 0
+  fail=$((fail + 1))
+  printf 'FAIL plan expected [%s] got [%s] for: %s\n' "$1" "$got" "$2"
+}
+expect_plan 'commit /s' 'git commit -m x'
+expect_plan 'commit /w' 'cd /w && git commit -m x'
+expect_plan 'commit /s/wt' 'cd wt && git commit -m x'
+expect_plan 'commit /home/u/code/wt' 'cd ~/code/wt && git commit -m x'
+expect_plan 'commit /home/u' 'cd && git commit -m x'
+expect_plan 'commit /w' 'git -C /w commit -m x'
+expect_plan 'commit /w/sub' 'cd /w && git -C sub commit -m x'
+expect_plan 'commit /my dir' 'git -C "/my dir" commit -m x'
+expect_plan 'commit /w' 'cd /w; gitleaks protect --staged && git commit -m "a; cd /x"'
+expect_plan 'commit /w;push /s' '(cd /w; git commit -m x) && git push origin b'
+expect_plan 'commit /w;push /x' 'cd /w && git commit -m x; cd /x && git push origin b'
+expect_plan 'commit /w' 'timeout 600 git -C /w commit -m x'
+expect_plan 'commit /w' "bash -c 'cd /w && git commit -m x'"
+expect_plan 'commit /s' 'x=$(cd /w && pwd) && git commit -m x'
+expect_plan 'commit ?' 'cd "$WT" && git commit -m x'
+expect_plan 'commit ?' 'cd - && git commit -m x'
+expect_plan 'commit ?' 'git --work-tree=/w commit -m x'
+expect_plan 'commit ?' 'git --git-dir /w/.git commit -m x'
+expect_plan 'commit ?' '"$GIT" commit -m x'
+expect_plan 'commit ?' 'echo "$(git commit -m x)"'
+expect_plan '' 'cd /w && git status'
+
+# --- AG-07 (decision 127): destructive commands ask the owner. One case per rule of ASK_RULES in the hook, then near
+# misses that must pass untouched. A repository on branch main and one on a feature branch for the branch-aware rules.
+repos=$(mktemp -d)
+git -C "$repos" init -q -b main on-main
+git -C "$repos" init -q -b wp-x on-feature
+m=$repos/on-main f=$repos/on-feature
+asked=""
+expect_ask() { # expect_ask <rule> <command text> [cwd]
+  asked+=" $1 "
+  expect_plan "ask $1" "$2" "${3:-$f}"
+}
+expect_ask podman-volume-rm 'podman volume rm hoops_pgdata'
+expect_ask podman-volume-rm 'podman volume prune -f'
+expect_ask podman-volume-rm 'echo x | xargs podman volume remove'
+expect_ask podman-volume-rm "bash -c 'podman volume rm hoops_pgdata-19'"
+expect_ask podman-volume-rm 'sudo podman --connection m volume rm x'
+expect_ask podman-system-prune 'podman system prune -a --volumes'
+expect_ask podman-system-prune 'podman system reset --force'
+expect_ask podman-machine 'podman machine stop'
+expect_ask podman-machine 'podman machine rm -f'
+expect_ask podman-machine 'podman machine reset'
+expect_ask compose-down-volumes 'podman compose -f infra/compose/compose.yaml down -v'
+expect_ask compose-down-volumes 'podman-compose down --volumes'
+expect_ask compose-down-volumes 'just down -v'
+expect_ask kind-delete-cluster 'kind delete cluster --name hoops'
+expect_ask kind-delete-cluster 'timeout 60 kind delete clusters --all'
+expect_ask kind-delete-cluster 'just kind-down'
+expect_ask kind-delete-cluster 'deploy/kind/down.sh'
+expect_ask git-force-push 'git push --force origin wp-x'
+expect_ask git-force-push 'git push -f'
+expect_ask git-force-push 'git push origin +wp-x'
+expect_ask git-force-push 'git push --force-with-lease origin wp-x'
+expect_ask git-force-push 'git push --mirror origin'
+expect_ask git-push-main 'git push origin main'
+expect_ask git-push-main 'git push origin wp-x:main'
+expect_ask git-push-main 'git push origin HEAD:refs/heads/main'
+expect_ask git-push-main 'git push origin --delete main'
+expect_ask git-push-main 'git push origin :main'
+expect_ask git-push-main 'git push --all origin'
+expect_ask git-push-main 'git push' "$m"
+expect_ask git-push-main 'git push origin HEAD' "$m"
+expect_ask git-reset-hard-main 'git reset --hard origin/main' "$m"
+expect_ask git-reset-hard-main "cd $m && git reset --hard HEAD~1"
+expect_ask git-main-ref 'git branch -D main'
+expect_ask git-main-ref 'git branch -f main HEAD~1'
+expect_ask git-main-ref 'git branch -M wp-x main'
+expect_ask git-main-ref 'git checkout -B main'
+expect_ask git-main-ref 'git switch -C main origin/main'
+expect_ask git-main-ref 'git update-ref refs/heads/main 0123abc'
+expect_ask gh-repo-settings 'gh repo edit --visibility private'
+expect_ask gh-repo-settings 'gh repo rename other'
+expect_ask gh-repo-settings 'gh secret set X --body y'
+expect_ask gh-repo-settings 'gh variable set IMAGE_REGISTRY --body y'
+expect_ask gh-repo-settings 'gh workflow disable ci.yml'
+expect_ask gh-delete 'gh repo delete o/r --yes'
+expect_ask gh-delete 'gh release delete v1 -y'
+expect_ask gh-delete 'gh secret delete X'
+expect_ask gh-delete 'gh -R o/r run delete 5'
+expect_ask gh-api-write 'gh api -X DELETE repos/o/r/git/refs/heads/x'
+expect_ask gh-api-write 'gh api --method=PUT repos/o/r/rulesets/1'
+expect_ask gh-api-write 'gh api repos/o/r/rulesets --input ruleset.json'
+expect_ask gh-api-write 'gh api repos/o/r/issues -f title=x'
+expect_ask gh-merge-admin 'gh pr merge 12 --rebase --admin'
+expect_ask pg-copies-remove 'scripts/pg-major-move.sh --clean-up --out /x --remove'
+expect_plan "commit $f;push $f;ask podman-volume-rm" 'echo "it is unbalanced; podman volume rm x' "$f" # unreadable: loose
+expect_plan 'commit /w;push /w;ask git-force-push' 'cd /w && git commit -m x && git push --force origin wp-x' "$f"
+while read -r rule; do # every rule of the table has a case above
+  total=$((total + 1))
+  case "$asked" in *" $rule "*) ;; *) fail=$((fail + 1)); echo "FAIL ask rule without a test: $rule" ;; esac
+done < <(sed -n 's/^#   \([a-z-]*\)  .*/\1/p' "$hook")
+total=$((total + 1))
+[ -n "$(sed -n 's/^#   \([a-z-]*\)  .*/\1/p' "$hook")" ] || { fail=$((fail + 1)); echo "FAIL no ASK_RULES table in $hook"; }
+# near misses: ordinary commands pass untouched
+for cmd in 'podman volume ls' 'podman volume inspect hoops_pgdata' 'podman machine start' 'podman machine ssh "date +%s"' \
+  'podman compose -f c.yaml down' 'podman compose up -d --wait' 'podman rm -f throwaway' 'podman system df' 'just down' \
+  'just up' 'kind get clusters' 'kind create cluster --name x' 'git push origin wp-x' 'git push -u origin wp-x' \
+  'git push origin --delete wp-x' 'git push origin HEAD' 'git reset --hard origin/wp-x' 'git branch -d wp-x' \
+  'git branch -D wp-x' 'git branch feature main' 'git checkout -b feature main' 'git worktree remove --force ../wt' \
+  'git stash push' 'gh pr create --base main --head wp-x' 'gh pr merge 12 --rebase --match-head-commit abc' \
+  'gh run watch 5 --exit-status' 'gh api repos/o/r/branches/main' 'gh api -X GET repos/o/r/pulls -f state=open' \
+  'gh pr checks 12 --watch' 'gh secret list' 'grep -n "podman volume rm" docs/x.md' 'echo "git push --force"' \
+  "git log --grep 'kind delete cluster'" 'scripts/pg-major-move.sh --clean-up --out /x' 'git push origin main:refs/heads/x'; do
+  expect_plan '' "$cmd" "$f"
+done
+expect_plan "commit $f" 'git commit -m "podman volume rm hoops_pgdata"' "$f" # a commit message mentioning it
+expect_plan '' 'git reset --hard HEAD~1' "$f"
+rm -rf "$repos"
+
+# --- end to end in real repositories: a main checkout and a worktree of it, stub gate scripts in each
+e2e() { # e2e <session exit> <worktree exit> <command, WT = the worktree> [jq input filter]; prints "<rc>|<stderr+stdout>"
+  local base out rc
+  base=$(mktemp -d)
+  git -C "$base" init -q -b main main
+  git -C "$base/main" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
+  git -C "$base/main" worktree add -q -b wp-x "$base/wt"
+  git -C "$base" init -q other # a repository without the gate scripts
+  for t in main:$1 wt:$2; do
+    mkdir -p "$base/${t%%:*}/scripts/hooks"
+    printf '#!/bin/sh\nexit %s\n' "${t#*:}" >"$base/${t%%:*}/scripts/hooks/isolation-check.sh"
+    printf '#!/bin/sh\nexit %s\n' "${t#*:}" >"$base/${t%%:*}/scripts/hooks/db-role-check.sh"
+    chmod +x "$base/${t%%:*}/scripts/hooks/"*.sh
+  done
+  out=$(jq -nc --arg d "$base/main" --arg c "$(sed -e "s#OTHER#$base/other#g" -e "s#WT#$base/wt#g" <<<"$3")" '{cwd: $d, session_id: "s1", tool_input: {command: $c}}' |
+    env -u CLAUDE_PROJECT_DIR "$hook" 2>&1)
+  rc=$?
+  E2E_LOG=$(cat "$base/main/.git/claude-gate.log" 2>/dev/null)
+  rm -rf "$base"
+  echo "$rc|$out"
+}
+check "a commit in a worktree runs the worktree's gate" "$(e2e 1 0 'cd WT && git commit -m x')" "0|*PASSED*checkout */wt"
+check "the worktree's failing gate blocks" "$(e2e 0 1 'cd WT && git commit -m x')" "2|Blocked: the tenant isolation*/wt*"
+check "git -C picks the worktree" "$(e2e 1 0 'git -C WT commit -m x')" "0|*PASSED*"
+check "the session checkout is still gated" "$(e2e 1 0 'git commit -m x')" "2|Blocked: the tenant isolation*"
+check "a push in the worktree runs the role check there" "$(e2e 1 0 'cd WT && git push origin wp-x')" "0|*db-role-check PASSED*"
+check "an unknown checkout blocks" "$(e2e 0 0 'cd "$TARGET_DIR" && git commit -m x')" "2|Blocked: cannot tell which checkout*"
+check "a checkout without the gate script blocks" "$(e2e 0 0 'cd OTHER && git commit -m x')" \
+  "2|Blocked: */other has no scripts/hooks/isolation-check.sh*"
+# AG-10: one log line per decision in the shared git directory, without the command's text
+e2e 1 0 'cd WT && git commit -m s3cr3t-in-message' >/dev/null
+check "the gate log has the decision" "$E2E_LOG" $'*commit\tpassed*'
+check "the gate log names the worktree" "$E2E_LOG" $'*/wt\tcommit*'
+check "the gate log names the session" "$E2E_LOG" $'*\ts1\t*'
+total=$((total + 1))
+case "$E2E_LOG" in *s3cr3t*) fail=$((fail + 1)); echo "FAIL the gate log holds the command text" ;; esac
+e2e 0 1 'cd WT && git commit -m x' >/dev/null
+check "a blocked gate is logged" "$E2E_LOG" $'*commit\tblocked*'
+out=$(e2e 0 0 'podman volume rm hoops_pgdata')
+check "a destructive command answers ask" "$out" '0|{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"ask","permissionDecisionReason":"*podman-volume-rm*"}}'
+check "an ask is logged" "$E2E_LOG" $'*ask podman-volume-rm\tasked*'
+check "an ordinary command prints nothing and logs nothing" "$(e2e 1 1 'ls -la'; echo "[$E2E_LOG]")" "0|"$'\n'"[]"
+
+# --- AG-14: without jq the hook cannot read the command, so it blocks; unreadable input blocks too
+nojq=$(mktemp -d)
+for tool in cat git date grep env sed paste; do ln -s "$(command -v "$tool")" "$nojq/$tool"; done
+out=$(echo '{"tool_input":{"command":"git commit -m x"}}' | PATH=$nojq "$(command -v bash)" "$hook" 2>&1)
+check "no jq blocks" "$?|$out" "2|Blocked: jq is missing*"
+rm -rf "$nojq"
+out=$(echo 'not json' | "$hook" 2>&1)
+check "unreadable hook input blocks" "$?|$out" "2|Blocked: *"
 
 # --- the gates cover every service with tenant data, the Go finance-service too (WP118, ADR-0055)
 covers() { # covers <gate script> <text the script must contain>
